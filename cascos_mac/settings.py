@@ -37,6 +37,7 @@ INSTALLED_APPS = [
 # Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -105,8 +106,10 @@ USE_I18N = True
 USE_TZ = True
 
 # Archivos estáticos (CSS, JavaScript, Imágenes)
-STATIC_URL = '/static/'  # URL para acceder a los archivos estáticos
-STATICFILES_DIRS = [BASE_DIR / "static"]  # Directorio adicional para archivos estáticos
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"  # Railway usará esta carpeta en producción
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # Campo de clave primaria predeterminado
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
