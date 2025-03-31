@@ -15,12 +15,18 @@ SECRET_KEY = 'django-insecure-0ee!fl%7vm)6@&!-g)hn4uh_5+wtn5e_m#&h2$l0s)j++t=!5=
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "web-production-482151.up.railway.app",
+    "web-production-482151.up.railway.app",  # En producción
+    "localhost",  # Para entorno local
+    "127.0.0.1",  # Para acceder desde localhost
 ]
 
+
 CSRF_TRUSTED_ORIGINS = [
-    "https://web-production-482151.up.railway.app",
+    "https://web-production-482151.up.railway.app",  # En producción
+    "http://localhost:8000",  # Para entorno local
+    "http://127.0.0.1:8000",  # Para entorno local
 ]
+
 
 # Aplicaciones instaladas
 INSTALLED_APPS = [
@@ -134,7 +140,6 @@ SESSION_SAVE_EVERY_REQUEST = True  # Guarda la sesión en cada solicitud
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-ALLOWED_HOSTS = ['*']
 
 CACHES = {
     'default': {
