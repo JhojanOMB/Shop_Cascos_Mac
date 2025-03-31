@@ -13,7 +13,7 @@ packaging==24.2
 pillow==10.4.0
 python-barcode==0.15.1
 python-escpos==3.1
-pywin32==308
+pywin32==308; platform_system == "Windows"
 PyYAML==6.0.2
 qrcode==8.0
 reportlab==4.3.1
