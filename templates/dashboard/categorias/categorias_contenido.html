@@ -1,0 +1,53 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="mt-4">
+    <!-- Botón para Agregar Nueva Categoría -->
+    <div class="mb-3">
+        <a href="{% url 'crear_categoria' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Agregar Nueva Categoría
+        </a>
+    </div>
+    
+    <!-- Tabla de Categorías -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover mt-3">
+            <thead class="table-light">
+                <tr class="text-center align-middle">
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria in categorias %}
+                    <tr>
+                        <td  class="fw-semibold  text-center">{{ categoria.nombre }}</td>
+                        <td>{{ categoria.descripcion }}</td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group" aria-label="Acciones">
+                                <a href="{% url 'editar_categoria' categoria.pk %}" 
+                                   class="btn btn-warning btn-sm border-black" 
+                                   aria-label="Editar categoría {{ categoria.nombre }}">
+                                   <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'eliminar_categoria' categoria.pk %}" 
+                                   class="btn btn-danger btn-sm border-black" 
+                                   aria-label="Eliminar categoría {{ categoria.nombre }}">
+                                   <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center">No hay categorías disponibles.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

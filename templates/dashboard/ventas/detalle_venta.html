@@ -1,0 +1,15 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Detalle de Venta{% endblock %}
+
+{% block content %}
+<h1>Factura {{ venta.numero_factura }}</h1>
+<p>Fecha: {{ venta.fecha }}</p>
+<p>Empleado: {{ venta.empleado.get_full_name|default:venta.empleado.username }}</p>
+<p>Total: ${{ venta.total|floatformat:0|intcomma }}</p>
+{% if venta.qr_code %}
+    <img src="{{ venta.qr_code.url }}" alt="Código QR">
+{% endif %}
+{% endblock %}

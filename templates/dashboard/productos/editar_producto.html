@@ -1,0 +1,263 @@
+{% extends 'base_dashboard.html' %}
+{% load custom_filters %}
+{% load static %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center align-middle fw-bolder">Editar Producto</h2>
+    <hr class="border border-2 mb-2">
+    
+    <!-- Mostrar mensaje de error si existen errores en el formulario -->
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <strong>¡Advertencia!</strong> Algunos campos están incompletos o contienen errores. Por favor, corrígelos para continuar.
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" action="{% url 'editar_producto' object.pk %}">
+        {% csrf_token %}
+        <div class="row">
+            <!-- Columna Izquierda -->
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-tag me-2"></i>{{ form.nombre.label }}</label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}
+                        <div class="text-danger">
+                            {% for error in form.nombre.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-align-left me-2"></i>{{ form.descripcion.label }}</label>
+                    {{ form.descripcion }}
+                    {% if form.descripcion.errors %}
+                        <div class="text-danger">
+                            {% for error in form.descripcion.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-dollar-sign me-2"></i>{{ form.precio_compra.label }}</label>
+                    {{ form.precio_compra }}
+                    {% if form.precio_compra.errors %}
+                        <div class="text-danger">
+                            {% for error in form.precio_compra.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-dollar-sign me-2"></i>Precio Venta</label>
+                    {{ form.precio }}
+                    {% if form.precio.errors %}
+                        <div class="text-danger">
+                            {% for error in form.precio.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-boxes me-2"></i>{{ form.cantidad.label }}</label>
+                    {{ form.cantidad }}
+                    {% if form.cantidad.errors %}
+                        <div class="text-danger">
+                            {% for error in form.cantidad.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-list me-2"></i>{{ form.categoria.label }}</label>
+                    {{ form.categoria }}
+                    {% if form.categoria.errors %}
+                        <div class="text-danger">
+                            {% for error in form.categoria.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-industry me-2"></i>{{ form.proveedor.label }}</label>
+                    {{ form.proveedor }}
+                    {% if form.proveedor.errors %}
+                        <div class="text-danger">
+                            {% for error in form.proveedor.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-bookmark me-2"></i>{{ form.catalogo.label }}</label>
+                    {{ form.catalogo }}
+                    {% if form.catalogo.errors %}
+                        <div class="text-danger">
+                            {% for error in form.catalogo.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-venus-mars me-2"></i>Género</label><br>
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" id="es_dama" name="genero" value="dama" {% if form.genero.value == 'dama' %}checked{% endif %}>
+                        <label class="form-check-label" for="es_dama"><i class="fas fa-female"></i> Dama</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" id="es_caballero" name="genero" value="caballero" {% if form.genero.value == 'caballero' %}checked{% endif %}>
+                        <label class="form-check-label" for="es_caballero"><i class="fas fa-male"></i> Caballero</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" id="es_unisex" name="genero" value="unisex" {% if form.genero.value == 'unisex' %}checked{% endif %}>
+                        <label class="form-check-label" for="es_unisex"><i class="fas fa-transgender"></i> Unisex</label>
+                    </div>
+                </div>  
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-tag me-2"></i>{{ form.en_oferta.label }}</label>
+                    {{ form.en_oferta }}
+                </div>
+        
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-dollar-sign me-2"></i>{{ form.precio_oferta.label }}</label>
+                    {{ form.precio_oferta }}
+                </div>
+
+            <!-- Tabla de tallas con checkbox -->
+            <div class="row mb-3">
+                <h4>Tallas Disponibles</h4>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr class="text-center">
+                            <th>Seleccionada</th>
+                            <th>Talla</th>
+                            <th>Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for talla in tallas %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" 
+                                    name="activar_talla_{{ talla.id }}" 
+                                    id="activar_talla_{{ talla.id }}"
+                                    {% if tallas_con_cantidad|get_item:talla.id %}checked{% endif %}>
+                            </td>
+                            <td class="text-center">{{ talla.nombre }}</td>
+                            <td>
+                                <input type="number" 
+                                    class="form-control text-center" 
+                                    name="cantidad_talla_{{ talla.id }}" 
+                                    id="cantidad_talla_{{ talla.id }}" 
+                                    value="{{ tallas_con_cantidad|get_item:talla.id }}" 
+                                    min="0">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            </div>
+
+            <!-- Columna Derecha -->
+            <div class="col-md-6">
+                <!-- Imagen 1 -->
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen1.label }}</label>
+                    {% if object.imagen1 %}
+                        <div class="container border rounded align-content-center p-3">
+                            <img src="{{ object.imagen1.url }}" alt="Imagen 1" width="100" class="mb-2">
+                            <p><small>Imagen actual</small></p>
+                        </div>
+                    {% endif %}
+                    {{ form.imagen1 }}
+                </div>
+
+                <!-- Imagen 2 -->
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen2.label }}</label>
+                    {% if object.imagen2 %}
+                        <div class="container border rounded align-content-center p-3">
+                            <img src="{{ object.imagen2.url }}" alt="Imagen 2" width="100" class="mb-2">
+                            <p><small>Imagen actual</small></p>
+                        </div>
+                    {% endif %}
+                    {{ form.imagen2 }}
+                </div>
+
+                <!-- Imagen 3 -->
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen3.label }}</label>
+                    {% if object.imagen3 %}
+                        <div class="container border rounded align-content-center p-3">
+                            <img src="{{ object.imagen3.url }}" alt="Imagen 3" width="100" class="mb-2">
+                            <p><small>Imagen actual</small></p>
+                        </div>
+                    {% endif %}
+                    {{ form.imagen3 }}
+                </div>
+
+                <!-- Imagen 4 -->
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen4.label }}</label>
+                    {% if object.imagen4 %}
+                        <div class="container border rounded align-content-center p-3">
+                            <img src="{{ object.imagen4.url }}" alt="Imagen 4" width="100" class="mb-2">
+                            <p><small>Imagen actual</small></p>
+                        </div>
+                    {% endif %}
+                    {{ form.imagen4 }}
+                </div>
+
+                <!-- Imagen 5 -->
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen5.label }}</label>
+                    {% if object.imagen5 %}
+                        <div class="container border rounded align-content-center p-3">
+                            <img src="{{ object.imagen5.url }}" alt="Imagen 5" width="100" class="mb-2">
+                            <p><small>Imagen actual</small></p>
+                        </div>
+                    {% endif %}
+                    {{ form.imagen5 }}
+                </div>          
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        <a href="{% url 'contenido_productos' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
+<script>
+    const checkboxes = document.querySelectorAll('input[name="genero"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            checkboxes.forEach(item => {
+                if (item !== this) {
+                    item.checked = false;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

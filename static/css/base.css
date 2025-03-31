@@ -1,0 +1,112 @@
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap");
+
+:root {
+    --fuente-letra: 'Quicksand', sans-serif;
+}
+
+* {
+    font-family: var(--fuente-letra);
+}
+
+body {
+    font-family: var(--fuente-letra);
+    background: #8a8a8a;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar {
+    background: #df580a !important;
+    padding: 10px 15px;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    color: #212529;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.logo-navbar {
+    width: 45px;
+    /* Tamaño reducido del logo para móviles */
+    height: 45px;
+}
+
+.navbar-toggler {
+    border-color: #212529;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='rgba(33,37,41, 1)' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+
+.navbar-collapse {
+    justify-content: space-between;
+}
+
+.navbar-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.navbar-nav .nav-link {
+    padding: 10px;
+    font-weight: 500;
+    width: 100%;
+    text-align: center;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: #e9ecef;
+    border-radius: 5px;
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        padding: 10px;
+    }
+
+    .navbar-brand span {
+        font-size: 1.1rem;
+        /* Tamaño de texto reducido en móviles */
+    }
+
+    .navbar-toggler {
+        margin-left: auto;
+    }
+
+    .navbar-collapse {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .search-bar-wrapper {
+        order: 2;
+        /* Asegura que la barra de búsqueda se coloque después de la marca en móviles */
+        margin-top: 10px;
+    }
+
+    .navbar-nav {
+        order: 3;
+        /* Coloca el menú de navegación debajo de la barra de búsqueda en móviles */
+        width: 100%;
+        flex-direction: column;
+        margin-top: 10px;
+    }
+
+    .navbar-nav .nav-link {
+        font-size: 1rem;
+        width: 100%;
+        /* Hace que los enlaces de navegación ocupen todo el ancho en móviles */
+    }
+
+    .navbar-nav .btn {
+        margin-bottom: 10px;
+        width: 100%;
+        /* Hace que los botones ocupen todo el ancho en móviles */
+    }
+}

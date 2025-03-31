@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Resultados de búsqueda{% endblock %}
+
+{% block header_links %}
+
+<style>
+    .h-pantalla {
+    height: 54.5vh !important;
+}
+</style>
+
+<div class="d-flex gap-2 justify-content-end align-items-center">
+    {% if user.is_authenticated %}
+        {% if user.rol == 'gerente' %}
+        <a href="{% url 'dashboard_gerente' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
+        {% elif user.rol == 'vendedor' %}
+        <a href="{% url 'dashboard_vendedor' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
+        {% endif %}
+        <a href="{% url 'logout' %}" class="btn btn-dark w-100 text-nowrap">Cerrar Sesión</a>
+    {% else %}
+        <a href="{% url 'login' %}" class="btn btn-dark w-100 text-nowrap">Iniciar Sesión</a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/productos.css' %}">
+
+<div class="container my-5">
+    <h2>Resultados de búsqueda para "{{ query }}"</h2>
+
+    {% if productos %}
+    <div class="row g-4">
+        {% for producto in productos %}
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm p-2">
+                <!-- Imagen del producto -->
+                {% if producto.imagen1 %}
+                <img src="{{ producto.imagen1.url }}" class="card-img-top w-100" alt="{{ producto.nombre }}">
+                {% else %}
+                <img src="{% static 'img/No_hay_imagen.png' %}" class="d-block w-100 rounded-4" alt="No image available">
+                {% endif %}
+
+                <!-- Etiqueta de oferta -->
+                {% if producto.en_oferta %}
+                <div class="offer-label position-absolute top-0 start-0 bg-danger text-white p-1 rounded-end">Oferta</div>
+                {% endif %}
+
+                <div class="card-body">
+                    <!-- Nombre del producto -->
+                    <h5 class="card-title fw-semibold">{{ producto.nombre }}</h5>
+                    <p class="card-text">${{ producto.precio|floatformat:0 }}</p>
+
+                    <!-- Género del producto -->
+                    <p>
+                        {% if producto.genero == 'dama' %}
+                        <span class="badge bg-dama">Para Mujer</span>
+                        {% elif producto.genero == 'caballero' %}
+                            <span class="badge bg-hombre">Para Hombre</span>
+                        {% elif producto.genero == 'unisex' %}
+                            <span class="badge bg-unisex">Unisex</span>
+                        {% endif %}
+                    </p>
+
+                    <!-- Precios: Original y con descuento -->
+                    {% if producto.en_oferta %}
+                    <div class="price-wrapper">
+                        <p class="price text-success h3">
+                            <strong>${{ producto.precio_oferta|floatformat:0|intcomma }}</strong>
+                        </p>
+                        <p class="text-muted text-danger text-decoration-line-through">
+                            <strong style="text-decoration: none;">Antes: </strong>${{ producto.precio|floatformat:0|intcomma }}
+                        </p>
+                    </div>
+                    {% else %}
+                    <p class="price text-success h4">
+                        <strong>${{ producto.precio|floatformat:0|intcomma }}</strong>
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Footer de la Tarjeta -->
+                <div class="card-footer text-center bg-light">
+                    <a href="{% url 'product_detail' producto.id %}" class="btn btn-outline-dark w-100">
+                        <i class="fa-regular fa-eye me-2"></i>Ver Más
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="container h-pantalla text-center my-4">
+        <p class="text-muted">No se encontraron productos que coincidan con tu búsqueda.</p>
+        <p>
+            <a href="{% url 'index' %}" class="btn btn-dark">
+                Ver todos los productos
+            </a>
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

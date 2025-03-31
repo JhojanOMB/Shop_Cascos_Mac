@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}W Cascos | Login{% endblock %}
+
+{% block header_links %}
+<div class="d-flex gap-2 justify-content-end align-items-center">
+    <a href="{% url 'index' %}" class="btn btn-dark text-nowrap">Volver</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+<style>
+    /* Asegura que la columna ocupe todo el alto disponible */
+    .col-md-6.d-none.d-md-block {
+        background-image: url("{% static 'img/login_fondo.jpeg' %}");
+        /* Establece la imagen de fondo */
+        background-size: cover;
+        /* Asegura que la imagen cubra todo el espacio sin distorsionarse */
+        background-position: center;
+        /* Centra la imagen en el contenedor */
+        background-repeat: no-repeat;
+        /* Evita que la imagen se repita */
+    }
+</style>
+
+<div id="particles-js"></div>
+
+<main class="d-flex align-items-center justify-content-center p-3 pantalla">
+    <div class="row shadow-lg g-0 rounded-4 overflow-hidden border border-dark bg-white size-login">
+        <!-- Lado izquierdo con la imagen como fondo -->
+        <div class="col-md-6 d-none d-md-block imagen-fondo">
+        </div>
+
+        <!-- Lado derecho con el formulario -->
+        <div class="col-md-6 p-5 d-flex flex-column justify-content-center">
+            <form method="post" action="{% url 'login' %}" novalidate>
+                {% csrf_token %}
+                <h2 class="text-center mb-4 text-dark fs-2 fw-bold fe-letter">Iniciar sesión</h2>
+
+                <!-- Usuario o correo -->
+                <div class="form-floating mb-3">
+                    <input type="text" id="username_or_email" name="username_or_email"
+                        class="form-control {% if form.username_or_email.errors %}is-invalid{% endif %}"
+                        placeholder="Usuario o correo" required>
+                    <label for="username_or_email">Usuario o Correo Electrónico</label>
+                    {% for error in form.username_or_email.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Contraseña -->
+                <div class="form-floating mb-4">
+                    <input type="password" id="password" name="password"
+                        class="form-control {% if form.password.errors %}is-invalid{% endif %}" placeholder="Contraseña"
+                        required>
+                    <label for="password">Contraseña</label>
+                    {% for error in form.password.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Botón de inicio -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-dark btn-lg">Iniciar sesión</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<!-- Modal de error para credenciales inválidas -->
+{% if messages %}
+  {% for message in messages %}
+    {% if message.tags == "error" %}
+      <div class="modal fade" id="modalError" tabindex="-1" aria-labelledby="modalErrorLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 310px;">
+          <div class="modal-content">
+            <!-- Cabecera con diseño corregido -->
+            <div class="modal-header border-0 d-flex flex-column align-items-center" style="
+                background-color: #f8d7da;
+                border-bottom-left-radius: 150px;
+                border-bottom-right-radius: 150px;
+            ">
+              <!-- Botón de cerrar -->
+              <div class="w-100 d-flex justify-content-end">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeErrorModal"></button>
+              </div>
+              <!-- Ícono de error -->
+              <div class="d-flex justify-content-center align-items-center rounded-circle mx-auto mb-3" style="
+                  width: 80px; 
+                  height: 80px; 
+                  background-color: #f44336; 
+                  box-shadow: 0 0 0 10px #e57373, 0 0 0 20px #ef9a9a;
+              ">
+                <i class="fa-solid fa-times text-light fs-3"></i>
+              </div>
+            </div>
+            <!-- Cuerpo del modal -->
+            <div class="modal-body text-center">
+              <h1 class="fw-bold text-danger" id="modalErrorLabel">Credenciales inválidas</h1>
+              <p class="fs-5 text-muted mt-3" id="errorMessage">
+                Por favor, verifica tu correo o usuario y contraseña.
+              </p>
+            </div>
+            <!-- Footer -->
+            <div class="modal-footer border-0 justify-content-center">
+              <button type="button" class="btn btn-outline-danger px-4" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+          document.addEventListener('DOMContentLoaded', function () {
+              var modal = new bootstrap.Modal(document.getElementById('modalError'));
+              modal.show();
+              // Auto-cierra el modal después de 5 segundos (5000ms)
+              setTimeout(function(){
+                  modal.hide();
+              }, 5000);
+          });
+      </script>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/login.js' %}"></script>
+<script src="{% static 'js/particles.js' %}"></script>
+{% endblock %}

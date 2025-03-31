@@ -1,0 +1,395 @@
+{% extends 'base_dashboard.html' %}
+{% load custom_filters %}
+{% load static %}
+
+{% block content %}
+<div class="container form-container mt-4">
+    <form id="productoForm" method="post">
+        {% csrf_token %}
+        <h2 class="text-center align-middle fw-bolder">Crear Producto</h2>
+        <hr class="border border-2 mb-2">
+
+        <!-- Mostrar errores generales del formulario -->
+        <div class="alert alert-danger" role="alert" {% if form.errors %}style="display:block"{% else %}style="display:none"{% endif %}>
+            <strong>¡Ups! Hay algunos errores en el formulario:</strong>
+            <ul>
+                {% for field, errors in form.errors.items %}
+                    <li><strong>{{ field }}:</strong> {% for error in errors %}{{ error }}{% endfor %}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Formulario principal -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">{{ form.nombre.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-user"></i></span>
+                        {{ form.nombre }}
+                    </div>
+                    {% if form.nombre.errors %}
+                        <div class="invalid-feedback d-block">
+                            <strong>Errores en el campo "{{ form.nombre.label }}":</strong>
+                            {% for error in form.nombre.errors %}
+                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">{{ form.descripcion.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-pencil"></i></span>
+                        {{ form.descripcion }}
+                    </div>
+                    {% if form.descripcion.errors %}
+                        <div class="invalid-feedback d-block">
+                            <strong>Errores en el campo "{{ form.descripcion.label }}":</strong>
+                            {% for error in form.descripcion.errors %}
+                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.precio_compra.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-dollar"></i></span>
+                        {{ form.precio_compra }}
+                    </div>
+                    {% if form.precio_compra.errors %}
+                        <div class="invalid-feedback d-block">
+                            <strong>Errores en el campo "{{ form.precio_compra.label }}":</strong>
+                            {% for error in form.precio_compra.errors %}
+                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ form.precio.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-dollar"></i></span>
+                        {{ form.precio_venta }}
+                    </div>
+                    {% if form.precio_venta.errors %}
+                        <div class="invalid-feedback d-block">
+                            <strong>Errores en el campo "{{ form.precio_venta.label }}":</strong>
+                            {% for error in form.precio_venta.errors %}
+                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ form.categoria.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-list"></i></span>
+                        {{ form.categoria }}
+                    </div>
+                    {% if form.categoria.errors %}
+                        <div class="invalid-feedback d-block">
+                            <strong>Errores en el campo "{{ form.categoria.label }}":</strong>
+                            {% for error in form.categoria.errors %}
+                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ form.proveedor.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-truck-front"></i></span>
+                        {{ form.proveedor }}
+                    </div>
+                    {% if form.proveedor.errors %}
+                        <div class="invalid-feedback d-block">
+                            <strong>Errores en el campo "{{ form.proveedor.label }}":</strong>
+                            {% for error in form.proveedor.errors %}
+                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-check me-2"></i>{{ form.en_oferta.label }}</label>
+                    {{ form.en_oferta }}
+                    {% if form.en_oferta.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.en_oferta.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ form.precio_oferta.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-tags"></i></span>
+                        {{ form.precio_oferta }}
+                    </div>
+                    {% if form.precio_oferta.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.precio_oferta.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-venus-mars me-2"></i> Género</label>
+                    <select name="genero" class="form-select">
+                        <option value="">Seleccione una opción</option>
+                        <option value="dama">Dama</option>
+                        <option value="caballero">Caballero</option>
+                        <option value="unisex">Unisex</option>
+                        <option value="no_necesita">No Necesita</option>
+                    </select>
+                </div>               
+                
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-shop me-2"></i>¿Es un producto del catálogo?</label>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="catalogo" name="catalogo" value="catalogo" {% if form.catalogo.value == 'catalogo' %}checked{% endif %}>
+                        <label class="form-check-label" for="catalogo">Catálogo</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" id="no_catalogo" name="catalogo" value="no_catalogo" {% if form.catalogo.value == 'no_catalogo' %}checked{% endif %}>
+                        <label class="form-check-label" for="no_catalogo">No Catálogo</label>
+                    </div>
+                </div>   
+            </div>      
+
+            <!-- Columna Derecha -->
+            <div class="col-md-6">
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen1.label }}</label>
+                    {% if object.imagen1 %}
+                        <div class="container border rounded align-content-center p-3">
+                            <img src="{{ object.imagen1.url }}" alt="Imagen 1" width="100" class="mb-2">
+                            <p><small>Imagen actual</small></p>
+                        </div>
+                    {% endif %}
+                    {{ form.imagen1 }}
+                    {% if form.imagen1.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.imagen1.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen2.label }}</label>
+                    {{ form.imagen2 }}
+                    {% if form.imagen2.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.imagen2.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen3.label }}</label>
+                    {{ form.imagen3 }}
+                    {% if form.imagen3.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.imagen3.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen4.label }}</label>
+                    {{ form.imagen4 }}
+                    {% if form.imagen4.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.imagen4.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="container border p-3 mb-3 rounded">
+                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen5.label }}</label>
+                    {{ form.imagen5 }}
+                    {% if form.imagen5.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.imagen5.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="text-end mt-3">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Guardar Producto
+            </button>
+            <a href="{% url 'contenido_productos' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de éxito -->
+<div class="modal fade" id="modalSuccess" tabindex="-1" aria-labelledby="modalSuccessLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 310px;">
+        <div class="modal-content">
+            <!-- Cabecera con diseño corregido -->
+            <div class="modal-header border-0 d-flex flex-column align-items-center" style="
+                background-color: #bef0c8;
+                border-bottom-left-radius: 150px;
+                border-bottom-right-radius: 150px;
+            ">
+                <!-- Botón de cerrar -->
+                <div class="w-100 d-flex justify-content-end">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeModal"></button>
+                </div>
+                <!-- Ícono de éxito -->
+                <div class="d-flex justify-content-center align-items-center rounded-circle mx-auto mb-3" style="
+                    width: 80px; 
+                    height: 80px; 
+                    background-color: #4ec45e; 
+                    box-shadow: 0 0 0 10px #74d181, 0 0 0 20px #9bdea4;
+                ">
+                    <i class="fa-solid fa-check text-light fs-3"></i>
+                </div>
+            </div>
+            <!-- Cuerpo del modal -->
+            <div class="modal-body text-center">
+                <!-- Mensaje de éxito -->
+                <h1 class="fw-bold text-success" id="modalSuccessLabel">¡Éxito!</h1>
+                <p class="fs-5 text-muted mt-3">El producto ha sido creado con éxito.</p>
+            </div>
+            <!-- Footer -->
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-outline-success px-4" id="verDetalles">Ver detalles</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de error -->
+<div class="modal fade" id="modalError" tabindex="-1" aria-labelledby="modalErrorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 310px;">
+        <div class="modal-content">
+            <!-- Cabecera con diseño corregido -->
+            <div class="modal-header border-0 d-flex flex-column align-items-center" style="
+                background-color: #f8d7da;
+                border-bottom-left-radius: 150px;
+                border-bottom-right-radius: 150px;
+            ">
+                <!-- Botón de cerrar -->
+                <div class="w-100 d-flex justify-content-end">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeErrorModal"></button>
+                </div>
+                <!-- Ícono de error -->
+                <div class="d-flex justify-content-center align-items-center rounded-circle mx-auto mb-3" style="
+                    width: 80px; 
+                    height: 80px; 
+                    background-color: #f44336; 
+                    box-shadow: 0 0 0 10px #e57373, 0 0 0 20px #ef9a9a;
+                ">
+                    <i class="fa-solid fa-times text-light fs-3"></i>
+                </div>
+            </div>
+            <!-- Cuerpo del modal -->
+            <div class="modal-body text-center">
+                <!-- Mensaje de error -->
+                <h1 class="fw-bold text-danger" id="modalErrorLabel">¡Error!</h1>
+                <p class="fs-5 text-muted mt-3" id="errorMessage">Ha ocurrido un error inesperado. Vuelve a intentarlo.</p>
+            </div>
+            <!-- Footer -->
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-outline-danger px-4" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para manejar la solicitud AJAX -->
+<script>
+    // Función para formatear los errores en una lista HTML
+    function formatErrors(errors) {
+        let html = '<ul>';
+        for (let field in errors) {
+            if (errors.hasOwnProperty(field)) {
+                // Opcional: Puedes transformar el nombre del campo a algo más amigable
+                let fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+                let errorMessages = errors[field].join(', ');
+                html += `<li><strong>${fieldName}:</strong> ${errorMessages}</li>`;
+            }
+        }
+        html += '</ul>';
+        return html;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.getElementById('productoForm');
+        if(form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var formData = new FormData(form);
+                fetch(form.action, {
+                    method: form.method,
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': form.querySelector('input[name="csrfmiddlewaretoken"]').value,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Mostrar modal de éxito
+                        var successModal = new bootstrap.Modal(document.getElementById('modalSuccess'), {
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                        successModal.show();
+    
+                        // Redirigir al hacer clic en "Ver detalles" o al cerrar el modal
+                        document.getElementById('verDetalles').addEventListener('click', function() {
+                            window.location.href = "{% url 'contenido_productos' %}";
+                        });
+                        document.getElementById('closeModal').addEventListener('click', function() {
+                            window.location.href = "{% url 'contenido_productos' %}";
+                        });
+                    } else {
+                        // Mostrar modal de error
+                        var errorModal = new bootstrap.Modal(document.getElementById('modalError'), {
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                        errorModal.show();
+                        if (data.errors && Object.keys(data.errors).length > 0) {
+                            document.getElementById('errorMessage').innerHTML = formatErrors(data.errors);
+                        } else {
+                            document.getElementById('errorMessage').innerText = "Ha ocurrido un error inesperado.";
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Error en la solicitud:", error);
+                    var errorModal = new bootstrap.Modal(document.getElementById('modalError'), {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                    errorModal.show();
+                    document.getElementById('errorMessage').innerText = "Error en la conexión con el servidor.";
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap");
+
+:root {
+  --fuente-letra-Quick: 'Quicksand', sans-serif;
+  --fuente-letra-Poppins: 'Poppins', sans-serif;
+}
+
+body {
+    font-family: var(--fuente-letra-Quick);
+    background: rgb(255,255,255);
+    background: -moz-linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(218,144,157,1) 62%, rgba(181,32,58,1) 96%);
+    background: -webkit-linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(218,144,157,1) 62%, rgba(181,32,58,1) 96%);
+    background: linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(218,144,157,1) 62%, rgba(181,32,58,1) 96%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#ffffff",endColorstr="#b5203a",GradientType=1);
+}
+
+.pantalla{
+  height: calc(100vh - 154px) !important;
+}
+
+/* Asegura que la imagen sea responsiva y ocupe todo el espacio sin distorsionar */
+.col-md-6.d-none.d-md-block img {
+  width: 100%;  /* La imagen ocupa todo el ancho disponible */
+  height: 100%; /* La imagen ocupa toda la altura disponible */
+  object-fit: cover; /* La imagen cubre el contenedor sin distorsionarse */
+}
+
+.fe-letter {
+  letter-spacing: 3px; 
+}
+
+#particles-js {
+  position: fixed; /* Usamos 'fixed' para que se quede en su lugar al hacer scroll */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1; /* Asegura que las partículas estén detrás del contenido */
+  pointer-events: none; /* Esto asegura que las partículas no interfieran con la interacción del usuario */
+}
+
+.size-login {
+  max-width: 750px;
+  width: 100%;
+  height: 400px;
+}

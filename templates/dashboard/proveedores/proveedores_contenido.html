@@ -1,0 +1,71 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-3">
+    <h1 class="mb-4">Proveedores</h1>
+    <a href="{% url 'crear_proveedor' %}" class="btn btn-primary mb-3">Crear Proveedor</a>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered">
+            <thead>
+                <tr class="text-center align-middle">
+                    <th>Nombre</th>
+                    <th>Dirección</th>
+                    <th>Teléfono</th>
+                    <th>Correo Electrónico</th>
+                    <th>Provedor De</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-center align-middle">
+                {% for proveedor in proveedores %}
+                <tr>
+                    <td>{% if proveedor.nombre %}{{ proveedor.nombre }}{% else %}<span class="text-muted">Sin nombre</span>{% endif %}</td>
+                    <td>{% if proveedor.direccion %}{{ proveedor.direccion }}{% else %}<span class="text-muted">Dirección no disponible</span>{% endif %}</td>
+                    <td>{% if proveedor.telefono %}{{ proveedor.telefono }}{% else %}<span class="text-muted">Teléfono no disponible</span>{% endif %}</td>
+                    <td>{% if proveedor.correo_electronico %}{{ proveedor.correo_electronico }}{% else %}<span class="text-muted">Correo no disponible</span>{% endif %}</td>
+                    <td>{% if proveedor.provedor_de %}{{ proveedor.provedor_de }}{% else %}<span class="text-muted">No especificado</span>{% endif %}</td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group" aria-label="Acciones">
+                        <a href="{% url 'editar_proveedor' proveedor.pk %}" class="btn btn-warning bg-gradient btn-sm me-1 border-black">Editar</a>
+                        <a href="{% url 'eliminar_proveedor' proveedor.pk %}" class="btn btn-danger bg-gradient btn-sm border-black">Eliminar</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="align-items-center mt-2">
+        <div class="pagination">
+            <ul class="pagination pagination-sm">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="First">&laquo; Primero</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">Anterior</a>
+                </li>
+                {% endif %}
+    
+                <li class="page-item disabled">
+                    <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+    
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">Último
+                        &raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

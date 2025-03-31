@@ -1,0 +1,34 @@
+.card-img-top {
+    object-fit: cover; /* Esto asegura que la imagen cubra el área sin deformarse */
+    object-position: center; /* Centra la imagen en caso de que se recorte */
+}
+
+.bg-dama {
+    --bs-bg-opacity: 1;
+    background-color: rgb(252 59 145) !important;
+}
+
+.bg-hombre {
+    --bs-bg-opacity: 1;
+    background-color: rgb(0, 0, 0) !important;
+}
+
+.bg-unisex {
+    background: rgb(0,0,0);
+    background: -moz-linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+    background: -webkit-linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+    background: linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#000000",endColorstr="#fc3b91",GradientType=1);
+}
+
+.offer-label {
+    z-index: 10;
+    /* Asegura que la etiqueta esté encima de las imágenes */
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+}
+
+.texto-espaciado {
+    letter-spacing: 2.5px;
+}

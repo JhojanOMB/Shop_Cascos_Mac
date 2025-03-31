@@ -1,0 +1,208 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="container fw-bolder text-center align-middle border border-black p-3 rounded-4 mb-3 shadow">Editar
+        Usuario</h2>
+    <div class="card shadow-lg rounded-4 p-4 border-dark">
+        <div class="card-body">
+            <form method="post" id="edit-usuario-form" class="needs-validation row g-3" novalidate>
+                {% csrf_token %}
+
+                <!-- Campo de Nombre de Usuario -->
+                <div class="col-md-6">
+                    <label for="id_username" class="form-label fw-semibold text-letter">Nombre de Usuario:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                        {{ form.username|add_class:"form-control bg-light text-dark" }}
+                    </div>
+                    {% if form.username.errors %}
+                    <div class="text-danger">{{ form.username.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Campo de Nombre -->
+                <div class="col-md-6">
+                    <label for="id_first_name" class="form-label fw-semibold text-letter">Nombre:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                        {{ form.first_name|add_class:"form-control bg-light text-dark" }}
+                    </div>
+                    {% if form.first_name.errors %}
+                    <div class="text-danger">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Campo de Apellidos -->
+                <div class="col-md-6">
+                    <label for="id_last_name" class="form-label fw-semibold text-letter">Apellidos:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                        {{ form.last_name|add_class:"form-control bg-light text-dark" }}
+                    </div>
+                    {% if form.last_name.errors %}
+                    <div class="text-danger">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Campo de Email -->
+                <div class="col-md-6">
+                    <label for="id_email" class="form-label fw-semibold text-letter">Correo Electrónico:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+                        {{ form.email|add_class:"form-control bg-light text-dark" }}
+                    </div>
+                    {% if form.email.errors %}
+                    <div class="text-danger">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Campo de Rol -->
+                <div class="col-md-6">
+                    <label for="id_rol" class="form-label fw-semibold text-letter">Rol:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-user-tag"></i></span>
+                        {{ form.rol|add_class:"form-select bg-light text-dark" }}
+                    </div>
+                    {% if form.rol.errors %}
+                    <div class="text-danger">{{ form.rol.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Campo de Contraseña -->
+                <div class="col-md-6">
+                    <label for="id_password" class="form-label fw-semibold text-letter">Nueva Contraseña:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                        {{ form.password1|add_class:"form-control bg-light text-dark" }}
+                        <button type="button" class="btn btn-outline-dark toggle-password" data-target="#id_password1">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                    </div>
+                    {% if form.password1.errors %}
+                    <div class="text-danger">{{ form.password1.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Campo de Confirmar Contraseña -->
+                <div class="col-md-6">
+                    <label for="id_password2" class="form-label fw-semibold text-letter">Confirmar Nueva
+                        Contraseña:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                        {{ form.password2|add_class:"form-control bg-light text-dark" }}
+                        <button type="button" class="btn btn-outline-dark toggle-password" data-target="#id_password2">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                    </div>
+                    {% if form.password2.errors %}
+                    <div class="text-danger">{{ form.password2.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Botón de envío -->
+                <div class="col-12">
+                    <button type="submit" class="btn btn-outline-dark w-100 fs-5">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de éxito -->
+{% if success %}
+<div class="modal fade show" id="modalSuccess" tabindex="-1" aria-labelledby="modalSuccessLabel" aria-hidden="true"
+    style="display: block;" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 310px;">
+        <div class="modal-content">
+            <!-- Cabecera con diseño corregido -->
+            <div class="modal-header border-0 d-flex flex-column align-items-center" style="
+                background-color: #bef0c8;
+                border-bottom-left-radius: 150px;
+                border-bottom-right-radius: 150px;
+            ">
+                <!-- Botón de cerrar -->
+                <div class="w-100 d-flex justify-content-end">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <!-- Ícono de éxito -->
+                <div class="d-flex justify-content-center align-items-center rounded-circle mx-auto mb-3" style="
+                    width: 80px; 
+                    height: 80px; 
+                    background-color: #4ec45e; 
+                    box-shadow: 0 0 0 10px #74d181, 0 0 0 20px #9bdea4;
+                ">
+                    <i class="fa-solid fa-check text-light fs-3"></i>
+                </div>
+            </div>
+            <!-- Cuerpo del modal -->
+            <div class="modal-body text-center">
+                <!-- Mensaje de éxito -->
+                <h1 class="fw-bold text-success" id="modalSuccessLabel">¡Éxito!</h1>
+                <p class="fs-5 text-muted mt-3">Los cambios del usuario han sido guardados con éxito.</p>
+            </div>
+            <!-- Footer -->
+            <div class="modal-footer border-0 justify-content-center">
+                <a href="{% url 'listar_usuarios' %}" class="btn btn-outline-primary     px-4">Ir a la lista de
+                    usuarios</a>
+                <button type="button" class="btn btn-outline-success px-4" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Redirigir automáticamente después de 3 segundos
+    setTimeout(function () {
+        window.location.href = "{% url 'listar_usuarios' %}";
+    }, 2000);
+</script>
+{% endif %}
+
+<!-- Mostrar Contraseña -->
+<script>
+    (function () {
+        'use strict';
+        var form = document.querySelector('.needs-validation');
+
+        // Mostrar/ocultar contraseñas
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', function () {
+                var target = document.querySelector(this.dataset.target);
+                if (target.type === 'password') {
+                    target.type = 'text';
+                    this.innerHTML = '<i class="bi bi-eye-slash-fill"></i>';
+                } else {
+                    target.type = 'password';
+                    this.innerHTML = '<i class="bi bi-eye-fill"></i>';
+                }
+            });
+        });
+
+        // Validación personalizada para contraseñas
+        form.addEventListener('submit', function (event) {
+            let isValid = true;
+            var password1 = document.getElementById('id_password1');
+            var password2 = document.getElementById('id_password2');
+
+            // Validar que las contraseñas coincidan
+            if (password1.value !== password2.value) {
+                isValid = false;
+                document.getElementById('password2-error').style.display = 'block';
+            } else {
+                document.getElementById('password2-error').style.display = 'none';
+            }
+
+            if (!isValid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            form.classList.add('was-validated');
+        }, false);
+    })();
+</script>
+
+{% endblock %}

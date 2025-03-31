@@ -1,0 +1,86 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center fw-bold border border-dark p-3 rounded-4 shadow-sm mb-4">Mi Perfil</h1>
+    <div class="card shadow-sm border border-dark">
+        <div class="card-header text-center fw-bold fs-4 border-bottom border-dark">
+            Información Personal
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label fw-bold">Nombre completo:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-secondary bg-gradient text-light"><i class="fa-solid fa-user"></i></span>
+                        <span class="form-control bg-light text-dark">
+                            {{ usuario.get_full_name|default:"N/A" }}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label fw-bold">Usuario:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-secondary bg-gradient text-light"><i class="fa-solid fa-envelope"></i></span>
+                        <span class="form-control bg-light text-dark">{{ usuario.username }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label fw-bold">Email:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-secondary bg-gradient text-light"><i class="fa-solid fa-envelope"></i></span>
+                        <span class="form-control bg-light text-dark">{{ usuario.email }}</span>
+                    </div>
+                </div>
+            
+                <div class="col-md-6 mb-2">
+                    <label class="form-label fw-bold">Rol:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-secondary bg-gradient text-light"><i class="fa-solid fa-briefcase"></i></span>
+                        <span class="form-control bg-light text-dark">{{ usuario.get_rol_display }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label fw-bold">Primer nombre:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-secondary bg-gradient text-light"><i class="fa-solid fa-user"></i></span>
+                        <span class="form-control bg-light text-dark">{{ usuario.first_name }}</span>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-2">
+                    <label class="form-label fw-bold">Apellido:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-secondary bg-gradient text-light"><i class="fa-solid fa-user"></i></span>
+                        <span class="form-control bg-light text-dark">{{ usuario.last_name }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label fw-bold">Última conexión:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-secondary bg-gradient text-light"><i class="fa-solid fa-clock"></i></span>
+                        <span class="form-control bg-light text-dark">{{ usuario.last_login }}</span>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-2">
+                    <label class="form-label fw-bold">Fecha de registro:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-secondary bg-gradient text-light"><i class="fa-solid fa-calendar-alt"></i></span>
+                        <span class="form-control bg-light text-dark">{{ usuario.date_joined }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-center border-top border-dark">
+            <a class="btn btn-outline-dark px-4 py-2" 
+               {% if user.is_gerente %} href="{% url 'dashboard_gerente' %}" 
+               {% elif user.is_vendedor %} href="{% url 'dashboard_vendedor' %}" 
+               {% endif %}>
+                Volver al Inicio
+            </a>
+            <a href="{% url 'password_reset' %}" class="btn btn-outline-dark px-4 py-2">Recuperar Contraseña</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

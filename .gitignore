@@ -1,0 +1,17 @@
+# Ignorar entorno virtual
+cascos/
+
+# Archivos de compilación de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Archivos de log
+*.log
+
+# Configuraciones del editor
+.vscode/
+.idea/
+
+# Archivos de dependencias (si trabajas con Node.js por ejemplo)
+node_modules/

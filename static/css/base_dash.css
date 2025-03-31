@@ -1,0 +1,228 @@
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap");
+
+/* Variables globales */
+:root {
+    --fuente-letra: 'Quicksand', sans-serif;
+    --color-bg-navbar: #df580a;
+    --color-bg-sidebar: #343a40;
+    --color-text-sidebar: #ffffff;
+    --color-hover: #007bff;
+    --color-hover-dark: #0056b3;
+    --color-footer: #343a40;
+    --color-text-footer: #ffffff;
+}
+
+/* General */
+* {
+    font-family: var(--fuente-letra);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--fuente-letra);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Navbar */
+.navbar {
+    background: var(--color-bg-navbar) !important;
+    padding: 10px 15px;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #212529;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.navbar-brand img {
+    width: 50px;
+    height: 50px;
+}
+
+.navbar-nav .btn {
+    color: white;
+    background-color: #212529;
+}
+
+/* Sidebar */
+.sidebar-header {
+    background-color: var(--color-bg-sidebar);
+    color: var(--color-text-sidebar);
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.sidebar-nav .nav-link {
+    font-size: 1rem;
+    color: #495057;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.sidebar-nav .nav-link i {
+    margin-right: 10px;
+    font-size: 1.25rem;
+    color: black;
+    -webkit-text-stroke: 0.5px var(--color-hover);
+    transition: color 0.3s ease;
+}
+
+.sidebar-nav .nav-link:hover {
+    background-color: #e9ecef;
+    color: var(--color-hover);
+    border-radius: 5px;
+}
+
+.sidebar-nav .nav-link:hover i {
+    color: var(--color-hover-dark);
+}
+
+/* Estilos para la barra lateral cuando está colapsada */
+.sidebar:not(.collapsed) {
+    width: 200px; /* Ancho de la barra lateral cuando está colapsada */
+    transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 80px; /* Ancho de la barra lateral cuando está colapsada */
+    transition: width 0.3s ease;
+}
+
+/* Ajustar los enlaces y ocultar el texto cuando la barra lateral está colapsada */
+.sidebar.collapsed .nav-link {
+    font-size: 0; /* Ocultar el texto de los links */
+    justify-content: center;
+    padding: 12px; /* Ajustar el espaciado para que los íconos se centren */
+    align-items: center;
+}
+
+/* Aumentar el tamaño del icono cuando la barra lateral está colapsada */
+.sidebar.collapsed .nav-link i {
+    font-size: 1.5rem; /* Tamaño más grande para los íconos */
+}
+
+/* Ocultar la columna del nombre cuando la barra lateral está colapsada */
+.sidebar.collapsed #user-name-column {
+    display: none; /* Eliminar la columna del nombre del layout */
+}
+
+/* Ocultar la división cuando la barra lateral está colapsada */
+.sidebar.collapsed #division-bar {
+    display: none; /* Eliminar la columna del nombre del layout */
+}
+
+/* Mostrar los tooltips cuando la barra lateral está colapsada */
+.sidebar.collapsed .nav-link[data-bs-toggle="tooltip"] {
+    visibility: visible !important; /* Forzar la visibilidad de los tooltips */
+}
+
+
+/* Contenido principal */
+.content {
+    transition: margin-left 0.3s ease;
+    flex-grow: 1;
+    padding: 20px;
+}
+
+/* Footer */
+footer {
+    background-color: var(--color-footer);
+    color: var(--color-text-footer);
+    text-align: center;
+    padding: 10px 0;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+}
+
+/* Tooltip */
+.tooltip {
+    font-size: 0.9rem;
+    background-color: var(--color-bg-sidebar);
+}
+
+.tooltip-inner {
+    color: var(--color-text-sidebar);
+}
+
+/* Mejoras visuales de navbar */
+.nav-item a {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Estilos específicos para móviles */
+@media (max-width: 768px) {
+    .sidebar {
+        position: relative;
+        height: auto;
+    }
+
+    .content {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 500px) {
+    .sidebar {
+        display: none;
+    }
+}
+
+/* Colores de categorías */
+.bg-dama {
+    background-color: #fc3b91 !important;
+}
+
+.bg-hombre {
+    background-color: #000000 !important;
+}
+
+.bg-unisex {
+    .bg-unisex {
+        background: rgb(0,0,0);
+        background: -moz-linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+        background: -webkit-linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+        background: linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+        filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#000000",endColorstr="#fc3b91",GradientType=1);
+    }
+}
+
+.texto-cafe {
+    color: #a55318 !important;
+}
+
+.alerta-warning {
+    border: 1px solid #f18e06cf;
+    background-color: #dc800129;
+    box-shadow: 0px 0px 2px #ffb103;
+    color: #ffb103;
+    transition: 0.5s;
+    cursor: pointer;
+}
+
+.icono-centrado {
+    display: flex;
+    align-items: center;
+    height: 1em; /* Ajusta la altura para alinearlo perfectamente */
+    margin-top: -2px; /* Ajusta según el tamaño del icono para centrarlo mejor */
+}
+
+.bg-gris-claro {
+    background-color: rgb(24 24 27 / 10%);;
+}
+
+.alto-tarjeta {
+    height: 60px !important;
+}

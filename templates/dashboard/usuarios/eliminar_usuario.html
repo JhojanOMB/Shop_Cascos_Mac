@@ -1,0 +1,5 @@
+<form method="post" id="delete-product-form">
+    {% csrf_token %}
+    <p>¿Estás seguro de que deseas eliminar el usuario "{{ object.nombre }}"?</p>
+    <button type="submit" class="btn btn-danger">Eliminar</button>
+</form>

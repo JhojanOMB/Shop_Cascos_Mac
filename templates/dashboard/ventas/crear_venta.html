@@ -1,0 +1,219 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+    <h4 class="fw-semibold mb-3">Realizar Venta</h4>
+    <form method="post" id="venta-form" action="{% url 'ventas:crear_venta' %}">
+        {% csrf_token %}
+
+        <!-- Campo de Código de Barras -->
+        <div class="input-group mb-3">
+            <input type="text" id="codigo_barras" name="codigo_barras" class="form-control border-black shadow-sm"
+                placeholder="Escanear o ingresar código de barras" aria-label="Código de Barras">
+            <button type="button" class="btn btn-success border-black" id="btn-agregar-producto" onclick="buscarProducto()">Agregar Producto</button>
+        </div>
+
+        <div class="container border border-2 shadow p-3 rounded-4">
+            <!-- Listado de Productos en la Venta -->
+            <div class="table-responsive mt-3">
+                <table id="productos-table" class="table table-bordered table-striped table-hover">
+                    <thead class="thead-dark">
+                        <tr class="text-center align-middle">
+                            <th>Producto</th>
+                            <th>Talla</th>
+                            <th>Precio</th>
+                            <th>Cantidad</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productos-list">
+                        <!-- Los productos se agregarán aquí -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Selector de Método de Pago -->
+            <div class="mb-3">
+                <label for="metodo_pago" class="form-label fw-semibold">Método de Pago</label>
+                <select id="metodo_pago" name="metodo_pago" class="form-select border-black shadow-sm" required>
+                    <option value="" disabled selected>Selecciona un método de pago</option>
+                    {% for valor, nombre in metodos_pago %}
+                        <option value="{{ valor }}">{{ nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Total de la Venta -->
+            <h5 class="mt-4">Total de esta Venta: <span id="total-venta" class="badge bg-success">$0.00</span></h5>
+
+            <button type="submit" class="btn btn-primary border-black mt-4">Terminar Venta</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let totalVenta = 0;
+
+    document.getElementById('codigo_barras').addEventListener('keypress', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            buscarProducto();
+        }
+    });
+
+    function buscarProducto() {
+        const codigoBarras = document.getElementById('codigo_barras').value.trim();
+        if (!codigoBarras) {
+            alert('Por favor ingresa un código de barras válido.');
+            return;
+        }
+
+        document.getElementById('btn-agregar-producto').disabled = true;
+
+        fetch(`{% url 'ventas:obtener_producto_por_codigo' %}?codigo_barras=${codigoBarras}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    agregarProducto(data.producto);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al buscar el producto.');
+            })
+            .finally(() => {
+                document.getElementById('btn-agregar-producto').disabled = false;
+            });
+    }
+
+    function agregarProducto(producto) {
+        const tablaProductos = document.getElementById('productos-list');
+
+        const filaExistente = Array.from(tablaProductos.children).find(row =>
+            row.querySelector('input[name="productos_ids"]').value == producto.id);
+
+        if (filaExistente) {
+            const cantidadInput = filaExistente.querySelector('input[name="cantidades"]');
+            let cantidadActual = parseInt(cantidadInput.value);
+            const cantidadNueva = cantidadActual + 1;
+
+            if (cantidadNueva > producto.stock) {
+                alert(`No hay suficiente stock para "${producto.nombre}". Máximo disponible: ${producto.stock}`);
+                return;
+            }
+
+            cantidadInput.value = cantidadNueva;
+            actualizarTotal(cantidadInput, producto.precio, producto.stock);
+        } else {
+            if (producto.stock <= 0) {
+                alert(`El producto "${producto.nombre}" no tiene stock disponible.`);
+                return;
+            }
+
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${producto.nombre} <input type="hidden" name="productos_ids" value="${producto.id}"></td>
+                <td>${producto.talla}</td>
+                <td>$${producto.precio.toFixed(2)}</td>
+                <td>
+                    <input type="number" name="cantidades" value="1" min="1" max="${producto.stock}" class="form-control"
+                        onchange="actualizarTotal(this, ${producto.precio}, ${producto.stock})" required>
+                </td>
+                <td class="total">$${producto.precio.toFixed(2)}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">Eliminar</button>
+                </td>
+            `;
+
+            tablaProductos.appendChild(fila);
+            totalVenta += parseFloat(producto.precio);
+            document.getElementById('total-venta').textContent = `$${totalVenta.toFixed(2)}`;
+        }
+
+        document.getElementById('codigo_barras').value = '';
+    }
+
+    function actualizarTotal(input, precio, stock) {
+        const cantidad = parseInt(input.value);
+
+        if (cantidad > stock) {
+            alert(`La cantidad solicitada excede el stock disponible (${stock} unidades).`);
+            input.value = stock;
+            return;
+        }
+
+        const totalCelda = input.parentElement.nextElementSibling;
+        const totalAnterior = parseFloat(totalCelda.textContent.replace('$', '').replace(',', ''));
+        const totalNuevo = cantidad * precio;
+
+        totalVenta += totalNuevo - totalAnterior;
+        totalCelda.textContent = `$${totalNuevo.toFixed(2)}`;
+        document.getElementById('total-venta').textContent = `$${totalVenta.toFixed(2)}`;
+    }
+
+    function eliminarProducto(button) {
+        const fila = button.closest('tr');
+        const totalCelda = fila.querySelector('.total');
+        const totalProducto = parseFloat(totalCelda.textContent.replace('$', '').replace(',', ''));
+
+        totalVenta -= totalProducto;
+        document.getElementById('total-venta').textContent = `$${totalVenta.toFixed(2)}`;
+
+        fila.remove();
+    }
+</script>
+
+<script>
+    function printFactura() {
+        const printableContent = document.querySelector('.printable-area').innerHTML; // Seleccionar solo la factura
+        const printWindow = window.open('', '', 'width=800,height=600');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Factura</title>
+                    <style>
+                        /* Estilos básicos para impresión */
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 20px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        table, th, td {
+                            border: 1px solid black;
+                        }
+                        th, td {
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        h2, p {
+                            text-align: center;
+                        }
+                        img {
+                            display: block;
+                            margin: 10px auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${printableContent}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    }
+    </script>
+{% endblock %}

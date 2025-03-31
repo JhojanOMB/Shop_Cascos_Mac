@@ -1,0 +1,65 @@
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap");
+
+/* Variables CSS */
+:root {
+    --color-texto: #000000;
+    --color-fondo-icono: #fcf9d8;
+    --color-fondo-whatsapp: #04aa44;
+    --color-header-fondo: #333;
+    --color-header-texto: #fff;
+    --color-producto-tarjeta-fondo: #ffffff;
+    --color-producto-tarjeta-borde: #ddd;
+}
+
+/* General */
+body {
+    font-family: var(--fuente-letra) !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* WhatsApp Icon */
+.wrapper {
+    position: fixed;
+    bottom: 10px;
+    /* Ajusta la posición desde abajo */
+    right: 10px;
+    /* Ajusta la posición desde la derecha */
+    z-index: 1000;
+}
+
+.wrapper .icon {
+    background: var(--color-fondo-icono);
+    border-radius: 50%;
+    padding: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    justify-content: center;
+    align-items: center;
+}
+
+.wrapper .icon.whatsapp:hover {
+    background: var(--color-fondo-whatsapp);
+    color: #fff;
+}
+
+/* Tooltip */
+.wrapper .tooltip {
+    position: absolute;
+    top: 50%;
+    right: 65px;
+    transform: translateY(-50%);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 15px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    background: var(--color-fondo-whatsapp);
+}
+
+.wrapper .icon:hover .tooltip {
+    opacity: 1;
+    pointer-events: auto;
+}

@@ -1,0 +1,233 @@
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap");
+
+/* Variables CSS */
+:root {
+    --color-texto: #000000;
+    --color-fondo-icono: #fcf9d8;
+    --color-fondo-whatsapp: #04aa44;
+    --color-fondo-carrito: #046daa;
+    --color-header-fondo: #333;
+    --color-header-texto: #fff;
+    --color-producto-tarjeta-fondo: #ffffff;
+    --color-producto-tarjeta-borde: #ddd;
+}
+
+/* General */
+body {
+    font-family: var(--fuente-letra) !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* Products Section */
+.products {
+    padding: 40px 20px;
+    background-color: var(--color-producto-tarjeta-fondo);
+}
+
+.products h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 2em;
+}
+
+.product-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.product-card {
+    background-color: var(--color-producto-tarjeta-fondo);
+    border: 1px solid var(--color-producto-tarjeta-borde);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 250px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.product-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.product-card img {
+    max-width: 100%;
+    height: auto;
+    border-bottom: 1px solid var(--color-producto-tarjeta-borde);
+    margin-bottom: 15px;
+}
+
+.product-card h3 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+
+.product-card .price {
+    font-size: 1.2em;
+    color: var(--color-boton-primario);
+    margin-bottom: 15px;
+}
+
+.product-card .sizes {
+    font-size: 1em;
+    color: #333;
+}
+
+/* Contenedor general */
+.wrapper {
+    position: fixed;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espaciado entre los iconos */
+}
+
+/* Estilos generales de los iconos */
+.wrapper .icon {
+    background: var(--color-fondo-icono);
+    border-radius: 50%;
+    padding: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    position: relative;
+    color: black;
+}
+
+/* Ícono de WhatsApp */
+.wrapper .icon.whatsapp {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+}
+
+.wrapper .icon.whatsapp:hover {
+    background: var(--color-fondo-whatsapp);
+    color: #fff;
+}
+
+/* Ícono del Carrito */
+.wrapper .icon.carrito {
+    position: fixed;
+    bottom: 70px; /* Separado del WhatsApp */
+    right: 10px;
+}
+
+.wrapper .icon.carrito:hover {
+    background: var(--color-fondo-carrito);
+    color: #fff;
+}
+
+/* Tooltip (texto emergente) */
+.wrapper .tooltip {
+    position: absolute;
+    top: 50%;
+    right: 65px;
+    transform: translateY(-50%);
+    background: black;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 15px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+/* Flecha del tooltip */
+.wrapper .tooltip::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -10px;
+    transform: translateY(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent black transparent transparent;
+}
+
+/* Mostrar tooltip al hacer hover en el icono */
+.wrapper .icon:hover .tooltip {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Cambiar color del tooltip según el icono */
+.wrapper .icon.whatsapp:hover .tooltip {
+    background: var(--color-fondo-whatsapp);
+}
+
+.wrapper .icon.whatsapp:hover .tooltip::before {
+    border-color: transparent var(--color-fondo-whatsapp) transparent transparent;
+}
+
+.wrapper .icon.carrito:hover .tooltip {
+    background: var(--color-fondo-carrito);
+}
+
+.wrapper .icon.carrito:hover .tooltip::before {
+    border-color: transparent var(--color-fondo-carrito) transparent transparent;
+}
+
+.carousel-item img {
+    height: 190px;
+    /* Altura fija para consistencia visual */
+    object-fit: cover;
+    /* Recorta o ajusta la imagen sin deformarla */
+    width: auto;
+    /* Mantiene la proporción del ancho original */
+    max-width: 100%;
+    /* No deja que la imagen se salga del contenedor */
+}
+
+.offer-label {
+    z-index: 10;
+    /* Asegura que la etiqueta esté encima de las imágenes */
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+}
+
+.bg-dama {
+    background-color: rgb(252 59 145) !important;
+}
+
+.bg-hombre {
+    background-color: rgb(0, 0, 0) !important;
+}
+
+.bg-unisex {
+    background: rgb(0,0,0);
+    background: -moz-linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+    background: -webkit-linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+    background: linear-gradient(20deg, rgba(0,0,0,1) 22%, rgba(252,59,145,1) 80%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#000000",endColorstr="#fc3b91",GradientType=1);
+}
+
+.carousel-control-prev-icon {
+    filter: invert(1) grayscale(100);
+}
+
+.carousel-control-next-icon {
+    filter: invert(1) grayscale(100);
+}
+
+.btn:hover .svgIcon {
+    transform: rotate(250deg);
+    transition-duration: 1.5s;
+  }
+
+.texto-luminoso {
+    letter-spacing: 1.1px;
+    text-shadow: 0px 0px 4px rgb(252 249 216);
+}

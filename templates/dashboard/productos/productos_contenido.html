@@ -1,0 +1,337 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+
+<!-- Controles de filtro y búsqueda -->
+<div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+    <!-- Botón "Crear Productos" -->
+    <a href="{% url 'crear_producto' %}" class="btn btn-success btn-sm">Crear Productos</a>
+
+    <!-- Formulario de búsqueda y filtros -->
+    <form method="get" class="d-flex align-items-center gap-2">
+        <!-- Campo de búsqueda por texto -->
+        <div class="input-group input-group-sm">
+            <input type="text" class="form-control" id="search-bar" name="q" placeholder="Buscar producto" 
+                   value="{{ request.GET.q }}">
+        </div>
+
+        <!-- Campo de filtro por categoría -->
+        <div class="input-group input-group-sm">
+            <select class="form-select" id="category-filter" name="categoria">
+                <option value="">Filtrar por categoría</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" 
+                        {% if request.GET.categoria|stringformat:"s" == categoria.id|stringformat:"s" %}selected{% endif %}>
+                        {{ categoria.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Campo de filtro por proveedor -->
+        <div class="input-group input-group-sm">
+            <select class="form-select" id="provider-filter" name="proveedor">
+                <option value="">Filtrar por proveedor</option>
+                {% for proveedor in proveedores %}
+                    <option value="{{ proveedor.id }}" 
+                        {% if request.GET.proveedor|stringformat:"s" == proveedor.id|stringformat:"s" %}selected{% endif %}>
+                        {{ proveedor.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Botones de búsqueda y limpiar -->
+        <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+        <a href="{% url 'contenido_productos' %}" class="btn btn-dark btn-sm">Limpiar</a>
+    </form>
+</div>
+
+<!-- Tabla de productos -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered mt-3">
+        <thead class="text-center align-middle">
+            <tr>
+                <th>Nombre</th>
+                <th>Precio Compra</th>
+                <th>Precio Venta</th>
+                <th>Categoría</th>
+                <th>Códigos de Barras</th>
+                <th>Cantidad Talla S</th>
+                <th>Cantidad Talla M</th>
+                <th>Cantidad Talla L</th>
+                <th>Cantidad Talla XL</th>
+                <th>Cantidad Talla XXL</th>
+                <th>Cantidad General</th>
+                <th>Cantidad En Stock</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for producto in productos %}
+            <tr class="align-middle text-center" id="producto-{{ producto.id }}">
+                <td class="text-start fw-semibold">{{ producto.nombre }}</td>
+                <td>${{ producto.precio_compra|floatformat:0|intcomma|default:"0" }}</td>
+                <td>${{ producto.precio|floatformat:0|intcomma }}</td>
+                <td>{{ producto.categoria.nombre }}</td>
+                <td>
+                    <!-- Botón que abre el modal específico del producto -->
+                    <button type="button" class="btn btn-outline-dark btn-sm w-100" 
+                            data-bs-toggle="modal" data-bs-target="#codigoBarrasModal-{{ producto.id }}">
+                        <i class="fa-solid fa-barcode" style="font-size: xx-large;"></i>
+                    </button>
+                    
+                    <!-- Modal para mostrar e imprimir códigos de barras -->
+                    <div class="modal fade" id="codigoBarrasModal-{{ producto.id }}" tabindex="-1" 
+                         aria-labelledby="codigoBarrasModalLabel-{{ producto.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content bg-light text-dark">
+                                <div class="modal-header bg-dark text-light">
+                                    <h5 class="modal-title" id="codigoBarrasModalLabel-{{ producto.id }}">
+                                        Códigos de Barras - {{ producto.nombre }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" 
+                                            data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <!-- Formulario para seleccionar e imprimir códigos -->
+                                <form method="POST" action="{% url 'imprimir_codigos_barras' %}">
+                                    {% csrf_token %}
+                                    <div class="modal-body">
+                                        <div class="container">
+                                            <!-- Sección: Código de Barras General -->
+                                            <div class="row mb-4">
+                                                <div class="col-12 text-center">
+                                                    <h6 class="text-dark fw-semibold">Código de Barras General</h6>
+                                                    <a href="#" data-bs-toggle="modal" 
+                                                       data-bs-target="#expandirCodigoGeneralModal-{{ producto.id }}">
+                                                        <img src="{% url 'codigo_barras_producto' producto.id %}" 
+                                                             alt="Código de Barras General" class="img-thumbnail mb-2" 
+                                                             style="width: 180px;">
+                                                    </a>
+                                                </div>
+                                                <div class="col-12 text-center">
+                                                    <!-- Mostrar el número del código de barras -->
+                                                    <p class="mb-1">Código: {{ producto.codigo_barras }}</p>
+                                                    <!-- Botón para copiar el número del código -->
+                                                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                                                            onclick="copiarCodigo('{{ producto.codigo_barras }}', 'general')">
+                                                        <i class="bi bi-clipboard"></i> Copiar Número
+                                                    </button>
+                                                    <!-- Checkbox para seleccionar la impresión del código general -->
+                                                    <div class="form-check form-switch mt-2">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                               name="codigos[]" value="general-{{ producto.id }}" 
+                                                               id="chk-general-{{ producto.id }}">
+                                                        <label class="form-check-label" for="chk-general-{{ producto.id }}">
+                                                            Imprimir Código General
+                                                        </label>
+                                                    </div>
+                                                    <div class="mt-2">
+                                                        <label for="cantidad_general_{{ producto.id }}" class="form-label mb-0">Cantidad:</label>
+                                                        <input type="number" name="cantidad_general-{{ producto.id }}" 
+                                                               id="cantidad_general_{{ producto.id }}" value="1" min="1" 
+                                                               class="form-control form-control-sm" style="width: 80px; display: inline-block;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Sección: Códigos de Barras por Talla -->
+                                            <div class="row">
+                                                <div class="col-12 text-center mb-3">
+                                                    <h6 class="text-dark fw-semibold">Códigos de Barras por Talla</h6>
+                                                </div>
+                                                {% for talla in producto.producto_tallas.all %}
+                                                <div class="col-md-4 col-sm-6 text-center mb-3">
+                                                    <p class="mb-1"><strong>Talla: {{ talla.talla.nombre }}</strong></p>
+                                                    <a href="#" data-bs-toggle="modal" 
+                                                       data-bs-target="#expandirCodigoTallaModal-{{ talla.id }}">
+                                                        <img src="{% url 'codigo_barras_talla' talla.id %}" 
+                                                             alt="Código de Barras - Talla {{ talla.talla.nombre }}" 
+                                                             class="img-thumbnail" style="width: 120px;">
+                                                    </a>
+                                                    <div class="mt-2">
+                                                        <!-- Mostrar el número del código de barras para la talla -->
+                                                        <span class="small text-muted">Código: {{ talla.codigo_barras }}</span>
+                                                        <button class="btn btn-outline-secondary btn-sm ms-2" 
+                                                                type="button"
+                                                                onclick="copiarCodigo('{{ talla.codigo_barras }}', '{{ talla.id }}')">
+                                                            <i class="bi bi-clipboard"></i> Copiar Número
+                                                        </button>
+                                                        <!-- Checkbox para seleccionar la impresión del código por talla -->
+                                                        <div class="form-check form-switch mt-2">
+                                                            <input class="form-check-input" type="checkbox" 
+                                                                   name="codigos[]" value="talla-{{ talla.id }}" 
+                                                                   id="chk-talla-{{ talla.id }}">
+                                                            <label class="form-check-label" for="chk-talla-{{ talla.id }}">
+                                                                Imprimir Talla {{ talla.talla.nombre }}
+                                                            </label>
+                                                        </div>
+                                                        <div class="mt-2">
+                                                            <label for="cantidad_talla_{{ talla.id }}" class="form-label mb-0">Cantidad:</label>
+                                                            <input type="number" name="cantidad_talla-{{ talla.id }}" 
+                                                                   id="cantidad_talla_{{ talla.id }}" value="1" min="1" 
+                                                                   class="form-control form-control-sm" style="width: 80px; display: inline-block;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <!-- Botón para enviar la selección e imprimir -->
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            Imprimir Seleccionados
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Función JavaScript para copiar el código al portapapeles -->
+                    <script>
+                        function copiarCodigo(codigo, id) {
+                            navigator.clipboard.writeText(codigo).then(function() {
+                                document.querySelectorAll("[id^='copiado-']").forEach(el => el.style.display = 'none');
+                                const copiadoMensaje = document.getElementById('copiado-' + id);
+                                if (copiadoMensaje) {
+                                    copiadoMensaje.style.display = 'inline';
+                                    setTimeout(function() {
+                                        copiadoMensaje.style.display = 'none';
+                                    }, 2000);
+                                }
+                            }).catch(function(err) {
+                                console.error('Error al copiar el código: ', err);
+                            });
+                        }
+                    </script>
+                    
+                    <!-- Modal para imagen expandida del Código de Barras General -->
+                    <div class="modal fade" id="expandirCodigoGeneralModal-{{ producto.id }}" tabindex="-1" 
+                         aria-labelledby="expandirCodigoGeneralModalLabel-{{ producto.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header bg-dark text-light">
+                                    <h5 class="modal-title" id="expandirCodigoGeneralModalLabel-{{ producto.id }}">
+                                        Código de Barras General - {{ producto.nombre }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" 
+                                            data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body text-center">
+                                    <img src="{% url 'codigo_barras_producto' producto.id %}" 
+                                         alt="Código de Barras General" class="img-fluid">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-dark btn-sm w-100" 
+                                            data-bs-toggle="modal" data-bs-target="#codigoBarrasModal-{{ producto.id }}">
+                                        Volver
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal para imagen expandida del Código de Barras por Talla -->
+                    {% for talla in producto.producto_tallas.all %}
+                    <div class="modal fade" id="expandirCodigoTallaModal-{{ talla.id }}" tabindex="-1" 
+                         aria-labelledby="expandirCodigoTallaModalLabel-{{ talla.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header bg-dark text-light">
+                                    <h5 class="modal-title" id="expandirCodigoTallaModalLabel-{{ talla.id }}">
+                                        Código de Barras - Talla {{ talla.talla.nombre }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" 
+                                            data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body text-center">
+                                    <img src="{% url 'codigo_barras_talla' talla.id %}" 
+                                         alt="Código de Barras - Talla {{ talla.talla.nombre }}" class="img-fluid">
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-dark btn-sm w-100" 
+                                            data-bs-toggle="modal" data-bs-target="#codigoBarrasModal-{{ producto.id }}">
+                                        Volver
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </td>             
+                
+                <!-- Cantidades por talla -->
+                <td>{{ producto.cantidades_por_talla.S|default:"0" }}</td>
+                <td>{{ producto.cantidades_por_talla.M|default:"0" }}</td>
+                <td>{{ producto.cantidades_por_talla.L|default:"0" }}</td>
+                <td>{{ producto.cantidades_por_talla.XL|default:"0" }}</td>
+                <td>{{ producto.cantidades_por_talla.XXL|default:"0" }}</td>
+                <td>{{ producto.cantidades_por_talla.General|default:"0" }}</td>
+                
+                <!-- Total en stock -->
+                <td>{{ producto.total_cantidad }}</td>
+
+                <!-- Acciones -->
+                <td>
+                    <div class="btn-group" role="group" aria-label="Acciones">
+                        <a href="{% url 'editar_producto' producto.pk %}" class="btn btn-warning btn-sm me-1 border-black">Editar</a>
+                        <a href="{% url 'eliminar_producto' producto.pk %}" class="btn btn-danger btn-sm border-black">Eliminar</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Paginación inferior -->
+<div class="align-items-center mt-2">
+    <div class="pagination">
+        <ul class="pagination pagination-sm">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1" aria-label="First">&laquo; Primero</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">Anterior</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">Siguiente</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                    Último &raquo;
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<!-- Modal genérico (opcional) para mostrar el código de barras -->
+<div class="modal fade" id="codigoBarrasModal" tabindex="-1" aria-labelledby="codigoBarrasModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="codigoBarrasModalLabel">Código de Barras</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="codigo-barras-img" src="" alt="Código de Barras" style="max-width: 100%; height: auto;">
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

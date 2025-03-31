@@ -1,0 +1,18 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1 class="mb-4">Eliminar Proveedor</h1>
+    <p>¿Estás seguro de que deseas eliminar a <strong>{{ proveedor.nombre }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Eliminar Proveedor</button>
+        <a href="{% url 'contenido_proveedores' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<h2>Editar Venta</h2>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}  <!-- Formulario principal de Venta -->
+
+    <h3>Detalles de Venta</h3>
+    <table id="detalle-venta-table">
+        {{ detalle_venta_forms.management_form }}
+        {% for form in detalle_venta_forms %}
+            <tr>
+                <td>
+                    {{ form.producto.label_tag }} {{ form.producto }}  <!-- Campo de selección de producto -->
+                </td>
+                <td>
+                    {{ form.cantidad.label_tag }} {{ form.cantidad }}  <!-- Campo de cantidad -->
+                </td>
+                <td>
+                    <button type="button" class="remove-detail">Eliminar</button>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    <button type="button" id="add-detail">Agregar Producto</button>
+    <button type="submit">Guardar Venta</button>
+</form>
+
+<script>
+    // JavaScript para agregar/eliminar detalles dinámicamente en el FormSet
+    document.getElementById('add-detail').addEventListener('click', function () {
+        const table = document.getElementById('detalle-venta-table');
+        const newRow = table.querySelector('tr').cloneNode(true);
+        
+        // Limpiar campos de la fila clonada
+        newRow.querySelectorAll('input').forEach(input => input.value = '');
+        newRow.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+        
+        // Insertar la nueva fila antes del botón de agregar
+        table.appendChild(newRow);
+    });
+
+    // Event listener para eliminar filas de detalle
+    document.querySelectorAll('.remove-detail').forEach(button => {
+        button.addEventListener('click', function () {
+            const row = this.closest('tr');
+            row.remove();
+        });
+    });
+</script>
+{% endblock %}

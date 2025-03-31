@@ -1,0 +1,10 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<form method="post" id="edit-product-form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+</form>
+{% endblock %}
