@@ -1,0 +1,1 @@
+web: gunicorn cascos_mac.wsgi
