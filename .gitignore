@@ -16,3 +16,5 @@ __pycache__/
 # Archivos de dependencias (si trabajas con Node.js por ejemplo)
 node_modules/
 
+# Archivos estaticos
+staticfiles
