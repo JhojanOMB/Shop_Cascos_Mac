@@ -121,7 +121,7 @@ USE_TZ = True
 # Archivos estáticos (CSS, JavaScript, Imágenes)
 STATIC_URL = "/static/"
 STATIC_FILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),  # Directorio donde se encuentran los archivos estáticos de la aplicación
+    os.path.join(BASE_DIR, "blog/static"),  # Directorio donde se encuentran los archivos estáticos de la aplicación
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # Directorio donde se recopilan los archivos estáticos
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
