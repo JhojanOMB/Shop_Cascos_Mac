@@ -1,1 +1,1 @@
-web: gunicorn cascos_mac.wsgi
+web: python manage.py collecstatic && gunicorn cascos_mac.wsgi

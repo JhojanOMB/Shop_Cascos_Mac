@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'whitenoise.runserver_nostatic',  # Para servir archivos estáticos en desarrollo
     'django.contrib.humanize',
 
     #aplicaciones locales
@@ -119,7 +120,10 @@ USE_TZ = True
 
 # Archivos estáticos (CSS, JavaScript, Imágenes)
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"  # Railway usará esta carpeta en producción
+STATIC_FILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),  # Directorio donde se encuentran los archivos estáticos de la aplicación
+]
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # Directorio donde se recopilan los archivos estáticos
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 
