@@ -205,10 +205,10 @@
                                 {% if producto.en_oferta %}
                                     <p class="price text-success fw-bold mb-0 me-2">${{ producto.precio_oferta|floatformat:0|intcomma }}</p>
                                     <p class="text-muted text-danger text-decoration-line-through mb-0">
-                                        ${{ producto.precio|floatformat:0|intcomma }}
+                                        ${{ producto.precio_venta|floatformat:0|intcomma }}
                                     </p>
                                 {% else %}
-                                    <p class="price text-success fw-bold mb-0">${{ producto.precio|floatformat:0|intcomma }}</p>
+                                    <p class="price text-success fw-bold mb-0">${{ producto.precio_venta|floatformat:0|intcomma }}</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -229,7 +229,7 @@
 
                     <!-- Footer de la Tarjeta -->
                     <div class="card-footer bg-light text-center">
-                        <a href="{% url 'product_detail' producto.id %}" class="btn btn-outline-dark w-100">
+                        <a href="{% url 'detalles_producto_tienda' producto.id %}" class="btn btn-outline-dark w-100">
                             <i class="fa-regular fa-eye me-2"></i>Ver Detalles
                         </a>
                         <!-- Botón para abrir el modal -->

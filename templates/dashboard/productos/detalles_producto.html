@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block header_links %}
+<div class="d-flex gap-2 justify-content-end align-items-center">
+    {% if user.is_authenticated %}
+        {% if user.rol == 'gerente' %}
+        <a href="{% url 'dashboard_gerente' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
+        {% elif user.rol == 'vendedor' %}
+        <a href="{% url 'dashboard_vendedor' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
+        {% endif %}
+        <a href="{% url 'logout' %}" class="btn btn-dark w-100 text-nowrap">Cerrar Sesión</a>
+    {% else %}
+        <a href="{% url 'login' %}" class="btn btn-dark w-100 text-nowrap">Iniciar Sesión</a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block dashboard_css %}
+<link rel="stylesheet" href="{% static 'css/producto_detalles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row g-4">
+        <div class="col-md-5 rounded-5">
+            {% if producto.imagen1 or producto.imagen2 or producto.imagen3 or producto.imagen4 or producto.imagen5 %}
+                <div id="carousel-{{ producto.id }}" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
+                    <div class="carousel-inner">
+                        {% if producto.imagen1 %}
+                        <div class="carousel-item active">
+                            <img src="{{ producto.imagen1.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 1" style="object-fit: contain; max-height: 500px;">
+                        </div>
+                        {% endif %}
+                        {% if producto.imagen2 %}
+                        <div class="carousel-item {% if not producto.imagen1 %}active{% endif %}">
+                            <img src="{{ producto.imagen2.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 2" style="object-fit: contain; max-height: 500px;">
+                        </div>
+                        {% endif %}
+                        {% if producto.imagen3 %}
+                        <div class="carousel-item {% if not producto.imagen1 and not producto.imagen2 %}active{% endif %}">
+                            <img src="{{ producto.imagen3.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 3" style="object-fit: contain; max-height: 500px;">
+                        </div>
+                        {% endif %}
+                        {% if producto.imagen4 %}
+                        <div class="carousel-item {% if not producto.imagen1 and not producto.imagen2 and not producto.imagen3 %}active{% endif %}">
+                            <img src="{{ producto.imagen4.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 4" style="object-fit: contain; max-height: 500px;">
+                        </div>
+                        {% endif %}
+                        {% if producto.imagen5 %}
+                        <div class="carousel-item {% if not producto.imagen1 and not producto.imagen2 and not producto.imagen3 and not producto.imagen4 %}active{% endif %}">
+                            <img src="{{ producto.imagen5.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 5" style="object-fit: contain; max-height: 500px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ producto.id }}" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Anterior</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ producto.id }}" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Siguiente</span>
+                    </button>
+                </div>
+            {% else %}
+                <img src="{% static 'img/No_hay_imagen.png' %}" class="d-block w-100 img-fluid" alt="No image available" style="object-fit: contain; max-height: 500px;">
+            {% endif %}
+
+            <div class="imagenes-adicionales mt-3 d-flex justify-content-center flex-wrap gap-1">
+                {% if producto.imagen1 %}
+                <img src="{{ producto.imagen1.url }}" alt="Miniatura 1 de {{ producto.nombre }}" 
+                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
+                    onclick="cambiarImagen('{{ producto.id }}', 0);">
+                {% endif %}
+                {% if producto.imagen2 %}
+                <img src="{{ producto.imagen2.url }}" alt="Miniatura 2 de {{ producto.nombre }}" 
+                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
+                    onclick="cambiarImagen('{{ producto.id }}', 1);">
+                {% endif %}
+                {% if producto.imagen3 %}
+                <img src="{{ producto.imagen3.url }}" alt="Miniatura 3 de {{ producto.nombre }}" 
+                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
+                    onclick="cambiarImagen('{{ producto.id }}', 2);">
+                {% endif %}
+                {% if producto.imagen4 %}
+                <img src="{{ producto.imagen4.url }}" alt="Miniatura 4 de {{ producto.nombre }}" 
+                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
+                    onclick="cambiarImagen('{{ producto.id }}', 3);">
+                {% endif %}
+                {% if producto.imagen5 %}
+                <img src="{{ producto.imagen5.url }}" alt="Miniatura 5 de {{ producto.nombre }}" 
+                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
+                    onclick="cambiarImagen('{{ producto.id }}', 4);">
+                {% endif %}
+            </div>
+        </div>
+
+    <!-- Detalles del producto -->
+    <div class="col-md-7">
+        <div class="card shadow-lg border rounded-5 py-5 px-5">
+            <!-- Encabezado: Nombre -->
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="fw-bold texto-espaciado">{{ producto.nombre }}</h2>
+            </div>
+
+            <!-- Separador visual -->
+            <hr>
+
+            <!-- Precio destacado y estilizado -->
+            <div class="mb-4">
+                {% if producto.en_oferta %}
+                    <!-- Etiqueta de oferta -->
+                    <span class="badge bg-danger text-white rounded-pill fs-6 texto-espaciado shadow-sm d-inline-block">
+                        ¡Oferta Especial!
+                    </span>
+                    <!-- Precio de oferta -->
+                    <div class="mt-2 fs-3 texto-espaciado">
+                        <span class="text-success fw-bold">
+                            ${{ producto.precio_oferta|floatformat:0|intcomma }}
+                        </span>
+                        <span class="text-muted text-decoration-line-through">
+                            Antes: ${{ producto.precio|floatformat:0|intcomma }}
+                        </span>
+                    </div>
+                {% else %}
+                    <!-- Precio regular -->
+                    <div>
+                        <span class="text-success texto-espaciado fs-3 fw-bold">
+                            ${{ producto.precio_venta|floatformat:0|intcomma }}
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-2">
+                <h6 class="fw-bold text-muted">Descripción del Producto</h6>
+                <p class="text-secondary">{{ producto.descripcion }}</p>
+            </div>
+
+            <!-- Tallas Disponibles -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-muted">Tallas Disponibles</h6>
+                {% if tallas_disponibles %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for detalle in tallas_disponibles %}
+                            {% if detalle.cantidad > 0 %}
+                                <span class="badge bg-light text-dark border rounded-pill px-3 py-2 shadow-sm">
+                                    {{ detalle.talla.nombre }}
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No especificado</p>
+                {% endif %}
+            </div>
+
+            <!-- Género -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-muted">Género</h6>
+                {% if producto.genero %}
+                    <span class="badge 
+                        {% if producto.genero == 'dama' %} bg-dama 
+                        {% elif producto.genero == 'caballero' %} bg-caballero 
+                        {% else %} bg-unisex text-light 
+                        {% endif %} py-2 px-3">
+                        {{ producto.genero|title }}
+                    </span>
+                {% else %}
+                    <p class="text-muted">No especificado</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    </div>
+    
+    <div class="container mt-5 rounded-4 mb-3 shadow-lg p-4">
+        <h3 class="fw-semibold">Productos que te pueden Interesar</h3>
+        {% if productos_similares %}
+        <div class="row mt-5 similares-bg">
+            <div class="row">
+                {% for similar in productos_similares %}
+                <div class="col-md-3">
+                    <div class="card mb-4">
+                        <a href="{% url 'detalles_producto_tienda' similar.id %}">
+                            {% if similar.imagen1 %}
+                            <img src="{{ similar.imagen1.url }}" class="card-img-top" alt="{{ similar.nombre }}">
+                            {% else %}
+                            <img src="{% static 'img/No_hay_imagen.png' %}" class="card-img-top" alt="No image available">
+                            {% endif %}
+                        </a>
+                        <div class="card-body">
+                            <h5 class="card-title fw-bolder">{{ similar.nombre }}</h5>
+                            <p class="card-text text-success"><strong>${{ similar.precio|floatformat:0|intcomma }}</strong></p>
+                            <a href="{% url 'detalles_producto_tienda' similar.id %}" class="btn btn-outline-dark w-100">Ver más</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>   
+        {% else %}
+        <div class="row mt-5">
+            <p class="text-muted">No hay productos similares disponibles.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function cambiarImagen(productoId, index) {
+        // Obtiene el carrusel correspondiente al producto
+        const carousel = document.querySelector(`#carousel-${productoId}`);
+        
+        // Elimina la clase 'active' de todas las imágenes
+        const items = carousel.querySelectorAll('.carousel-item');
+        items.forEach(item => item.classList.remove('active'));
+        
+        // Agrega la clase 'active' solo a la imagen correspondiente
+        items[index].classList.add('active');
+    }
+</script>   
+{% endblock %}

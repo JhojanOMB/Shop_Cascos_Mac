@@ -74,7 +74,7 @@
             <tr class="align-middle text-center" id="producto-{{ producto.id }}">
                 <td class="text-start fw-semibold">{{ producto.nombre }}</td>
                 <td>${{ producto.precio_compra|floatformat:0|intcomma|default:"0" }}</td>
-                <td>${{ producto.precio|floatformat:0|intcomma }}</td>
+                <td>${{ producto.precio_venta|floatformat:0|intcomma }}</td>
                 <td>{{ producto.categoria.nombre }}</td>
                 <td>
                     <!-- Botón que abre el modal específico del producto -->
@@ -162,8 +162,8 @@
                                                         <!-- Checkbox para seleccionar la impresión del código por talla -->
                                                         <div class="form-check form-switch mt-2">
                                                             <input class="form-check-input" type="checkbox" 
-                                                                   name="codigos[]" value="talla-{{ talla.id }}" 
-                                                                   id="chk-talla-{{ talla.id }}">
+                                                                name="codigos[]" value="talla-{{ talla.id }}" 
+                                                                id="chk-talla-{{ talla.id }}">
                                                             <label class="form-check-label" for="chk-talla-{{ talla.id }}">
                                                                 Imprimir Talla {{ talla.talla.nombre }}
                                                             </label>
@@ -171,8 +171,8 @@
                                                         <div class="mt-2">
                                                             <label for="cantidad_talla_{{ talla.id }}" class="form-label mb-0">Cantidad:</label>
                                                             <input type="number" name="cantidad_talla-{{ talla.id }}" 
-                                                                   id="cantidad_talla_{{ talla.id }}" value="1" min="1" 
-                                                                   class="form-control form-control-sm" style="width: 80px; display: inline-block;">
+                                                                id="cantidad_talla_{{ talla.id }}" value="1" min="1" 
+                                                                class="form-control form-control-sm" style="width: 80px; display: inline-block;">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -211,7 +211,7 @@
                     
                     <!-- Modal para imagen expandida del Código de Barras General -->
                     <div class="modal fade" id="expandirCodigoGeneralModal-{{ producto.id }}" tabindex="-1" 
-                         aria-labelledby="expandirCodigoGeneralModalLabel-{{ producto.id }}" aria-hidden="true">
+                        aria-labelledby="expandirCodigoGeneralModalLabel-{{ producto.id }}" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header bg-dark text-light">
@@ -223,7 +223,7 @@
                                 </div>
                                 <div class="modal-body text-center">
                                     <img src="{% url 'codigo_barras_producto' producto.id %}" 
-                                         alt="Código de Barras General" class="img-fluid">
+                                        alt="Código de Barras General" class="img-fluid">
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-outline-dark btn-sm w-100" 
@@ -238,7 +238,7 @@
                     <!-- Modal para imagen expandida del Código de Barras por Talla -->
                     {% for talla in producto.producto_tallas.all %}
                     <div class="modal fade" id="expandirCodigoTallaModal-{{ talla.id }}" tabindex="-1" 
-                         aria-labelledby="expandirCodigoTallaModalLabel-{{ talla.id }}" aria-hidden="true">
+                        aria-labelledby="expandirCodigoTallaModalLabel-{{ talla.id }}" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header bg-dark text-light">
@@ -250,7 +250,7 @@
                                 </div>
                                 <div class="modal-body text-center">
                                     <img src="{% url 'codigo_barras_talla' talla.id %}" 
-                                         alt="Código de Barras - Talla {{ talla.talla.nombre }}" class="img-fluid">
+                                        alt="Código de Barras - Talla {{ talla.talla.nombre }}" class="img-fluid">
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-outline-dark btn-sm w-100" 
@@ -280,6 +280,7 @@
                     <div class="btn-group" role="group" aria-label="Acciones">
                         <a href="{% url 'editar_producto' producto.pk %}" class="btn btn-warning btn-sm me-1 border-black">Editar</a>
                         <a href="{% url 'eliminar_producto' producto.pk %}" class="btn btn-danger btn-sm border-black">Eliminar</a>
+                        <a href="{% url 'detalles_producto' producto.pk %}" class="btn btn-danger btn-sm border-black">Detalles</a>
                     </div>
                 </td>
             </tr>

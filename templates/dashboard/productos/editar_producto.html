@@ -58,10 +58,10 @@
 
                 <div class="mb-3">
                     <label class="form-label"><i class="fas fa-dollar-sign me-2"></i>Precio Venta</label>
-                    {{ form.precio }}
+                    {{ form.precio_venta }}
                     {% if form.precio.errors %}
                         <div class="text-danger">
-                            {% for error in form.precio.errors %}
+                            {% for error in form.precio_venta.errors %}
                                 <p>{{ error }}</p>
                             {% endfor %}
                         </div>

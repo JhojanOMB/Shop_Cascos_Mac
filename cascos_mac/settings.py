@@ -20,13 +20,11 @@ ALLOWED_HOSTS = [
     "127.0.0.1",  # Para acceder desde localhost
 ]
 
-
 CSRF_TRUSTED_ORIGINS = [
     "https://web-production-482151.up.railway.app",  # En producción
     "http://localhost:8000",  # Para entorno local
     "http://127.0.0.1:8000",  # Para entorno local
 ]
-
 
 # Aplicaciones instaladas
 INSTALLED_APPS = [
@@ -120,9 +118,10 @@ USE_TZ = True
 
 # Archivos estáticos (CSS, JavaScript, Imágenes)
 STATIC_URL = "/static/"
-STATIC_FILES_DIRS = [
-    os.path.join(BASE_DIR, "blog/static"),  # Directorio donde se encuentran los archivos estáticos de la aplicación
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
 ]
+
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # Directorio donde se recopilan los archivos estáticos
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 

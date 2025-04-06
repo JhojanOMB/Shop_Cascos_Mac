@@ -127,7 +127,7 @@
                     <!-- Precio regular -->
                     <div>
                         <span class="text-success texto-espaciado fs-3 fw-bold">
-                            ${{ producto.precio|floatformat:0|intcomma }}
+                            ${{ producto.precio_venta|floatformat:0|intcomma }}
                         </span>
                     </div>
                 {% endif %}
@@ -185,7 +185,7 @@
                 {% for similar in productos_similares %}
                 <div class="col-md-3">
                     <div class="card mb-4">
-                        <a href="{% url 'product_detail' similar.id %}">
+                        <a href="{% url 'detalles_producto_tienda' similar.id %}">
                             {% if similar.imagen1 %}
                             <img src="{{ similar.imagen1.url }}" class="card-img-top" alt="{{ similar.nombre }}">
                             {% else %}
@@ -195,7 +195,7 @@
                         <div class="card-body">
                             <h5 class="card-title fw-bolder">{{ similar.nombre }}</h5>
                             <p class="card-text text-success"><strong>${{ similar.precio|floatformat:0|intcomma }}</strong></p>
-                            <a href="{% url 'product_detail' similar.id %}" class="btn btn-outline-dark w-100">Ver más</a>
+                            <a href="{% url 'detalles_producto_tienda' similar.id %}" class="btn btn-outline-dark w-100">Ver más</a>
                         </div>
                     </div>
                 </div>

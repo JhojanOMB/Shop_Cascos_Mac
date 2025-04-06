@@ -489,9 +489,25 @@ class ProductoDeleteView(LoginRequiredMixin, DeleteView):
             return JsonResponse({'success': True, 'message': 'Producto eliminado exitosamente.'})
         return response
 
-class ProductDetailView(DetailView):
+class ProductDetailView(LoginRequiredMixin, DetailView):
+    """
+    Vista de detalle de un producto.
+    Muestra la información completa del producto especificado por su pk.
+    """
     model = Producto
-    template_name = 'tienda/product_detail.html'
+    template_name = "dashboard/productos/detalles_producto.html"  # Cambia la ruta según tu estructura de templates
+    context_object_name = "producto"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Puedes agregar más variables al contexto si lo requieres.
+        # Por ejemplo, si quisieras mostrar productos relacionados:
+        # context['productos_relacionados'] = Producto.objects.filter(categoria=self.object.categoria).exclude(pk=self.object.pk)[:4]
+        return context
+
+class ProductDetailShopView(DetailView):
+    model = Producto
+    template_name = 'tienda/detalles_producto_tienda.html'
     context_object_name = 'producto'
 
     def get_context_data(self, **kwargs):
@@ -521,6 +537,8 @@ class ProductDetailView(DetailView):
         context['tallas_disponibles'] = tallas_disponibles
 
         return context
+    
+    
 
 def buscar_productos(request):
     query = request.GET.get('q')
