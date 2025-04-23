@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from tienda import views as tienda_views
 from usuarios import views as usuarios_views
-from inventario.views import inventario_view
+from inventario.views import *
 from carrito.views import *  # Importamos las vistas del carrito de compras
 from django.conf import settings
 from django.conf.urls.static import static
@@ -13,7 +13,7 @@ urlpatterns = [
     path('logout/', usuarios_views.logout_view, name='logout'),
     path('tienda/', include('tienda.urls')),  # Incluye las URLs de la aplicación tienda
     path('ventas/', include('ventas.urls')),  # Incluye las URLs de la aplicación ventas
-    path('inventario/', inventario_view, name='inventario'),  # URL para la vista de inventario
+    path('inventario/', include('inventario.urls')),  # Incluye las URLs para la vista de inventario
     path('carrito/', include('carrito.urls')),  # Incluye las URLs de la aplicación carrito de compras
     path('usuarios/', include('usuarios.urls')),  # Incluye las URLs de la aplicación usuarios
     path('', tienda_views.index, name='index'),  # Página de inicio en el proyecto

@@ -1,10 +1,13 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from tienda.models import Producto, ProductoTalla
-from inventario.models import Inventario
+from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db.models import Q
+from tienda.models import *
+from inventario.models import *
+from .forms import *
 
-# Obtener las cantidades por talla y el total del producto
+# Función auxiliar para obtener cantidades por talla y el total del producto
 def obtener_cantidades_por_talla_y_total(producto_id):
     producto = Producto.objects.get(id=producto_id)
     tallas_detalle = ProductoTalla.objects.filter(producto=producto)
@@ -18,24 +21,19 @@ def obtener_cantidades_por_talla_y_total(producto_id):
 
     return cantidades_por_talla, cantidad_total
 
-# Obtener la cantidad total en el inventario del producto
+# Función auxiliar para obtener la cantidad total en el inventario para un producto
 def obtener_cantidades_inventario(producto_id):
     inventarios = Inventario.objects.filter(producto_id=producto_id)
     cantidad_total_inventario = 0
     for inventario in inventarios:
         cantidad_total_inventario += inventario.cantidad
-
     return cantidad_total_inventario
 
 @login_required
 def inventario_view(request):
-    # Obtener todos los productos
-    productos = Producto.objects.all()
-
-    # Obtener el valor de búsqueda enviado por el usuario
     query = request.GET.get('search', '')
-
-    # Filtrar productos si hay una búsqueda
+    
+    productos = Producto.objects.all().order_by('nombre')
     if query:
         productos = productos.filter(
             Q(nombre__icontains=query) |
@@ -43,30 +41,79 @@ def inventario_view(request):
             Q(codigo_barras__icontains=query)
         )
 
-    # Inicializar listas para los productos filtrados
+    # Convertir la QuerySet en lista para clasificar según stock
+    productos = list(productos)
     productos_con_stock = []
     productos_sin_stock = []
     productos_bajo_stock = []
-
-    # Filtrar productos y calcular la cantidad total
+    
     for producto in productos:
-        # Calcula la cantidad total usando la propiedad `total_cantidad`
-        total_cantidad = producto.total_cantidad  # No necesitas asignarlo
-
-        # Filtrar según la cantidad
-        if total_cantidad > 0:
-            productos_con_stock.append(producto)
-        elif total_cantidad == 0:
+        total_cantidad = producto.total_cantidad  # La propiedad que debe considerar variantes o el campo cantidad
+        if total_cantidad == 0:
             productos_sin_stock.append(producto)
         elif total_cantidad <= 5:
             productos_bajo_stock.append(producto)
+        else:
+            productos_con_stock.append(producto)
+            
+    # Opcional: asignar variantes a cada producto (si es necesario para mostrar en la tabla)
+    for producto in productos:
+        producto.variantes = ProductoTalla.objects.filter(
+            producto=producto,
+            cantidad__gt=0
+        ).select_related('talla', 'color')
 
-    # Pasa los productos con las categorías correspondientes
+    # Paginación para cada lista (10 productos por página)
+    paginator_con = Paginator(productos_con_stock, 10)
+    paginator_sin = Paginator(productos_sin_stock, 10)
+    page_con = request.GET.get('page_con')
+    page_sin = request.GET.get('page_sin')
+    page_obj_con = paginator_con.get_page(page_con)
+    page_obj_sin = paginator_sin.get_page(page_sin)
+    
     context = {
-        'productos_con_stock': productos_con_stock,
-        'productos_sin_stock': productos_sin_stock,
-        'productos_bajo_stock': productos_bajo_stock,
-        'search_query': query,  # Pasar la búsqueda actual al template
+        'productos_con_stock': page_obj_con,  # Este es el objeto Page para productos con stock
+        'productos_sin_stock': page_obj_sin,    # Objeto Page para productos sin stock
+        'productos_bajo_stock': productos_bajo_stock,  # Si querés mostrarlos sin paginación o aplicá la misma lógica
+        'search_query': query,
+        'categorias': Categoria.objects.all(),
+        'proveedores': Proveedor.objects.all(),
     }
-
     return render(request, 'dashboard/inventario/inventario.html', context)
+
+@login_required
+def actualizar_cantidad_view(request, pk):
+    # Se obtiene la variante del producto
+    producto_talla = get_object_or_404(ProductoTalla, pk=pk)
+    if request.method == 'POST':
+        form = ActualizarCantidadForm(request.POST, instance=producto_talla)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Cantidad actualizada correctamente.')
+            return redirect('inventario')  # Verificá que esta URL esté definida
+    else:
+        form = ActualizarCantidadForm(instance=producto_talla)
+    return render(request, 'dashboard/inventario/actualizar_cantidad.html', {'form': form})
+
+@login_required
+def movimiento_inventario_view(request):
+    # Capturamos el producto_talla_id enviado en la URL
+    producto_talla_id = request.GET.get('producto_talla_id')
+    
+    if request.method == 'POST':
+        form = MovimientoInventarioForm(request.POST)
+        if form.is_valid():
+            movimiento = form.save(commit=False)
+            movimiento.usuario = request.user
+            movimiento.save()
+            messages.success(request, 'Movimiento registrado exitosamente.')
+            return redirect('inventario')
+    else:
+        initial = {}
+        if producto_talla_id:
+            initial['producto_talla'] = producto_talla_id
+            form = MovimientoInventarioForm(initial=initial, producto_talla_id=producto_talla_id)
+        else:
+            form = MovimientoInventarioForm()
+            
+    return render(request, 'dashboard/inventario/movimiento_inventario.html', {'form': form})

@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
-from django.views.generic import ListView, UpdateView, DeleteView, CreateView, DetailView
+from django.views.generic import ListView, UpdateView, DeleteView, CreateView, DetailView, TemplateView
 from .models import *
 from inventario.models import Inventario
 from ventas.models import *
@@ -14,13 +14,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 import barcode
 from barcode import get
 from barcode.writer import ImageWriter
-
 from django.http import HttpResponse
 from io import BytesIO
 import json
 from datetime import date
 import logging
-from django.core.paginator import Paginator
 from django.db import transaction
 from django.contrib import messages
 from django.utils import timezone
@@ -42,33 +40,26 @@ logger = logging.getLogger(__name__)
 
 def generar_codigo_barras(request, codigo_barras):
     """
-    Genera una imagen PNG del código de barras para el código proporcionado.
+    Genera una imagen PNG del código de barras para el código proporcionado,
+    utilizando el estándar EAN-13.
     """
     try:
-        # Generar código de barras utilizando el estándar EAN-13
-        codigo_barras_class = get('ean13', codigo_barras, writer=ImageWriter())
+        codigo_barras_class = barcode.get('ean13', codigo_barras, writer=ImageWriter())
         buffer = BytesIO()
         codigo_barras_class.write(buffer)
         buffer.seek(0)
-
-        # Retornar la imagen como respuesta HTTP
         return HttpResponse(buffer, content_type='image/png')
     except barcode.errors.BarcodeError as e:
         return HttpResponse(f"Error al generar el código de barras: {str(e)}", status=400)
 
-def generar_codigo_barras_producto(request, producto_id):
-    producto = get_object_or_404(Producto, pk=producto_id)
-    if not producto.codigo_barras:
-        return HttpResponse("El producto no tiene un código de barras asignado.", status=404)
-
-    return generar_codigo_barras(request, producto.codigo_barras)
-
-def generar_codigo_barras_talla(request, talla_id):
-    producto_talla = get_object_or_404(ProductoTalla, pk=talla_id)
+def generar_codigo_barras_talla(request, producto_talla_id):
+    """
+    Genera la imagen PNG del código de barras para la variante de producto (ProductoTalla)
+    identificada por producto_talla_id.
+    """
+    producto_talla = get_object_or_404(ProductoTalla, pk=producto_talla_id)
     if not producto_talla.codigo_barras:
-        return HttpResponse("La talla no tiene un código de barras asignado.", status=404)
-
-    # Usamos la función generadora común para devolver la imagen del código de barras
+        return HttpResponse("La variante no tiene un código de barras asignado.", status=404)
     return generar_codigo_barras(request, producto_talla.codigo_barras)
 
 def index(request):
@@ -88,11 +79,12 @@ def index(request):
 
     # Recuperar parámetros con valores por defecto
     categoria_id = request.GET.get('category')
-    price_min = request.GET.get('price_min', 0)  # Por defecto, el mínimo es 0
-    price_max = request.GET.get('price_max', precio_maximo_producto)  # Precio máximo basado en los productos disponibles
+    price_min = request.GET.get('price_min', 0)
+    price_max = request.GET.get('price_max', precio_maximo_producto)
     en_oferta = request.GET.get('en_oferta')
     genero = request.GET.get('genero')
     talla = request.GET.get('talla')
+    color = request.GET.get('color')
     order_by = request.GET.get('order_by', 'nombre')
 
     # Aplicar filtros
@@ -110,10 +102,13 @@ def index(request):
         productos = productos.filter(en_oferta=True)
 
     if genero in ['dama', 'caballero', 'unisex']:
-        productos = productos.filter(genero=genero)
+        productos = productos.filter(producto_tallas__genero=genero, producto_tallas__activa=True)
 
     if talla:
         productos = productos.filter(producto_tallas__talla__nombre=talla, producto_tallas__activa=True)
+
+    if color:
+        productos = productos.filter(producto_tallas__color__iexact=color, producto_tallas__activa=True)
 
     productos = productos.order_by(order_by)
 
@@ -127,17 +122,23 @@ def index(request):
     except EmptyPage:
         productos_paginados = paginator.page(paginator.num_pages)
 
-    # Obtener tallas únicas disponibles
+    # Obtener tallas y colores únicos disponibles
     tallas_disponibles = Talla.objects.filter(
         producto_tallas__producto__in=productos,
         producto_tallas__activa=True
     ).distinct()
+
+    colores_disponibles = ProductoTalla.objects.filter(
+        producto__in=productos,
+        activa=True
+    ).values_list('color', flat=True).distinct()
 
     return render(request, 'index.html', {
         'categorias': categorias,
         'productos': productos_paginados,
         'precio_maximo_producto': precio_maximo_producto,
         'tallas_disponibles': tallas_disponibles,
+        'colores_disponibles': colores_disponibles,
     })
 
 
@@ -314,7 +315,6 @@ class ProductoContenidoView(LoginRequiredMixin, ListView):
     context_object_name = 'productos'
     paginate_by = 10  # Número de resultados por página
 
-
     def get_queryset(self):
         queryset = Producto.objects.all()
         search_query = self.request.GET.get('q', '')
@@ -329,25 +329,43 @@ class ProductoContenidoView(LoginRequiredMixin, ListView):
         if proveedor_id:
             queryset = queryset.filter(proveedor_id=proveedor_id)
 
+        # Ordenar por los más recientes primero (por ID descendente)
+        queryset = queryset.order_by('-id')
+
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categorias'] = Categoria.objects.all()  # Enviar todas las categorías para el filtro
-        context['proveedores'] = Proveedor.objects.all()  # Enviar todos los proveedores para el filtro
+        context['categorias'] = Categoria.objects.all()
+        context['proveedores'] = Proveedor.objects.all()
 
-        # Añadir tallas disponibles para cada producto
         productos = context['productos']
         for producto in productos:
-            producto.tallas_disponibles = ProductoTalla.objects.filter(producto=producto, cantidad__gt=0).select_related('talla')
+            # Todas las combinaciones de talla, color, género y cantidad del producto
+            producto.variantes = ProductoTalla.objects.filter(
+                producto=producto,
+                cantidad__gt=0
+            ).select_related('talla')
 
         return context
 
-# Crear el formset para manejar ProductoTalla
-ProductoTallaFormSet = inlineformset_factory(
-    Producto, ProductoTalla, fields=('talla', 'cantidad'), extra=0, can_delete=False
+# Formset para crear
+ProductoTallaCreateFormSet = inlineformset_factory(
+    Producto,
+    ProductoTalla,
+    form=ProductoTallaForm,
+    extra=1,
+    can_delete=False  # opcional en crear
 )
 
+# Formset para editar
+ProductoTallaEditFormSet = inlineformset_factory(
+    Producto,
+    ProductoTalla,
+    form=ProductoTallaForm,
+    extra=1,
+    can_delete=True
+)
 class ProductoCreateView(LoginRequiredMixin, CreateView):
     model = Producto
     form_class = ProductoForm
@@ -355,73 +373,72 @@ class ProductoCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        ProductoTallaFormSet = inlineformset_factory(
-            Producto, ProductoTalla, fields=('talla', 'cantidad'), extra=0, can_delete=True
-        )
-
+        # Usamos self.object si ya existe; de lo contrario pasamos None
+        instance = self.object if hasattr(self, 'object') and self.object is not None else None
+        
         if self.request.POST:
-            context['formset'] = ProductoTallaFormSet(self.request.POST, instance=self.object)
+            context['formset'] = ProductoTallaCreateFormSet(self.request.POST, instance=instance)
         else:
-            context['formset'] = ProductoTallaFormSet()
-
+            context['formset'] = ProductoTallaCreateFormSet(instance=instance)
+            
+        # Obtener todas las tallas para ser usadas en el formset o en filtros en el template
         context['tallas'] = Talla.objects.all()
-
-        if hasattr(self, 'object') and self.object:
+        
+        # Armar diccionario con cantidad existente para cada talla si se está editando un producto.
+        if instance:
             context['tallas_con_cantidad'] = {
-                talla.id: ProductoTalla.objects.filter(producto=self.object, talla=talla).first().cantidad
-                if ProductoTalla.objects.filter(producto=self.object, talla=talla).exists()
+                talla.id: ProductoTalla.objects.filter(producto=instance, talla=talla).first().cantidad
+                if ProductoTalla.objects.filter(producto=instance, talla=talla).exists()
                 else 0
                 for talla in Talla.objects.all()
             }
         else:
             context['tallas_con_cantidad'] = {talla.id: 0 for talla in Talla.objects.all()}
-
+        
+        # Pasar errores, si existen, al contexto para mostrarlos (por ejemplo, en un modal o alerta)
         if hasattr(self, 'form_errors'):
             context['form_errors'] = self.form_errors
-
+        
+        # Variables para mostrar modales de éxito o error en la plantilla
         context['show_success_modal'] = getattr(self, 'show_success_modal', False)
         context['show_error_modal'] = getattr(self, 'show_error_modal', False)
-
+        
         return context
 
     def form_valid(self, form):
-        self.object = form.save()  # Guarda el producto
-
-        ProductoTallaFormSet = inlineformset_factory(
-            Producto, ProductoTalla, fields=('talla', 'cantidad'), extra=0, can_delete=True
-        )
-        formset = ProductoTallaFormSet(self.request.POST, instance=self.object)
-
+        # Intentamos guardar el producto y capturamos errores de validación (por ejemplo, nombre duplicado)
+        try:
+            self.object = form.save()
+        except ValidationError as e:
+            for field, error_list in e.message_dict.items():
+                for error in error_list:
+                    form.add_error(field, error)
+            # Además, se pueden registrar los errores en self.form_errors si deseas procesarlos en el template
+            self.form_errors = form.errors
+            self.show_error_modal = True
+            return self.form_invalid(form)
+            
+        # Una vez guardado el producto principal, trabajamos con el formset
+        formset = ProductoTallaEditFormSet(self.request.POST, instance=self.object)
         if formset.is_valid():
             formset.save()
             messages.success(self.request, "Producto creado exitosamente.")
-            self.show_success_modal = True
-
-            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True})
             return redirect(self.get_success_url())
         else:
             self.form_errors = formset.errors
             self.show_error_modal = True
-            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'errors': formset.errors}, status=400)
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
     def form_invalid(self, form):
+        # En caso de error en el formulario principal, se carga el formset con la data ingresada
+        formset = ProductoTallaEditFormSet(self.request.POST, instance=self.object)
         self.form_errors = form.errors
-        ProductoTallaFormSet = inlineformset_factory(
-            Producto, ProductoTalla, fields=('talla', 'cantidad'), extra=0, can_delete=True
-        )
-        formset = ProductoTallaFormSet(self.request.POST)
         self.show_error_modal = True
-        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
         return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
     def get_success_url(self):
         return reverse_lazy('contenido_productos')
-    
+
 class ProductoUpdateView(LoginRequiredMixin, UpdateView):
     model = Producto
     form_class = ProductoForm
@@ -429,53 +446,54 @@ class ProductoUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['formset'] = ProductoTallaEditFormSet(self.request.POST, self.request.FILES, instance=self.object)
+        else:
+            context['formset'] = ProductoTallaEditFormSet(instance=self.object)
 
-        producto = self.object  # Producto que estamos editando
         context['tallas'] = Talla.objects.all()
+        producto_tallas = ProductoTalla.objects.filter(producto=self.object).select_related('talla')
+        tallas_con_cantidad = {talla.id: 0 for talla in Talla.objects.all()}
+        for pt in producto_tallas:
+            tallas_con_cantidad[pt.talla.id] = pt.cantidad
+        context['tallas_con_cantidad'] = tallas_con_cantidad
 
-        # Crear un diccionario con las cantidades actuales (None si no está activa)
-        context['tallas_con_cantidad'] = {
-            talla.id: ProductoTalla.objects.filter(producto=producto, talla=talla).first().cantidad
-            if ProductoTalla.objects.filter(producto=producto, talla=talla).exists()
-            else None  # None indica que no está activada
-            for talla in Talla.objects.all()
-        }
+        context['form_errors'] = getattr(self, 'form_errors', None)
+
+        image_fields = ['imagen1', 'imagen2', 'imagen3', 'imagen4', 'imagen5']
+        image_data = {field: getattr(self.object, field, None) for field in image_fields}
+        context['image_fields'] = image_fields
+        context['image_data'] = image_data
+
+        context['show_success_modal'] = getattr(self, 'show_success_modal', False)
+        context['show_error_modal'] = getattr(self, 'show_error_modal', False)
 
         return context
 
     def form_valid(self, form):
-        self.object = form.save()  # Guardar el producto
+        self.object = form.save()
+        formset = ProductoTallaEditFormSet(self.request.POST, self.request.FILES, instance=self.object)
 
-        # Procesar las tallas activadas/desactivadas
-        tallas = Talla.objects.all()  # Todas las tallas disponibles
-        for talla in tallas:
-            activar_talla = self.request.POST.get(f'activar_talla_{talla.id}')  # Checkbox activado o no
-            cantidad_raw = self.request.POST.get(f'cantidad_talla_{talla.id}', '0')  # Cantidad como cadena
-            cantidad = int(cantidad_raw) if cantidad_raw.isdigit() else 0  # Convertir a entero si es válido
-
-            # Obtener o crear el ProductoTalla
-            producto_talla, created = ProductoTalla.objects.get_or_create(producto=self.object, talla=talla)
-
-            if activar_talla:  # Si el checkbox está marcado
-                producto_talla.activa = True
-            else:  # Si el checkbox no está marcado
-                producto_talla.activa = False
-
-            # Actualizar la cantidad
-            producto_talla.cantidad = cantidad
-            producto_talla.save()
-
-        return super().form_valid(form)
+        if formset.is_valid():
+            formset.save()
+            messages.success(self.request, "Producto actualizado exitosamente.")
+            self.show_success_modal = True
+            return redirect(self.get_success_url())
+        else:
+            print("Errores del formset:", formset.errors)
+            self.form_errors = formset.errors
+            self.show_error_modal = True
+            return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
     def form_invalid(self, form):
-        # Si el formset es inválido, renderiza la vista con los errores
-        formset = ProductoTallaFormSet(self.request.POST, instance=self.object)
+        formset = ProductoTallaEditFormSet(self.request.POST, self.request.FILES, instance=self.object)
+        self.form_errors = form.errors
+        self.show_error_modal = True
         return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
     def get_success_url(self):
-        # Redirigir al listado de productos
         return reverse_lazy('contenido_productos')
-    
+
 class ProductoDeleteView(LoginRequiredMixin, DeleteView):
     model = Producto
     template_name = 'dashboard/productos/eliminar_producto.html'
@@ -495,20 +513,49 @@ class ProductDetailView(LoginRequiredMixin, DetailView):
     Muestra la información completa del producto especificado por su pk.
     """
     model = Producto
-    template_name = "dashboard/productos/detalles_producto.html"  # Cambia la ruta según tu estructura de templates
+    template_name = "dashboard/productos/detalles_producto.html"
     context_object_name = "producto"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Puedes agregar más variables al contexto si lo requieres.
-        # Por ejemplo, si quisieras mostrar productos relacionados:
-        # context['productos_relacionados'] = Producto.objects.filter(categoria=self.object.categoria).exclude(pk=self.object.pk)[:4]
+        producto = self.object
+
+        # Tallas disponibles con cantidad > 0
+        tallas_disponibles = ProductoTalla.objects.filter(
+            producto=producto,
+            cantidad__gt=0
+        ).select_related('talla', 'color')
+
+        # Colores únicos disponibles (por cantidad > 0)
+        colores_disponibles = (
+            tallas_disponibles
+            .values('color__nombre', 'color__codigo_hex')
+            .distinct()
+        )
+
+        # Géneros únicos disponibles (por cantidad > 0)
+        generos_disponibles = (
+            tallas_disponibles
+            .values_list('genero', flat=True)
+            .distinct()
+        )
+
+        context["tallas_disponibles"] = tallas_disponibles
+        context["colores_disponibles"] = colores_disponibles
+        context["generos_disponibles"] = generos_disponibles
+
         return context
 
 class ProductDetailShopView(DetailView):
     model = Producto
     template_name = 'tienda/detalles_producto_tienda.html'
     context_object_name = 'producto'
+    slug_field = 'slug'
+    slug_url_kwarg = 'slug'
+
+    def get_queryset(self):
+        # Solo mostramos productos que están en catálogo.
+        return Producto.objects.filter(catalogo='catalogo')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -521,24 +568,39 @@ class ProductDetailShopView(DetailView):
             producto.imagen4,
             producto.imagen5,
         ]
+        # Filtramos las imágenes vacías o nulas
+        context['imagenes_adicionales'] = [img for img in imagenes_adicionales if img]
 
-        # Filtrar imágenes que no estén vacías o nulas
-        imagenes_adicionales = [img for img in imagenes_adicionales if img]
-        context['imagenes_adicionales'] = imagenes_adicionales
-
-        # Productos similares
-        productos_similares = Producto.objects.filter(
-            categoria=producto.categoria
+        # Productos similares (filtramos también que estén en catálogo)
+        context['productos_similares'] = Producto.objects.filter(
+            categoria=producto.categoria,
+            catalogo='catalogo'
         ).exclude(id=producto.id)[:4]
-        context['productos_similares'] = productos_similares
 
-        # Obtener tallas activas para el producto actual
-        tallas_disponibles = producto.producto_tallas.filter(activa=True)
-        context['tallas_disponibles'] = tallas_disponibles
+        # Tallas disponibles únicas con cantidad > 0
+        tallas_disponibles = ProductoTalla.objects.filter(
+            producto=producto,
+            cantidad__gt=0
+        ).select_related('talla', 'color').values_list('talla__nombre', flat=True).distinct()
+
+        context["tallas_disponibles"] = tallas_disponibles
+
+        # Para colores y géneros, necesitas la queryset original (no la lista de nombres de tallas)
+        variantes_disponibles = ProductoTalla.objects.filter(
+            producto=producto,
+            cantidad__gt=0
+        ).select_related('talla', 'color')
+
+        context["colores_disponibles"] = variantes_disponibles.values(
+            'color__nombre', 'color__codigo_hex'
+        ).distinct()
+
+        context["generos_disponibles"] = variantes_disponibles.values_list(
+            'genero', flat=True
+        ).distinct()
 
         return context
-    
-    
+
 
 def buscar_productos(request):
     query = request.GET.get('q')
@@ -586,7 +648,6 @@ class CategoriaUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('contenido_categorias')
 
-
 class CategoriaDeleteView(LoginRequiredMixin, DeleteView):
     model = Categoria
     template_name = 'dashboard/categorias/eliminar_categoria.html'
@@ -624,21 +685,17 @@ class ProveedorCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('contenido_proveedores') 
 
-class ProveedorUpdateView(UpdateView, LoginRequiredMixin, DeleteView):
+class ProveedorUpdateView(LoginRequiredMixin, UpdateView):
     model = Proveedor
     form_class = ProveedorForm
     template_name = 'dashboard/proveedores/editar_proveedor.html'
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        # Verificar si la solicitud es AJAX
-        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': 'Proveedor creado exitosamente.'})
-        return response
+        messages.success(self.request, '¡Proveedor actualizado correctamente!')
+        return super().form_valid(form)
 
-    # Definir la URL de éxito
     def get_success_url(self):
-        return reverse_lazy('contenido_proveedores') 
+        return reverse_lazy('contenido_proveedores')
 
 class ProveedorDeleteView(LoginRequiredMixin, DeleteView):
     model = Proveedor  
@@ -774,3 +831,71 @@ def imprimir_codigos_barras(request):
         return HttpResponse(buffer, content_type='application/pdf')
     
     return HttpResponse("Método no permitido", status=405)
+
+def eliminar_productos_seleccionados(request):
+    if request.method == "POST":
+        ids = request.POST.getlist('productos_seleccionados')
+        if ids:
+            productos_eliminados = Producto.objects.filter(id__in=ids)
+            productos_eliminados.delete()
+            messages.success(request, f'Se eliminaron {len(ids)} producto(s).')
+        else:
+            messages.warning(request, 'No seleccionaste ningún producto.')
+    return redirect('contenido_productos')
+
+
+# --- VISTAS CRUD PARA TALLAS ---
+class TallaListView(ListView):
+    model = Talla
+    template_name = 'dashboard/tallas/listar_tallas.html'
+    context_object_name = 'tallas'
+
+class TallaCreateView(CreateView):
+    model = Talla
+    form_class = TallaForm
+    template_name = 'dashboard/tallas/crear_talla.html'
+    success_url = reverse_lazy('contenido_adicionales')  # Redirige a la vista unificada
+
+class TallaUpdateView(UpdateView):
+    model = Talla
+    form_class = TallaForm
+    template_name = 'dashboard/tallas/editar_talla.html'
+    success_url = reverse_lazy('contenido_adicionales')
+
+class TallaDeleteView(DeleteView):
+    model = Talla
+    template_name = 'dashboard/tallas/eliminar_talla.html'
+    success_url = reverse_lazy('contenido_adicionales')
+
+# --- VISTAS CRUD PARA COLORES ---
+class ColorListView(ListView):
+    model = Color
+    template_name = 'dashboard/colores/listar_colores.html'
+    context_object_name = 'colores'
+
+class ColorCreateView(CreateView):
+    model = Color
+    form_class = ColorForm
+    template_name = 'dashboard/colores/crear_color.html'
+    success_url = reverse_lazy('contenido_adicionales')
+
+class ColorUpdateView(UpdateView):
+    model = Color
+    form_class = ColorForm
+    template_name = 'dashboard/colores/editar_color.html'
+    success_url = reverse_lazy('contenido_adicionales')
+
+class ColorDeleteView(DeleteView):
+    model = Color
+    template_name = 'dashboard/colores/eliminar_color.html'
+    success_url = reverse_lazy('contenido_adicionales')
+
+# --- VISTA UNIFICADA ADICIONALES CON TALLAS Y COLORES ---
+class AdicionalesListView(TemplateView):
+    template_name = 'dashboard/adicionales/adicionales.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tallas'] = Talla.objects.all()
+        context['colores'] = Color.objects.all()
+        return context

@@ -6,84 +6,109 @@
 <div class="container form-container mt-4">
     <form id="productoForm" method="post">
         {% csrf_token %}
-        <h2 class="text-center align-middle fw-bolder">Crear Producto</h2>
+        <h2 class="text-center fw-bolder">Crear Producto</h2>
         <hr class="border border-2 mb-2">
 
-        <!-- Mostrar errores generales del formulario -->
-        <div class="alert alert-danger" role="alert" {% if form.errors %}style="display:block"{% else %}style="display:none"{% endif %}>
+        {# Errores generales del formulario #}
+        {% if form.errors %}
+        <div class="alert alert-danger" role="alert">
             <strong>¡Ups! Hay algunos errores en el formulario:</strong>
-            <ul>
+            <ul class="mb-0">
                 {% for field, errors in form.errors.items %}
-                    <li><strong>{{ field }}:</strong> {% for error in errors %}{{ error }}{% endfor %}</li>
+                    <li>
+                        <strong>{{ field }}:</strong>
+                        {% for error in errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </li>
                 {% endfor %}
             </ul>
         </div>
+        {% endif %}
 
-        <!-- Formulario principal -->
+        {# Formulario principal #}
         <div class="row">
+            <!-- Columna Izquierda -->
             <div class="col-md-6">
+                <!-- Campo Nombre -->
                 <div class="mb-3">
                     <label class="form-label">{{ form.nombre.label }}</label>
-                    <div class="input-group shadow">
-                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-user"></i></span>
-                        {{ form.nombre }}
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-secondary text-light">
+                            <i class="fa-solid fa-tag"></i>
+                        </span>
+                        {{ form.nombre|add_class:"form-control" }}
                     </div>
                     {% if form.nombre.errors %}
-                        <div class="invalid-feedback d-block">
-                            <strong>Errores en el campo "{{ form.nombre.label }}":</strong>
-                            {% for error in form.nombre.errors %}
-                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">{{ form.descripcion.label }}</label>
-                    <div class="input-group shadow">
-                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-pencil"></i></span>
-                        {{ form.descripcion }}
+                    <div class="invalid-feedback d-block">
+                        <strong>Errores en "{{ form.nombre.label }}":</strong>
+                        {% for error in form.nombre.errors %}
+                        <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                        {% endfor %}
                     </div>
-                    {% if form.descripcion.errors %}
-                        <div class="invalid-feedback d-block">
-                            <strong>Errores en el campo "{{ form.descripcion.label }}":</strong>
-                            {% for error in form.descripcion.errors %}
-                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                            {% endfor %}
-                        </div>
                     {% endif %}
                 </div>
 
+                <!-- Campo Descripción -->
                 <div class="mb-3">
-                    <label class="form-label">{{ form.precio_compra.label }}</label>
-                    <div class="input-group shadow">
-                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-dollar"></i></span>
-                        {{ form.precio_compra }}
+                    <label class="form-label">{{ form.descripcion.label }}</label>
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-secondary text-light">
+                            <i class="fa-solid fa-pencil"></i>
+                        </span>
+                        {{ form.descripcion|add_class:"form-control" }}
                     </div>
-                    {% if form.precio_compra.errors %}
-                        <div class="invalid-feedback d-block">
-                            <strong>Errores en el campo "{{ form.precio_compra.label }}":</strong>
-                            {% for error in form.precio_compra.errors %}
-                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                            {% endfor %}
-                        </div>
+                    {% if form.descripcion.errors %}
+                    <div class="invalid-feedback d-block">
+                        <strong>Errores en "{{ form.descripcion.label }}":</strong>
+                        {% for error in form.descripcion.errors %}
+                        <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                     {% endif %}
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">{{ form.precio_venta.label }}</label>
-                    <div class="input-group shadow">
-                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-dollar"></i></span>
-                        {{ form.precio_venta }}
-                    </div>
-                    {% if form.precio_venta.errors %}
-                        <div class="invalid-feedback d-block">
-                            <strong>Errores en el campo "{{ form.precio_venta.label }}":</strong>
-                            {% for error in form.precio_venta.errors %}
-                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                            {% endfor %}
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.precio_compra.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary text-white">
+                                    <i class="fa-solid fa-dollar-sign"></i>
+                                </span>
+                                {{ form.precio_compra|add_class:"form-control precio-input" }}
+                            </div>
+                            {% if form.precio_compra.errors %}
+                            <div class="invalid-feedback d-block">
+                                <strong>Errores en "{{ form.precio_compra.label }}":</strong>
+                                {% for error in form.precio_compra.errors %}
+                                    <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
-                    {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.precio_venta.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary text-white">
+                                    <i class="fa-solid fa-dollar-sign"></i>
+                                </span>
+                                {{ form.precio_venta|add_class:"form-control precio-input" }}
+                            </div>
+                            {% if form.precio_venta.errors %}
+                            <div class="invalid-feedback d-block">
+                                <strong>Errores en "{{ form.precio_venta.label }}":</strong>
+                                {% for error in form.precio_venta.errors %}
+                                    <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label">{{ form.categoria.label }}</label>
                     <div class="input-group shadow">
@@ -114,53 +139,60 @@
                         </div>
                     {% endif %}
                 </div>
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-check me-2"></i>{{ form.en_oferta.label }}</label>
-                    {{ form.en_oferta }}
+
+                <!-- Sección de Oferta en una tarjeta -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <label class="form-label mb-0">
+                        <i class="fas fa-check me-2"></i>{{ form.en_oferta.label }}
+                        </label>
+                        <!-- Switch moderno -->
+                        <div class="form-check form-switch">
+                        {{ form.en_oferta|add_class:"form-check-input" }}
+                        </div>
+                    </div>
                     {% if form.en_oferta.errors %}
                         <div class="invalid-feedback d-block">
-                            {% for error in form.en_oferta.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
+                        {% for error in form.en_oferta.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
                         </div>
                     {% endif %}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">{{ form.precio_oferta.label }}</label>
-                    <div class="input-group shadow">
-                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-tags"></i></span>
-                        {{ form.precio_oferta }}
-                    </div>
-                    {% if form.precio_oferta.errors %}
+                    <!-- Campo Precio Oferta en un collapse -->
+                    <div class="collapse mt-3" id="collapsePrecioOferta">
+                        <label class="form-label">{{ form.precio_oferta.label }}</label>
+                        <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light">
+                            <i class="fa-solid fa-tags"></i>
+                        </span>
+                        {{ form.precio_oferta|add_class:"form-control precio-input" }}
+                        </div>
+                        {% if form.precio_oferta.errors %}
                         <div class="invalid-feedback d-block">
                             {% for error in form.precio_oferta.errors %}
-                                <p>{{ error }}</p>
+                            <p>{{ error }}</p>
                             {% endfor %}
                         </div>
-                    {% endif %}
+                        {% endif %}
+                    </div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-venus-mars me-2"></i> Género</label>
-                    <select name="genero" class="form-select">
-                        <option value="">Seleccione una opción</option>
-                        <option value="dama">Dama</option>
-                        <option value="caballero">Caballero</option>
-                        <option value="unisex">Unisex</option>
-                        <option value="no_necesita">No Necesita</option>
-                    </select>
-                </div>               
-                
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-shop me-2"></i>¿Es un producto del catálogo?</label>
-                    <div class="form-check">
-                        <input type="radio" class="form-check-input" id="catalogo" name="catalogo" value="catalogo" {% if form.catalogo.value == 'catalogo' %}checked{% endif %}>
-                        <label class="form-check-label" for="catalogo">Catálogo</label>
+
+                <!-- Sección de Catálogo con botón toggle -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                    <label class="form-label d-block">
+                        <i class="fas fa-shop me-2"></i>¿Es un producto del catálogo?
+                    </label>
+                    <div class="btn-group rounded-pill" role="group">
+                        <input type="radio" class="btn-check" name="catalogo" id="catalogo" value="catalogo" autocomplete="off" {% if form.catalogo.value == 'catalogo' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="catalogo">Catálogo</label>
+                        <input type="radio" class="btn-check" name="catalogo" id="no_catalogo" value="no_catalogo" autocomplete="off" {% if form.catalogo.value == 'no_catalogo' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="no_catalogo">No Catálogo</label>
                     </div>
-                    <div class="form-check">
-                        <input type="radio" class="form-check-input" id="no_catalogo" name="catalogo" value="no_catalogo" {% if form.catalogo.value == 'no_catalogo' %}checked{% endif %}>
-                        <label class="form-check-label" for="no_catalogo">No Catálogo</label>
                     </div>
-                </div>   
+                </div>              
             </div>      
 
             <!-- Columna Derecha -->
@@ -228,6 +260,72 @@
                         </div>
                     {% endif %}
                 </div>
+
+                <!-- Formset: Tallas, colores, género y cantidad -->
+                <h5 class="fw-bold mb-3">
+                    <i class="fas fa-ruler-combined me-2"></i>Variantes del Producto
+                </h5>
+                <div class="table-responsive border rounded shadow-sm">
+                    <table class="table table-bordered table-striped align-middle text-center mb-0">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th scope="col">Talla</th>
+                                <th scope="col">Color</th>
+                                <th scope="col">Género</th>
+                                <th scope="col">Cantidad</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="formset-body">
+                            {{ formset.management_form }}
+                            {% for subform in formset %}
+                            <tr class="formset-form">
+                                <td>
+                                    <div class="form-floating">
+                                        {{ subform.talla }}
+                                        <label for="{{ subform.talla.id_for_label }}">Talla</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="form-floating">
+                                        {{ subform.color }}
+                                        <label for="{{ subform.color.id_for_label }}">Color</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="form-floating">
+                                        {{ subform.genero }}
+                                        <label for="{{ subform.genero.id_for_label }}">Género</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="form-floating">
+                                        {{ subform.cantidad }}
+                                        <label for="{{ subform.cantidad.id_for_label }}">Cantidad</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-outline-danger btn-sm remove-form" title="Eliminar Variante">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" id="add-formset" class="btn btn-outline-primary mt-3">
+                    <i class="fas fa-plus"></i> Añadir Variante
+                </button>
+                
+                {% if formset.non_form_errors %}
+                <div class="invalid-feedback d-block mt-2">
+                    {% for error in formset.non_form_errors %}
+                    <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
             </div>
         </div>
 
@@ -317,79 +415,88 @@
     </div>
 </div>
 
-<!-- Script para manejar la solicitud AJAX -->
+<!-- Script formset -->
 <script>
-    // Función para formatear los errores en una lista HTML
-    function formatErrors(errors) {
-        let html = '<ul>';
-        for (let field in errors) {
-            if (errors.hasOwnProperty(field)) {
-                // Opcional: Puedes transformar el nombre del campo a algo más amigable
-                let fieldName = field.charAt(0).toUpperCase() + field.slice(1);
-                let errorMessages = errors[field].join(', ');
-                html += `<li><strong>${fieldName}:</strong> ${errorMessages}</li>`;
-            }
-        }
-        html += '</ul>';
-        return html;
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var form = document.getElementById('productoForm');
-        if(form) {
-            form.addEventListener('submit', function (event) {
-                event.preventDefault();
-                var formData = new FormData(form);
-                fetch(form.action, {
-                    method: form.method,
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': form.querySelector('input[name="csrfmiddlewaretoken"]').value,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Mostrar modal de éxito
-                        var successModal = new bootstrap.Modal(document.getElementById('modalSuccess'), {
-                            backdrop: 'static',
-                            keyboard: false
-                        });
-                        successModal.show();
+    document.addEventListener("DOMContentLoaded", function () {
+        const tbody = document.getElementById("formset-body");
+        const addBtn = document.getElementById("add-formset");
+        const totalForms = document.getElementById("id_producto_tallas-TOTAL_FORMS");
     
-                        // Redirigir al hacer clic en "Ver detalles" o al cerrar el modal
-                        document.getElementById('verDetalles').addEventListener('click', function() {
-                            window.location.href = "{% url 'contenido_productos' %}";
-                        });
-                        document.getElementById('closeModal').addEventListener('click', function() {
-                            window.location.href = "{% url 'contenido_productos' %}";
-                        });
-                    } else {
-                        // Mostrar modal de error
-                        var errorModal = new bootstrap.Modal(document.getElementById('modalError'), {
-                            backdrop: 'static',
-                            keyboard: false
-                        });
-                        errorModal.show();
-                        if (data.errors && Object.keys(data.errors).length > 0) {
-                            document.getElementById('errorMessage').innerHTML = formatErrors(data.errors);
-                        } else {
-                            document.getElementById('errorMessage').innerText = "Ha ocurrido un error inesperado.";
-                        }
+        let formIdx = parseInt(totalForms.value);
+    
+        // Guarda una plantilla clonada del primer form
+        const templateRow = tbody.querySelector(".formset-form");
+        const emptyRowHTML = templateRow ? templateRow.outerHTML : '';
+    
+        function reindexForms() {
+            const forms = tbody.querySelectorAll(".formset-form");
+            forms.forEach((form, index) => {
+                form.querySelectorAll("input, select, label").forEach(el => {
+                    if (el.name) {
+                        el.name = el.name.replace(/producto_tallas-\d+-/, `producto_tallas-${index}-`);
                     }
-                })
-                .catch(error => {
-                    console.error("Error en la solicitud:", error);
-                    var errorModal = new bootstrap.Modal(document.getElementById('modalError'), {
-                        backdrop: 'static',
-                        keyboard: false
-                    });
-                    errorModal.show();
-                    document.getElementById('errorMessage').innerText = "Error en la conexión con el servidor.";
+                    if (el.id) {
+                        el.id = el.id.replace(/producto_tallas-\d+-/, `producto_tallas-${index}-`);
+                    }
                 });
             });
+            totalForms.value = forms.length;
         }
+    
+        addBtn.addEventListener("click", () => {
+            if (!emptyRowHTML) return;
+    
+            const newRowHTML = emptyRowHTML.replace(/producto_tallas-\d+-/g, `producto_tallas-${formIdx}-`);
+            const temp = document.createElement("tbody");
+            temp.innerHTML = newRowHTML;
+    
+            const newRow = temp.querySelector("tr");
+            // Limpia los campos
+            newRow.querySelectorAll("input, select").forEach(input => {
+                if (input.type !== 'hidden') input.value = "";
+            });
+    
+            tbody.appendChild(newRow);
+            formIdx++;
+            reindexForms();
+        });
+    
+        tbody.addEventListener("click", (e) => {
+            if (e.target.closest(".remove-form")) {
+                const row = e.target.closest("tr");
+                row.remove();
+                reindexForms();
+            }
+        });
+    
+        reindexForms(); // Por si hay datos iniciales
     });
 </script>
+
+<script src="{% static 'js/formato.js' %}"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    const enOfertaInput = document.getElementById("id_en_oferta");
+    const collapsePrecio = new bootstrap.Collapse(document.getElementById("collapsePrecioOferta"), {
+        toggle: false
+    });
+    
+    // Función para actualizar el collapse según el estado del switch
+    function togglePrecioOferta() {
+        if(enOfertaInput.checked) {
+        collapsePrecio.show();
+        } else {
+        collapsePrecio.hide();
+        }
+    }
+    
+    // Inicializar el estado
+    togglePrecioOferta();
+    
+    // Escuchamos cambios en el switch "En Oferta"
+    enOfertaInput.addEventListener("change", togglePrecioOferta);
+    });
+</script>
+
 {% endblock %}

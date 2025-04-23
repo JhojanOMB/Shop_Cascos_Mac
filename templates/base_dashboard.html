@@ -35,7 +35,7 @@
 <body class="d-flex flex-column min-vh-100">
 
     <!-- Navbar para pantallas más grandes o ordenadores -->
-    <header class="navbar navbar-expand-lg navbar-expand-md py-2 px-5 d-none d-lg-flex d-md-flex">
+    <header class="navbar navbar-expand-lg navbar-expand-md py-2 px-5 d-none d-lg-flex d-md-flex sticky-top">
         <a class="navbar-brand d-flex align-items-center" href="{% url 'index' %}">
             <img src="{% static 'img/logo2.png' %}" alt="Logo de Mac Cascos" class="me-2">
             <span class="fs-3 fw-semibold text-light">Cascos Mac</span>
@@ -101,6 +101,11 @@
                                     <i class="fa fa-users"></i> Usuarios
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{% url 'contenido_adicionales' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
+                                    title="Adicionales">
+                                    <i class="fa fa-layer-group"></i> Adicionales
+                                </a>
                             <li class="nav-item">
                                 <a href="{% url 'contenido_proveedores' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
                                     title="Proveedores">
@@ -219,6 +224,12 @@
                                     <i class="fa fa-truck-field"></i> Proveedores
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{% url 'contenido_adicionales' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
+                                    title="Adicionales">
+                                    <i class="fa fa-layer-group"></i> Adicionales
+                                </a>
+                            </li>                           
                             <li class="nav-item">
                                 <a href="{% url 'mi_perfil' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
                                     title="Usuarios">

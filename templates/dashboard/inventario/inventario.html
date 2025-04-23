@@ -8,27 +8,39 @@
 
     <!-- Campo de búsqueda -->
     <div class="mb-3">
-        <form method="GET" action="{% url 'inventario' %}">
-            <input type="text" name="search" id="searchInput" class="form-control"
-                placeholder="Buscar por nombre, referencia o código de barras" value="{{ search_query }}">
-        </form>
+
+        <div class="row">
+            <div class="col-md-6">
+                <form method="GET" action="{% url 'inventario' %}">
+                    <input type="text" name="search" id="searchInput" class="form-control"
+                        placeholder="Buscar por nombre, referencia o código de barras" value="{{ search_query }}">
+                </form>
+            </div>
+            <div class="col-md-6">
+                <a href="{% url 'movimiento_inventario' %}" class="btn btn-success btn-sm mb-3">
+                    <i class="bi bi-plus-circle"></i> Registrar Movimiento
+                </a>               
+            </div>
+        </div>
     </div>
 
-    <!-- Alerta de productos sin stock -->
+    <!-- Alerta para productos sin stock -->
     {% if productos_sin_stock %}
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="fa-solid fa-circle-xmark fa-shake fs-5 align-middle me-2" style="-webkit-text-stroke: 0.5px rgb(255, 0, 0);"></i>
         ¡Atención! Hay productos sin stock en el inventario.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button class="btn btn-sm btn-dark ms-3 ver-productos" data-tipo="sin">Ver productos</button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
     </div>
     {% endif %}
 
-    <!-- Alerta de productos con bajo stock (5 o menos) -->
+    <!-- Alerta para productos con bajo stock -->
     {% if productos_bajo_stock %}
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
         <i class="fa-solid fa-triangle-exclamation fa-beat-fade align-middle me-2" style="color: #FFD43B; -webkit-text-stroke: 1px black;"></i>
         ¡Precaución! Algunos productos tienen 5 o menos unidades en stock.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button class="btn btn-sm btn-dark ms-3 ver-productos" data-tipo="bajo">Ver productos</button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
     </div>
     {% endif %}
 
@@ -36,66 +48,102 @@
     <div class="table-responsive">
         <h3>Productos en Stock</h3>
         <table class="table table-striped table-hover table-bordered mt-3">
-            <thead>
+            <thead class="table-dark text-center align-middle">
                 <tr class="text-center align-middle">
                     <th>Nombre</th>
-                    <th>Código de Barras</th>
+                    <th>Referencia</th>
                     <th>Precio</th>
-                    <th>Cantidad Talla S</th> 
-                    <th>Cantidad Talla M</th> 
-                    <th>Cantidad Talla L</th> 
-                    <th>Cantidad Talla XL</th> 
-                    <th>Cantidad Talla XXL</th>
-                    <th>Cantidad Unica</th>
+                    <th>Talla</th> 
+                    <th>Color</th> 
+                    <th>Género</th> 
                     <th>Cantidad Total</th>
                     <th>Fecha de Creación</th>
                 </tr>
             </thead>
-            <tbody class="text-center align-middle" id="productoTable">
+            <tbody class="text-center align-middle">
                 {% for producto in productos_con_stock %}
                 <tr>
                     <td class="text-start fw-bolder">{{ producto.nombre }}</td>
-                    <td>{{ producto.codigo_barras }}</td>
-                    <td>${{ producto.precio|floatformat:0|intcomma }}</td>
+                    <td>{{ producto.referencia }}</td>
+                    <td>${{ producto.precio_venta|floatformat:0|intcomma }}</td>
                     
-                    <!-- Mostrar las cantidades de cada talla -->
-                    <td>{{ producto.cantidades_por_talla.S|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.M|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.L|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.XL|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.XXL|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.General|default:"0" }}</td>
+                    <td colspan="3">
+                        {% if producto.variantes %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="table-light text-center align-middle">
+                                        <tr>
+                                            <th style="width: 25%;">Talla</th>
+                                            <th style="width: 25%;">Color</th>
+                                            <th style="width: 25%;">Género</th>
+                                            <th style="width: 25%;">Cantidad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for variante in producto.variantes %}
+                                        <tr class="text-center align-middle">
+                                            <td>{{ variante.talla.nombre }}</td>
+                                            <td>{{ variante.color }}</td>
+                                            <td>{{ variante.genero }}</td>
+                                            <td>{{ variante.cantidad }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">Sin variantes disponibles</span>
+                        {% endif %}
+                    </td>
                     
-                    <!-- Mostrar la cantidad total de productos en stock -->
                     <td>{{ producto.total_cantidad }}</td>
-            
                     <td>{{ producto.created_date }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="11">No hay productos en stock.</td>
+                    <td colspan="8">No hay productos en stock.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
+    <!-- Paginación para productos con stock -->
+    <nav aria-label="Paginación productos con stock">
+        <ul class="pagination justify-content-center mt-3">
+            {% if productos_con_stock.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page_con={{ productos_con_stock.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Anterior</a>
+            </li>
+            {% endif %}
+
+            {% for num in productos_con_stock.paginator.page_range %}
+            <li class="page-item {% if num == productos_con_stock.number %}active{% endif %}">
+                <a class="page-link" href="?page_con={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if productos_con_stock.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page_con={{ productos_con_stock.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Siguiente</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+
     <!-- Tabla de productos sin stock -->
     {% if productos_sin_stock %}
     <div class="table-responsive mt-5 bg-soft-danger">
         <h3>Productos sin Stock</h3>
         <table class="table table-striped table-hover table-bordered mt-3">
-            <thead>
-                <tr class="text-center align-middle">
+            <thead class="table-dark text-center align-middle">
+                <tr>
                     <th>Nombre</th>
-                    <th>Código de Barras</th>
+                    <th>Referencia</th>
                     <th>Precio</th>
-                    <th>Cantidad Talla S</th> 
-                    <th>Cantidad Talla M</th> 
-                    <th>Cantidad Talla L</th> 
-                    <th>Cantidad Talla XL</th> 
-                    <th>Cantidad Talla XXL</th> 
-                    <th>Cantidad Unica</th>
+                    <th>Talla</th>
+                    <th>Color</th>
+                    <th>Genero</th>
                     <th>Cantidad Total</th>
                     <th>Fecha de Creación</th>
                 </tr>
@@ -105,15 +153,36 @@
                 <tr>
                     <td class="text-start fw-bolder">{{ producto.nombre }}</td>
                     <td>{{ producto.codigo_barras }}</td>
-                    <td>${{ producto.precio|floatformat:0|intcomma }}</td>
+                    <td>${{ producto.precio_venta|floatformat:0|intcomma }}</td>
                     
-                    <!-- Mostrar las cantidades de cada talla -->
-                    <td>{{ producto.cantidades_por_talla.S|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.M|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.L|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.XL|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.XXL|default:"0" }}</td>
-                    <td>{{ producto.cantidades_por_talla.General|default:"0" }}</td>
+                    <td colspan="3">
+                        {% if producto.variantes %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="table-light text-center align-middle">
+                                        <tr>
+                                            <th style="width: 25%;">Talla</th>
+                                            <th style="width: 25%;">Color</th>
+                                            <th style="width: 25%;">Género</th>
+                                            <th style="width: 25%;">Cantidad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for variante in producto.variantes %}
+                                        <tr class="text-center align-middle">
+                                            <td>{{ variante.talla.nombre }}</td>
+                                            <td>{{ variante.color }}</td>
+                                            <td>{{ variante.genero }}</td>
+                                            <td>{{ variante.cantidad }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">Sin variantes disponibles</span>
+                        {% endif %}
+                    </td>
                     
                     <!-- Mostrar la cantidad total de productos sin stock -->
                     <td>{{ producto.total_cantidad }}</td>
@@ -128,8 +197,199 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Paginación de productos sin stock -->
+    <nav aria-label="Paginación productos sin stock">
+        <ul class="pagination justify-content-center mt-3">
+            {% if productos_sin_stock.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page_sin={{ productos_sin_stock.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Anterior</a>
+            </li>
+            {% endif %}
+
+            {% for num in productos_sin_stock.paginator.page_range %}
+            <li class="page-item {% if num == productos_sin_stock.number %}active{% endif %}">
+                <a class="page-link" href="?page_sin={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if productos_sin_stock.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page_sin={{ productos_sin_stock.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Siguiente</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+
     {% endif %}
 </div>
+
+<!-- Modal Principal para mostrar vista detallada -->
+<div class="modal fade" id="productosModal" tabindex="-1" aria-labelledby="productosModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="productosModalLabel">Productos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="contenidoProductosModal">
+        <!-- Se inyectará la tabla detallada aquí -->
+        </div>
+    </div>
+    </div>
+</div>
+
+<!-- Contenedores ocultos para las tablas detalladas con botón para agregar cantidad -->
+<div id="tabla-sin-stock" style="display: none;">
+    <h4>Detalle: Productos Sin Stock</h4>
+    <table class="table table-striped table-bordered">
+    <thead class="table-dark">
+        <tr>
+        <th>Nombre</th>
+        <th>Referencia</th>
+        <th>Precio</th>
+        <th>Talla</th>
+        <th>Color</th>
+        <th>Género</th>
+        <th>Cantidad</th>
+        <th>Fecha</th>
+        <th>Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for producto in productos_sin_stock %}
+        <tr>
+        <td>{{ producto.nombre }}</td>
+        <td>{{ producto.codigo_barras }}</td>
+        <td>${{ producto.precio_venta|floatformat:0|intcomma }}</td>
+        <td>
+            {% if producto.variantes %}
+            <ul class="list-unstyled mb-0">
+            {% for variante in producto.variantes %}
+                <li>{{ variante.talla.nombre }}</li>
+            {% endfor %}
+            </ul>
+            {% else %} - {% endif %}
+        </td>
+        <td>
+            {% if producto.variantes %}
+            <ul class="list-unstyled mb-0">
+            {% for variante in producto.variantes %}
+                <li>{{ variante.color }}</li>
+            {% endfor %}
+            </ul>
+            {% else %} - {% endif %}
+        </td>
+        <td>
+            {% if producto.variantes %}
+            <ul class="list-unstyled mb-0">
+            {% for variante in producto.variantes %}
+                <li>{{ variante.genero }}</li>
+            {% endfor %}
+            </ul>
+            {% else %} - {% endif %}
+        </td>
+        <td>{{ producto.total_cantidad }}</td>
+        <td>{{ producto.created_date }}</td>
+        <td>
+            <!-- Se envía el id del producto para poder registrar un movimiento específico -->
+            <a href="{% url 'movimiento_inventario' %}?producto_id={{ producto.id }}" class="btn btn-sm btn-primary">
+            Agregar Cantidad
+            </a>
+        </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    </table>
+</div>
+
+<div id="tabla-bajo-stock" style="display: none;">
+    <h4>Detalle: Productos con Bajo Stock</h4>
+    <table class="table table-striped table-bordered">
+    <thead class="table-dark">
+        <tr>
+        <th>Nombre</th>
+        <th>Referencia</th>
+        <th>Precio</th>
+        <th>Talla</th>
+        <th>Color</th>
+        <th>Género</th>
+        <th>Cantidad</th>
+        <th>Fecha</th>
+        <th>Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for producto in productos_bajo_stock %}
+        <tr>
+        <td>{{ producto.nombre }}</td>
+        <td>{{ producto.referencia }}</td>
+        <td>${{ producto.precio_venta|floatformat:0|intcomma }}</td>
+        <td>
+            {% if producto.variantes %}
+            <ul class="list-unstyled mb-0">
+            {% for variante in producto.variantes %}
+                <li>{{ variante.talla.nombre }}</li>
+            {% endfor %}
+            </ul>
+            {% else %} - {% endif %}
+        </td>
+        <td>
+            {% if producto.variantes %}
+            <ul class="list-unstyled mb-0">
+            {% for variante in producto.variantes %}
+                <li>{{ variante.color }}</li>
+            {% endfor %}
+            </ul>
+            {% else %} - {% endif %}
+        </td>
+        <td>
+            {% if producto.variantes %}
+            <ul class="list-unstyled mb-0">
+            {% for variante in producto.variantes %}
+                <li>{{ variante.genero }}</li>
+            {% endfor %}
+            </ul>
+            {% else %} - {% endif %}
+        </td>
+        <td>{{ producto.total_cantidad }}</td>
+        <td>{{ producto.created_date }}</td>
+        <td>
+            <a href="{% url 'movimiento_inventario' %}?producto_id={{ producto.id }}" class="btn btn-sm btn-primary">
+            Agregar Cantidad
+            </a>
+        </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    </table>
+</div>
+
+
+<!-- Script para manejar la lógica del modal -->
+<script>
+    document.querySelectorAll('.ver-productos').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const tipo = this.getAttribute('data-tipo');
+        const modalBody = document.getElementById('contenidoProductosModal');
+        const modalTitle = document.getElementById('productosModalLabel');
+
+        if (tipo === 'sin') {
+        modalBody.innerHTML = document.getElementById('tabla-sin-stock').innerHTML;
+        modalTitle.innerText = "Productos Sin Stock - Detallado";
+        } else if (tipo === 'bajo') {
+        modalBody.innerHTML = document.getElementById('tabla-bajo-stock').innerHTML;
+        modalTitle.innerText = "Productos con Bajo Stock - Detallado";
+        }
+
+        // Mostrar el modal de Bootstrap
+        const modal = new bootstrap.Modal(document.getElementById('productosModal'));
+        modal.show();
+    });
+    });
+</script>
+
 {% endblock %}
 
 <script src="{% static 'js/inventario.js' %}"></script>

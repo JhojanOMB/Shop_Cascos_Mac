@@ -1,56 +1,96 @@
 {% extends 'base_dashboard.html' %}
 {% load static %}
+{% load humanize %}
+
+{% block title %}Editar Venta{% endblock %}
 
 {% block content %}
-<h2>Editar Venta</h2>
+<div class="container mt-4">
+    <h4 class="fw-bold mb-4 text-dark">Editar Venta</h4>
+    
+    <!-- Formulario para editar datos generales de la venta -->
+    <form method="post" id="venta-update-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <hr>
+        <h5 class="fw-semibold text-dark">Productos Agregados</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr class="text-center">
+                        <th>Producto</th>
+                        <th>Talla</th>
+                        <th>Color</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Total</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="detalles-list">
+                    {% for detalle in detalles %}
+                        <tr id="fila-detalle-{{ detalle.id }}" class="text-center {% if detalle.anulado %}table-warning text-muted{% endif %}">
+                            <td>{{ detalle.producto_talla.producto.nombre }}</td>
+                            <td>{{ detalle.producto_talla.talla.nombre }}</td>
+                            <td>
+                                {% if detalle.producto_talla.color %}
+                                    {{ detalle.producto_talla.color }}
+                                {% else %}
+                                    Sin color
+                                {% endif %}
+                            </td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td class="text-end">${{ detalle.precio|floatformat:2|intcomma }}</td>
+                            <td class="text-end fw-bold">${{ detalle.total|floatformat:2|intcomma }}</td>
+                            <td>
+                                {% if not detalle.anulado %}
+                                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="anularDetalle({{ detalle.id }}, this)">Anular</button>
+                                {% else %}
+                                    <span class="badge bg-secondary">Anulado</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-<form method="post" novalidate>
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-    {{ form.as_p }}  <!-- Formulario principal de Venta -->
-
-    <h3>Detalles de Venta</h3>
-    <table id="detalle-venta-table">
-        {{ detalle_venta_forms.management_form }}
-        {% for form in detalle_venta_forms %}
-            <tr>
-                <td>
-                    {{ form.producto.label_tag }} {{ form.producto }}  <!-- Campo de selección de producto -->
-                </td>
-                <td>
-                    {{ form.cantidad.label_tag }} {{ form.cantidad }}  <!-- Campo de cantidad -->
-                </td>
-                <td>
-                    <button type="button" class="remove-detail">Eliminar</button>
-                </td>
-            </tr>
-        {% endfor %}
-    </table>
-
-    <button type="button" id="add-detail">Agregar Producto</button>
-    <button type="submit">Guardar Venta</button>
-</form>
+        <div class="text-end mt-3">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="{% url 'ventas:contenido_ventas' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
 
 <script>
-    // JavaScript para agregar/eliminar detalles dinámicamente en el FormSet
-    document.getElementById('add-detail').addEventListener('click', function () {
-        const table = document.getElementById('detalle-venta-table');
-        const newRow = table.querySelector('tr').cloneNode(true);
-        
-        // Limpiar campos de la fila clonada
-        newRow.querySelectorAll('input').forEach(input => input.value = '');
-        newRow.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
-        
-        // Insertar la nueva fila antes del botón de agregar
-        table.appendChild(newRow);
-    });
-
-    // Event listener para eliminar filas de detalle
-    document.querySelectorAll('.remove-detail').forEach(button => {
-        button.addEventListener('click', function () {
-            const row = this.closest('tr');
-            row.remove();
-        });
-    });
+    // Función para anular el producto via AJAX
+    function anularDetalle(detalleId, btn) {
+        if (confirm("¿Seguro que deseas anular este producto?")) {
+            fetch("{% url 'ventas:anular_detalle' 0 %}".replace("0", detalleId), {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    // Actualizar la fila: agregar clases de anulado y cambiar el botón por un badge.
+                    const fila = document.getElementById("fila-detalle-" + detalleId);
+                    fila.classList.add("table-warning", "text-muted");
+                    btn.outerHTML = '<span class="badge bg-secondary">Anulado</span>';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Ocurrió un error al anular el producto.");
+            });
+        }
+    }
 </script>
 {% endblock %}

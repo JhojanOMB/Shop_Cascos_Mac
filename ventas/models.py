@@ -31,6 +31,8 @@ class Venta(models.Model):
     facturado = models.BooleanField(default=False)
     qr_code = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
     metodo_pago = models.CharField(max_length=25, choices=METODOS_PAGO, default='EFECTIVO')
+    anulado = models.BooleanField(default=False)
+
 
     def calcular_total(self):
         self.total = sum(detalle.total for detalle in self.detalles.all())
@@ -94,10 +96,11 @@ class DetalleVenta(models.Model):
             raise ValidationError('No hay suficiente inventario para este producto en la talla seleccionada.')
 
     def save(self, *args, **kwargs):
-        """Guarda el detalle de venta con la lógica de cálculo y descuento de inventario."""
+        """Guarda el detalle de venta, calculando el total, sin afectar inventario automáticamente."""
         with transaction.atomic():
             self.calcular_total()
-            self.descontar_inventario()
+
+            # Ya no se llama descontar_inventario aquí
 
             if not self.codigo_barras:
                 self.codigo_barras = self.producto_talla.codigo_barras

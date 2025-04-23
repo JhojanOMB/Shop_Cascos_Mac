@@ -1,0 +1,107 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="container my-4">
+  <!-- Título de la sección -->
+  <div class="row">
+    <div class="col-12 text-center">
+      <h2 class="mb-4">Gestión de Adicionales</h2>
+    </div>
+  </div>
+  
+  <div class="row gy-4">
+    <!-- Sección de Tallas -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+          <h5 class="mb-0">Tallas</h5>
+          <a href="{% url 'crear_talla' %}" class="btn btn-sm btn-light">
+            <i class="fa-solid fa-plus me-1"></i> Nueva Talla
+          </a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Nombre</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for talla in tallas %}
+                <tr>
+                  <td class="align-middle">{{ talla.nombre }}</td>
+                  <td class="text-center align-middle">
+                    <a href="{% url 'editar_talla' talla.pk %}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Editar">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                    <a href="{% url 'eliminar_talla' talla.pk %}" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Eliminar">
+                      <i class="fa-solid fa-trash"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="2" class="text-center py-3">No hay tallas registradas.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div> <!-- /Col tallas -->
+
+    <!-- Sección de Colores -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
+          <h5 class="mb-0">Colores</h5>
+          <a href="{% url 'crear_color' %}" class="btn btn-sm btn-light">
+            <i class="fa-solid fa-plus me-1"></i> Nuevo Color
+          </a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Nombre</th>
+                  <th>Código Hex</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for color in colores %}
+                <tr>
+                  <td class="align-middle">{{ color.nombre }}</td>
+                  <td class="align-middle">
+                    <span class="d-inline-block" style="width: 20px; height: 20px; background-color: {{ color.codigo_hex }}; border: 1px solid #000;"></span>
+                    <small class="ms-2">{{ color.codigo_hex }}</small>
+                  </td>
+                  <td class="text-center align-middle">
+                    <a href="{% url 'editar_color' color.pk %}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="Editar">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                    <a href="{% url 'eliminar_color' color.pk %}" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Eliminar">
+                      <i class="fa-solid fa-trash"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center py-3">No hay colores registrados.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div> <!-- /Col colores -->
+  </div> <!-- /Row gy-4 -->
+</div>
+{% endblock %}

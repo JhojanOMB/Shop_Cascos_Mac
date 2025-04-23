@@ -25,14 +25,13 @@ class ProductoForm(forms.ModelForm):
         self.fields['imagen4'].widget.attrs.update({'class': 'form-control'})
         self.fields['imagen5'].widget.attrs.update({'class': 'form-control'})
         self.fields['proveedor'].widget.attrs.update({'class': 'form-control'})
-        self.fields['genero'].widget.attrs.update({'class': 'form-select'})
         
 
     class Meta:
         model = Producto
         fields = [
-            'nombre', 'descripcion', 'precio_venta', 'precio_compra', 'categoria', 
-            'imagen1', 'imagen2', 'imagen3', 'imagen4', 'imagen5', 'genero', 'catalogo',
+            'nombre', 'descripcion', 'referencia', 'precio_venta', 'precio_compra', 'categoria', 
+            'imagen1', 'imagen2', 'imagen3', 'imagen4', 'imagen5', 'catalogo',
             'proveedor', 'en_oferta', 'precio_oferta'
         ]
         widgets = {
@@ -74,39 +73,144 @@ class ProductoForm(forms.ModelForm):
             if precio_venta is None or precio_oferta >= precio_venta:
                 self.add_error('precio_oferta', 'El precio de oferta debe ser menor que el precio normal.')
 
-        # Validar el género solo si es obligatorio para la categoría
-        genero = cleaned_data.get('genero')
-        categoria = cleaned_data.get('categoria')
-
-        categorias_requieren_genero = ["Cascos", "Chaquetas"] 
-
-        if categoria and categoria.nombre in categorias_requieren_genero:
-            if not genero or genero == 'no_especificado':
-                self.add_error('genero', 'Debes seleccionar un género para esta categoría.')
-
         return cleaned_data
     
 class ProductoTallaForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['talla'].widget.attrs.update({'class': 'form-control'})
-        self.fields['cantidad'].widget.attrs.update({'class': 'form-control'})
-
     class Meta:
         model = ProductoTalla
-        fields = ['talla', 'cantidad']
+        fields = ['talla', 'cantidad', 'color', 'genero']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Asigna la clase CSS para que se muestre bien en Bootstrap
+        for field in ['talla', 'cantidad', 'color', 'genero']:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+
+    def clean(self):
+        cleaned_data = super().clean()
+        talla = cleaned_data.get('talla')
+        cantidad = cleaned_data.get('cantidad')
+        color = cleaned_data.get('color')
+        genero = cleaned_data.get('genero')
+
+        # Si se ha llenado alguno de estos campos, se exigen todos
+        if talla or cantidad or color or genero:
+            missing_fields = []
+            if not talla:
+                missing_fields.append("Talla")
+            # Nota: para cantidad verificamos si es None o vacío
+            if cantidad in (None, ''):
+                missing_fields.append("Cantidad")
+            if not color:
+                missing_fields.append("Color")
+            if not genero:
+                missing_fields.append("Género")
+            if missing_fields:
+                raise forms.ValidationError("Debe completar los siguientes campos: " + ", ".join(missing_fields))
+        return cleaned_data
 
 class ProveedorForm(forms.ModelForm):
     class Meta:
-        model = Proveedor 
+        model = Proveedor
         fields = ['nombre', 'direccion', 'telefono', 'correo_electronico', 'provedor_de']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre del proveedor',
+            }),
+            'direccion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Dirección del proveedor',
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número de teléfono',
+            }),
+            'correo_electronico': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Correo electrónico',
+            }),
+            'provedor_de': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '¿Proveedor de qué?',
+            }),
+        }
+        labels = {
+            'nombre': 'Nombre',
+            'direccion': 'Dirección',
+            'telefono': 'Teléfono',
+            'correo_electronico': 'Correo electrónico',
+            'provedor_de': 'Proveedor de',
+        }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get('nombre')
+        return nombre.title() if nombre else nombre
+
+    def clean_direccion(self):
+        direccion = self.cleaned_data.get('direccion')
+        return direccion.title() if direccion else direccion
+
+    def clean_provedor_de(self):
+        provedor_de = self.cleaned_data.get('provedor_de')
+        return provedor_de.title() if provedor_de else provedor_de
+
+    def __init__(self, *args, **kwargs):
+        super(ProveedorForm, self).__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] += ' shadow-sm rounded-3'
 
 class CategoriaForm(forms.ModelForm):
     class Meta:
         model = Categoria
-        fields = ['nombre', 'descripcion'] 
-
+        fields = ['nombre', 'descripcion']
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la categoría'}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Descripción de la categoría'}),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre de la categoría',
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción de la categoría',
+            }),
         }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get('nombre')
+        return nombre.title() if nombre else nombre
+
+    def clean_descripcion(self):
+        descripcion = self.cleaned_data.get('descripcion')
+        return descripcion.capitalize() if descripcion else descripcion
+
+    def __init__(self, *args, **kwargs):
+        super(CategoriaForm, self).__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] += ' shadow-sm rounded-3'
+
+class TallaForm(forms.ModelForm):
+    class Meta:
+        model = Talla
+        fields = ['nombre']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre']
+        return nombre.upper()
+
+
+class ColorForm(forms.ModelForm):
+    class Meta:
+        model = Color
+        fields = ['nombre', 'codigo_hex']
+        widgets = {
+            'codigo_hex': forms.TextInput(attrs={'type': 'color', 'class': 'form-control form-control-color'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre']
+        return nombre.title()

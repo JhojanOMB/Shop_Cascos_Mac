@@ -1,7 +1,9 @@
 # inventario/urls.py
+
 from django.urls import path
-from .views import inventario_view
+from .views import *
 
 urlpatterns = [
-    path('', inventario_view, name='inventario'),  # URL para la vista de inventario
+    path('', inventario_view, name='inventario'),
+    path('movimiento/', movimiento_inventario_view, name='movimiento_inventario'),
 ]

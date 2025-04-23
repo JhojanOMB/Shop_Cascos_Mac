@@ -18,7 +18,7 @@
     <div class="border p-4 shadow-sm rounded-3 bg-white">
         <div class="mb-3">
             <p class="text-muted mb-1"><strong>Fecha:</strong> {{ venta.fecha }}</p>
-            <p class="text-muted mb-1"><strong>Factura N°:</strong> {{ venta.id }}</p>
+            <p class="text-muted mb-1"><strong>Factura N°:</strong> {{ venta.numero_factura }}</p>
             <p class="text-muted mb-1"><strong>Empleado:</strong> {{ venta.empleado.get_full_name|default:venta.empleado.username }}</p>
         </div>
 
@@ -34,6 +34,7 @@
                     <tr class="text-center text-muted">
                         <th>Producto</th>
                         <th>Talla</th>
+                        <th>Color</th>
                         <th>Cantidad</th>
                         <th>Precio</th>
                         <th>Total</th>
@@ -44,6 +45,7 @@
                     <tr class="text-center text-dark">
                         <td>{{ detalle.producto_talla.producto.nombre }}</td>
                         <td>{{ detalle.producto_talla.talla.nombre }}</td>
+                        <td>{{ detalle.producto_talla.color }}</td>
                         <td>{{ detalle.cantidad }}</td>
                         <td class="text-end">${{ detalle.precio|floatformat:2|intcomma }}</td>
                         <td class="text-end fw-bold">${{ detalle.total|floatformat:2|intcomma }}</td>
@@ -92,7 +94,7 @@
 
         <!-- Botones -->
         <div class="mt-4 d-print-none text-center">
-            <button onclick="window.print()" class="btn btn-dark px-4 py-2 rounded-3 shadow-sm">Imprimir</button>
+            <button onclick="window.print()" class="btn btn-dark px-4 py-2 rounded-3 shadow-sm"><i class="fa-solid fa-print"></i> Imprimir</button>
             <a href="{% url 'ventas:contenido_ventas' %}" class="btn btn-outline-dark px-4 py-2 rounded-3 shadow-sm">Volver</a>
         </div>
     </div>

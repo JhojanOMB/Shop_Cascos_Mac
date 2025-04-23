@@ -22,6 +22,7 @@ import base64
 from django.http import HttpResponse
 from io import BytesIO
 from django.db.models import Q
+from .services import VentaService
 
 # FormSet inline para manejar los detalles de la venta
 DetalleVentaFormSet = inlineformset_factory(Venta, DetalleVenta, fields=('producto_talla', 'cantidad'), extra=1)
@@ -69,79 +70,41 @@ class VentaContenidoView(LoginRequiredMixin, ListView):
 
 class VentaCreateView(LoginRequiredMixin, CreateView):
     model = Venta
-    form_class = VentaForm  # Usamos el formulario personalizado
+    form_class = VentaForm
     template_name = 'dashboard/ventas/crear_venta.html'
     success_url = reverse_lazy('ventas:contenido_ventas')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['metodos_pago'] = METODOS_PAGO  # Agregar métodos de pago al contexto
+        context['metodos_pago'] = METODOS_PAGO
         return context
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        # Pasamos el usuario autenticado como inicial para el formulario
         kwargs.update({'initial': {'empleado': self.request.user}})
         return kwargs
 
     def form_valid(self, form):
-        venta = form.save(commit=False)
-        venta.empleado = self.request.user
-        venta.fecha = timezone.now()
-        venta.total = 0
-
-        productos_ids = self.request.POST.getlist('productos_ids')
-        cantidades = self.request.POST.getlist('cantidades')
-
-        # Validamos que existan productos y cantidades
-        if not productos_ids or not cantidades:
-            messages.error(self.request, "No se pueden crear ventas sin productos.")
-            return self.form_invalid(form)
-
-        with transaction.atomic():
-            total = 0
-            for producto_id, cantidad_str in zip(productos_ids, cantidades):
-                try:
-                    producto_talla = ProductoTalla.objects.get(id=producto_id)
-                    cantidad = int(cantidad_str)
-
-                    # Validar inventario
-                    if producto_talla.cantidad < cantidad:
-                        messages.error(self.request, f"No hay suficiente inventario para {producto_talla.producto.nombre} en talla {producto_talla.talla.nombre}.")
-                        return self.form_invalid(form)
-
-                    # Crear el detalle de venta
-                    detalle = DetalleVenta(
-                        venta=venta,
-                        producto_talla=producto_talla,
-                        cantidad=cantidad,
-                        precio=producto_talla.producto.precio
-                    )
-                    detalle.calcular_total()
-                    detalle.save()
-
-                    # Acumular total de la venta
-                    total += detalle.total
-                except ProductoTalla.DoesNotExist:
-                    messages.error(self.request, f"El producto con ID {producto_id} no existe.")
-                    return self.form_invalid(form)
-                except ValueError:
-                    messages.error(self.request, "La cantidad debe ser un número válido.")
-                    return self.form_invalid(form)
-                except ValidationError as e:
-                    messages.error(self.request, str(e))
-                    return self.form_invalid(form)
-
-            # Guardar el total y finalizar la venta
-            venta.total = total
-            venta.save()
-
-            messages.success(self.request, f"Venta realizada con éxito. Total: {venta.total}")
-
-            # Redirigir a la vista de impresión de factura
+        try:
+            venta = VentaService.crear_venta_con_detalles(
+                usuario=self.request.user,
+                datos_post=self.request.POST,
+                form=form
+            )
+            messages.success(self.request, f"Venta registrada correctamente. Total: ${venta.total:,}")
             return redirect('ventas:imprimir_factura', venta_id=venta.id)
 
-        return super().form_valid(form)
+        except ProductoTalla.DoesNotExist:
+            messages.error(self.request, "Uno de los productos no existe.")
+            return self.form_invalid(form)
+
+        except ValueError as e:
+            messages.error(self.request, str(e))
+            return self.form_invalid(form)
+
+        except Exception as e:
+            messages.error(self.request, "Ocurrió un error inesperado.")
+            return self.form_invalid(form)
 
 def obtener_producto_por_codigo(request):
     codigo_barras = request.GET.get('codigo_barras')
@@ -150,29 +113,36 @@ def obtener_producto_por_codigo(request):
             'success': False,
             'message': 'Debe proporcionar un código de barras.'
         }, status=400)
-
-    # Crear una consulta que busque tanto con como sin el primer cero
+    
     try:
-        producto_talla = ProductoTalla.objects.select_related('producto', 'talla').get(
-            Q(codigo_barras=codigo_barras) | Q(codigo_barras='0' + codigo_barras)
+        producto_talla = ProductoTalla.objects.select_related('producto', 'talla', 'color').get(
+            Q(codigo_barras=codigo_barras) | Q(codigo_barras='0' + codigo_barras),
+            activa=True
         )
-
         data = {
             'success': True,
             'producto': {
                 'id': producto_talla.id,
                 'nombre': producto_talla.producto.nombre,
-                'precio': float(producto_talla.producto.precio),
+                'precio': float(producto_talla.producto.precio_venta),
                 'stock': producto_talla.cantidad,
                 'talla': producto_talla.talla.nombre,
+                'color': producto_talla.color.nombre if producto_talla.color else None,
+                'genero': producto_talla.get_genero_display(),
             }
         }
     except ProductoTalla.DoesNotExist:
         data = {
             'success': False,
-            'message': 'Producto no encontrado o código de barras incorrecto.',
+            'message': 'Producto no encontrado o código de barras incorrecto.'
         }
-
+    except Exception as e:
+        # Aquí devolvemos el error completo para depurar (solo en desarrollo)
+        data = {
+            'success': False,
+            'message': f'Ocurrió un error al buscar el producto: {str(e)}'
+        }
+    
     return JsonResponse(data)
 
 class VentaUpdateView(LoginRequiredMixin, UpdateView):
@@ -186,7 +156,13 @@ class VentaUpdateView(LoginRequiredMixin, UpdateView):
         if self.request.is_ajax():
             return JsonResponse({'success': True, 'message': 'Venta actualizada exitosamente.'})
         return response
-
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Asegúrate de pasar todos los detalles, incluso los anulados si los quieres mostrar
+        # Si solo quieres los activos, filtra por anulado=False
+        context['detalles'] = self.object.detalles.all()
+        return context
 
 class VentaDeleteView(LoginRequiredMixin, DeleteView):
     model = Venta
@@ -198,57 +174,6 @@ class VentaDeleteView(LoginRequiredMixin, DeleteView):
         if self.request.is_ajax():
             return JsonResponse({'success': True, 'message': 'Venta eliminada exitosamente.'})
         return response
-
-
-@require_POST
-def agregar_producto_a_venta(request):
-    venta_id = request.POST.get('venta_id')
-    codigo_barras = request.POST.get('codigo_barras')
-    cantidad = int(request.POST.get('cantidad', 1))
-
-    try:
-        # Obtener la venta
-        venta = Venta.objects.get(id=venta_id)
-        # Obtener el producto correspondiente al código de barras
-        producto_talla = ProductoTalla.objects.get(codigo_barras=codigo_barras)
-
-        if producto_talla.cantidad < cantidad:
-            return JsonResponse({'success': False, 'message': f'No hay suficiente stock para {producto_talla.producto.nombre} en talla {producto_talla.talla.nombre}.'}, status=400)
-
-        # Crear o actualizar el DetalleVenta
-        detalle, created = DetalleVenta.objects.get_or_create(
-            venta=venta,
-            producto_talla=producto_talla,
-            defaults={'cantidad': cantidad, 'precio': producto_talla.producto.precio}
-        )
-
-        if not created:
-            # Si el detalle ya existía, actualizamos la cantidad y el total
-            detalle.cantidad += cantidad  # Este aumento puede ser la causa del problema
-            detalle.calcular_total()
-        else:
-            # Si es nuevo, se calcula el total y se descuenta inventario
-            detalle.calcular_total()
-
-        # Descontar inventario
-        detalle.descontar_inventario()
-        detalle.save()
-
-        # Actualizar el total de la venta
-        venta.calcular_total()
-
-        return JsonResponse({
-            'success': True,
-            'message': 'Producto agregado a la venta',
-            'detalle_total': detalle.total,
-            'venta_total': venta.total
-        })
-
-    except ProductoTalla.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'Producto no encontrado'}, status=404)
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=500)
-
 
 @require_POST
 def facturar_venta(request, venta_id):
@@ -265,13 +190,12 @@ def facturar_venta(request, venta_id):
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 def imprimir_factura(request, venta_id):
-    # Obtenemos la venta y sus detalles
     venta = get_object_or_404(Venta, id=venta_id)
     detalles = DetalleVenta.objects.filter(venta=venta)
 
-    # Generar contenido de la factura para la impresión directa
+    # Contenido de impresión
     contenido = f"""
-    FACTURA N°: {venta.id}
+    FACTURA N°: {venta.numero_factura}
     Fecha: {venta.fecha.strftime("%d/%m/%Y %H:%M")}
     Cliente: {venta.cliente or "Consumidor Final"}
     ----------------------------------------
@@ -289,15 +213,17 @@ def imprimir_factura(request, venta_id):
     GRACIAS POR SU COMPRA
     """
 
-    # Generar Código QR
+    # Generar código QR
     qr = qrcode.make(f"http://127.0.0.1:8000/ventas/factura/{venta.id}/")
     qr_buffer = BytesIO()
     qr.save(qr_buffer, format='PNG')
     qr_base64 = base64.b64encode(qr_buffer.getvalue()).decode('utf-8')
 
-    # Si es POST, intentar enviar a la impresora
+    sistema = platform.system()
+
+    # Si es POST, intentar imprimir
     if request.method == "POST":
-        if platform.system() == "Windows" and win32print:
+        if sistema == "Windows" and win32print:
             try:
                 printer_name = win32print.GetDefaultPrinter()
                 hprinter = win32print.OpenPrinter(printer_name)
@@ -307,30 +233,71 @@ def imprimir_factura(request, venta_id):
                 win32print.EndPagePrinter(hprinter)
                 win32print.EndDocPrinter(hprinter)
                 win32print.ClosePrinter(hprinter)
-                return HttpResponse("Factura enviada a la impresora correctamente.")
+                return JsonResponse({'success': True, 'message': 'Factura enviada a la impresora correctamente.'})
             except Exception as e:
-                return HttpResponse(f"Error al imprimir: {str(e)}")
+                return JsonResponse({'success': False, 'message': f'Error al imprimir: {str(e)}'})
         else:
-            return HttpResponse("La impresión directa solo está disponible en Windows.")
+            return JsonResponse({'success': False, 'message': f'La impresión directa solo funciona en Windows. Estás usando: {sistema}'})
 
-    # Si es GET, renderizar la factura para vista previa
+    # Si es GET, mostrar vista previa
     return render(request, 'dashboard/ventas/imprimir_factura.html', {
         'venta': venta,
         'detalles': detalles,
-        'qr_base64': qr_base64
+        'qr_base64': qr_base64,
+        'sistema': sistema
     })
 
 
-def consulta_factura(request, numero_factura):
-    venta = get_object_or_404(Venta, numero_factura=numero_factura)
-    return render(request, 'dashboard/ventas/detalle_venta.html', {'venta': venta})
+class PublicVentaDetalleView(DetailView):
+    model = Venta
+    template_name = 'dashboard/ventas/detalle_venta_publica.html'
+    slug_field = 'numero_factura'
+    slug_url_kwarg = 'numero_factura'
+    context_object_name = 'venta'
 
-def ver_factura_restringida(request, numero_factura):
-    venta = get_object_or_404(Venta, numero_factura=numero_factura)
-    if not request.user.is_authenticated:
-        return HttpResponseForbidden("No tienes permiso para acceder a esta factura.")
-    return render(request, 'dashboard/ventas/detalle_venta.html', {'venta': venta})
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        venta = self.get_object()
+        context['detalles'] = venta.detalles.all()
+        return context
 
-def ver_factura(request, pk):
-    venta = get_object_or_404(Venta, pk=pk)
-    return render(request, 'dashboard/ventas/detalle_venta.html', {'venta': venta})
+
+class VentaDetalleView(LoginRequiredMixin, DetailView):
+    model = Venta
+    template_name = 'dashboard/ventas/detalle_venta.html'
+    slug_field = 'numero_factura'
+    slug_url_kwarg = 'numero_factura'
+    context_object_name = 'venta'
+
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return HttpResponseForbidden("No tienes permiso para acceder a esta factura.")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        venta = self.get_object()
+        context['detalles'] = venta.detalles.all()
+        return context
+
+
+@require_POST
+def anular_detalle_venta(request, detalle_id):
+    detalle = get_object_or_404(DetalleVenta, id=detalle_id)
+    if not detalle.anulado:
+        detalle.anulado = True
+        detalle.save()  # Guarda el detalle ya marcado como anulado
+
+        # Devolver el producto al inventario
+        producto_talla = detalle.producto_talla
+        producto_talla.cantidad += detalle.cantidad
+        producto_talla.save()
+
+        # Recalcular total de la venta
+        venta = detalle.venta
+        venta.total = sum(d.total for d in venta.detalles.filter(anulado=False))
+        venta.save()
+
+        return JsonResponse({'success': True, 'message': 'Producto anulado y devuelto al inventario.'})
+    else:
+        return JsonResponse({'success': False, 'message': 'Este producto ya está anulado.'})

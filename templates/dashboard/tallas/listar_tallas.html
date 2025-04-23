@@ -1,0 +1,166 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .table-container {
+        overflow: visible !important; /* Permite que las filas sobresalgan */
+    }
+    
+    .table thead {
+        width: 100%; /* Se adapta al contenedor */
+        border-collapse: separate; /* Permite bordes redondeados */
+        border-spacing: 0; /* Evita espacios entre celdas */
+        border: 2px solid black; /* Borde exterior */
+        border-radius: 10px !important; /* Bordes redondeados */
+        background: white; /* Fondo consistente */
+        overflow: hidden !important; /* Aplica bordes redondeados */
+    }
+    
+    .table th, .table td {
+        border-bottom: 1px solid black; /* Borde inferior entre celdas */
+    }
+    
+    .table-row {
+        position: relative; /* Permite usar z-index */
+        transition: transform 0.3s, box-shadow 0.3s; /* Animaciones suaves */
+    }
+    
+    .table-row:hover {
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); /* Sombra en hover */
+        transform: translateY(-4px) scale(1.02); /* Efecto de elevación */
+    }
+    
+</style>
+
+<div class="container mt-4">
+    <h2>Usuarios</h2>
+
+    <form method="GET" class="mb-4">
+        <div class="row g-3">
+            <!-- Campo de búsqueda por nombre o correo -->
+            <div class="col-md-5">
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="Buscar por nombre o correo" value="{{ request.GET.q }}">
+            </div>
+    
+            <!-- Selector de rol -->
+            <div class="col-md-3">
+                <select name="rol" class="form-control form-control-sm">
+                    <option value="" {% if not request.GET.rol %}selected{% endif %}>Seleccionar rol</option>
+                    <option value="gerente" {% if request.GET.rol == 'gerente' %}selected{% endif %}>Gerente</option>
+                    <option value="vendedor" {% if request.GET.rol == 'vendedor' %}selected{% endif %}>Vendedor</option>
+                </select>
+            </div>
+    
+            <!-- Contenedor para los botones en la misma fila -->
+            <div class="col-md-4 d-flex justify-content-between align-items-center">
+                <button class="btn btn-outline-primary btn-sm flex-grow-1" type="submit">Buscar</button>
+                <a href="{% url 'listar_usuarios' %}" class="btn btn-outline-dark btn-sm flex-grow-1 ms-2">Limpiar Filtros</a>
+            </div>
+        </div>
+    </form>
+
+    <a class="btn btn-sm bg-gradient btn-primary border-black" href="{% url 'crear_usuario' %}">Crear Usuario</a>
+
+    <div class="table-responsive">
+        <table class="table table-hover mt-3">
+            <thead class="table-light text-center align-middle">
+                <tr>
+                    <th class="border-black border-end">Nombre</th>
+                    <th class="border-black border-end">Nombre de Usuario</th>
+                    <th class="border-black border-end">Email</th>
+                    <th class="border-black border-end">Permiso</th>
+                    <th class="border-black border-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-center align-middle">
+                {% for usuario in usuarios %}
+                <tr class="table-row">
+                    <td class="border">{{ usuario.get_full_name|default:usuario.username }}</td>
+                    <td class="border">{{ usuario.username }}</td>
+                    <td class="border">{{ usuario.email }}</td>
+                    <td class="border">
+                        {% if usuario.rol == 'gerente' %}Gerente{% endif %}
+                        {% if usuario.rol == 'vendedor' %}Vendedor{% endif %}
+                    </td>
+                    <td class="border text-center">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="d-flex">
+                                <a href="{% url 'detalle_usuario' usuario.pk %}" 
+                                class="btn btn-secondary btn-sm mx-1 border-black">Detalles</a>
+
+                                <a href="{% url 'editar_usuario' usuario.pk %}" 
+                                    class="btn btn-warning btn-sm mx-1 border-black">Editar</a>
+                                <!-- Botón para abrir el modal de eliminación -->
+                                <button class="btn btn-danger btn-sm mx-1 border-black" data-bs-toggle="modal" data-bs-target="#eliminarModal-{{ usuario.id }}">
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Modal de eliminación de usuario -->
+                <div class="modal fade" id="eliminarModal-{{ usuario.id }}" tabindex="-1" aria-labelledby="eliminarModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <form method="post" action="{% url 'eliminar_usuario' usuario.pk %}">
+                                {% csrf_token %}
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="eliminarModalLabel">Eliminar Usuario {{ usuario.username }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>¿Estás seguro de que deseas eliminar este usuario?</p>
+                                    <div class="alert alert-warning text-center" role="alert">
+                                        Esta acción no se puede deshacer.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-danger">Confirmar Eliminación</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                {% empty %}
+                <tr>
+                    <td colspan="5">No hay usuarios disponibles.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="align-items-center mt-2">
+            <div class="pagination">
+                <ul class="pagination pagination-sm">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.order_by %}&order_by={{ request.GET.order_by }}{% endif %}{% if request.GET.order_dir %}&order_dir={{ request.GET.order_dir }}{% endif %}" aria-label="First">&laquo; Primero</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.order_by %}&order_by={{ request.GET.order_by }}{% endif %}{% if request.GET.order_dir %}&order_dir={{ request.GET.order_dir }}{% endif %}" aria-label="Previous">Anterior</a>
+                    </li>
+                    {% endif %}
+        
+                    <li class="page-item disabled">
+                        <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+        
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.order_by %}&order_by={{ request.GET.order_by }}{% endif %}{% if request.GET.order_dir %}&order_dir={{ request.GET.order_dir }}{% endif %}" aria-label="Next">Siguiente</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.order_by %}&order_by={{ request.GET.order_by }}{% endif %}{% if request.GET.order_dir %}&order_dir={{ request.GET.order_dir }}{% endif %}" aria-label="Last">Último &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    
+    </div>
+</div>
+{% endblock %}

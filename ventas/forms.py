@@ -8,7 +8,7 @@ from django.utils import timezone
 class VentaForm(forms.ModelForm):
     class Meta:
         model = Venta
-        fields = ['empleado', 'metodo_pago']  # Incluye el campo 'metodo_pago'
+        fields = ['empleado', 'metodo_pago']
 
     def __init__(self, *args, **kwargs):
         initial = kwargs.get('initial', {})
@@ -16,23 +16,11 @@ class VentaForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if user:
             self.fields['empleado'].initial = user
-        self.fields['empleado'].disabled = True  # Deshabilita para evitar modificaciones
-
-    def clean(self):
-        cleaned_data = super().clean()
-
-        # Validamos que se reciban productos
-        productos_ids = self.data.getlist('productos_ids')
-        cantidades = self.data.getlist('cantidades')
-
-        if not productos_ids or not cantidades:
-            raise forms.ValidationError('No se puede crear una venta sin productos.')
-
-        return cleaned_data
+        self.fields['empleado'].disabled = True  # Protección contra edición
 
     def save(self, *args, **kwargs):
         instance = super().save(commit=False)
-        if not instance.pk:  # Nueva venta
+        if not instance.pk:
             instance.fecha = timezone.now()
         instance.save()
         return instance
@@ -61,5 +49,5 @@ class DetalleVentaForm(forms.ModelForm):
 DetalleVentaFormSet = modelformset_factory(
     DetalleVenta,
     form=DetalleVentaForm,
-    extra=5  # Permite agregar hasta 5 productos adicionales
+    extra=1 
 )

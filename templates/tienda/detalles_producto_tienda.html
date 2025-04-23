@@ -120,7 +120,7 @@
                             ${{ producto.precio_oferta|floatformat:0|intcomma }}
                         </span>
                         <span class="text-muted text-decoration-line-through">
-                            Antes: ${{ producto.precio|floatformat:0|intcomma }}
+                            Antes: ${{ producto.precio_venta|floatformat:0|intcomma }}
                         </span>
                     </div>
                 {% else %}
@@ -139,35 +139,59 @@
                 <p class="text-secondary">{{ producto.descripcion }}</p>
             </div>
 
-            <!-- Tallas Disponibles -->
+            <!-- Tallas -->
             <div class="mb-4">
                 <h6 class="fw-bold text-muted">Tallas Disponibles</h6>
                 {% if tallas_disponibles %}
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for talla in tallas_disponibles %}
+                            <div class="d-flex align-items-center gap-2 border rounded-pill px-3 py-1 shadow-sm bg-light">
+                                <span class="fw-semibold">{{ talla }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No hay tallas disponibles actualmente.</p>
+                {% endif %}
+            </div>
+
+            <!-- Colores Disponibles -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-muted">Colores Disponibles</h6>
+                {% if colores_disponibles %}
                     <div class="d-flex flex-wrap gap-2">
-                        {% for detalle in tallas_disponibles %}
-                            {% if detalle.cantidad > 0 %}
-                                <span class="badge bg-light text-dark border rounded-pill px-3 py-2 shadow-sm">
-                                    {{ detalle.talla.nombre }}
-                                </span>
+                        {% for color in colores_disponibles %}
+                            {% if color.color__codigo_hex %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span 
+                                        class="rounded-circle border shadow-sm" 
+                                        style="display:inline-block; width:24px; height:24px; background-color:{{ color.color__codigo_hex }};"
+                                        title="{{ color.color__nombre }}">
+                                    </span>
+                                </div>
                             {% endif %}
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="text-muted">No especificado</p>
+                    <p class="text-muted">No hay colores disponibles actualmente.</p>
                 {% endif %}
             </div>
 
             <!-- Género -->
             <div class="mb-4">
                 <h6 class="fw-bold text-muted">Género</h6>
-                {% if producto.genero %}
-                    <span class="badge 
-                        {% if producto.genero == 'dama' %} bg-dama 
-                        {% elif producto.genero == 'caballero' %} bg-caballero 
-                        {% else %} bg-unisex text-light 
-                        {% endif %} py-2 px-3">
-                        {{ producto.genero|title }}
-                    </span>
+                {% if generos_disponibles %}
+                    {% for genero in generos_disponibles %}
+                        <span class="badge 
+                            {% if genero == 'dama' %} bg-dama 
+                            {% elif genero == 'caballero' %} bg-caballero
+                            {% elif genero == 'unisex' %} bg-unisex 
+                            {% elif genero == 'no_necesita' %} bg-no-necesita 
+                            {% else %} bg-secondary text-light 
+                            {% endif %} py-2 px-3">
+                            {{ genero|title }}
+                        </span>
+                    {% endfor %}
                 {% else %}
                     <p class="text-muted">No especificado</p>
                 {% endif %}
@@ -194,8 +218,8 @@
                         </a>
                         <div class="card-body">
                             <h5 class="card-title fw-bolder">{{ similar.nombre }}</h5>
-                            <p class="card-text text-success"><strong>${{ similar.precio|floatformat:0|intcomma }}</strong></p>
-                            <a href="{% url 'detalles_producto_tienda' similar.id %}" class="btn btn-outline-dark w-100">Ver más</a>
+                            <p class="card-text text-success"><strong>${{ similar.precio_venta|floatformat:0|intcomma }}</strong></p>
+                            <a href="{% url 'detalles_producto_tienda' producto.slug %}" class="btn btn-outline-dark w-100">Ver más</a>
                         </div>
                     </div>
                 </div>

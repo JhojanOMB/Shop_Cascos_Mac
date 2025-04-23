@@ -2,262 +2,438 @@
 {% load custom_filters %}
 {% load static %}
 
-
 {% block content %}
 <div class="container mt-4">
     <h2 class="text-center align-middle fw-bolder">Editar Producto</h2>
     <hr class="border border-2 mb-2">
     
-    <!-- Mostrar mensaje de error si existen errores en el formulario -->
+    <!-- Mensaje general de error del formulario -->
     {% if form.errors %}
         <div class="alert alert-danger">
-            <strong>¡Advertencia!</strong> Algunos campos están incompletos o contienen errores. Por favor, corrígelos para continuar.
+            <strong>¡Advertencia!</strong> Algunos campos tienen errores. Revisa la información a continuación:
+            <ul>
+                {% for field in form %}
+                    {% if field.errors %}
+                        <li><strong>{{ field.label }}:</strong>
+                            {% for error in field.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if formset.errors %}
+        <div class="alert alert-danger">
+        <strong>Errores en variantes:</strong>
+        <ul>
+            {% for form in formset %}
+            {% if form.errors %}
+                <li>
+                Variante (
+                Talla: {% if form.instance.pk %}{{ form.instance.talla.nombre|default:"N/A" }}{% else %}{{ form.talla.value|default:"N/A" }}{% endif %}, 
+                Color: {% if form.instance.pk %}{{ form.instance.color|default:"N/A" }}{% else %}{{ form.color.value|default:"N/A" }}{% endif %}, 
+                Género: {% if form.instance.pk %}{{ form.instance.genero|default:"N/A" }}{% else %}{{ form.genero.value|default:"N/A" }}{% endif %}
+                ):
+                <ul>
+                    {% for field, errors in form.errors.items %}
+                    <li>
+                        {% if field == '__all__' %}
+                        <strong>Error general:</strong> {{ errors|join:", " }}
+                        {% else %}
+                        <strong>{{ field }}:</strong> {{ errors|join:", " }}
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                </li>
+            {% endif %}
+            {% endfor %}
+        </ul>
         </div>
     {% endif %}
 
     <form method="post" enctype="multipart/form-data" action="{% url 'editar_producto' object.pk %}">
         {% csrf_token %}
         <div class="row">
-            <!-- Columna Izquierda -->
+            <!-- Columna Izquierda: Datos del Producto -->
             <div class="col-md-6">
+                <!-- Campo Nombre -->
                 <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-tag me-2"></i>{{ form.nombre.label }}</label>
-                    {{ form.nombre }}
+                    <label class="form-label">{{ form.nombre.label }}</label>
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-secondary text-light">
+                            <i class="fa-solid fa-tag"></i>
+                        </span>
+                        {{ form.nombre|add_class:"form-control" }}
+                    </div>
                     {% if form.nombre.errors %}
-                        <div class="text-danger">
-                            {% for error in form.nombre.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
+                    <div class="invalid-feedback d-block">
+                        <strong>Errores en "{{ form.nombre.label }}":</strong>
+                        {% for error in form.nombre.errors %}
+                        <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                     {% endif %}
                 </div>
 
+                <!-- Campo Descripción -->
                 <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-align-left me-2"></i>{{ form.descripcion.label }}</label>
-                    {{ form.descripcion }}
+                    <label class="form-label">{{ form.descripcion.label }}</label>
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-secondary text-light">
+                            <i class="fa-solid fa-pencil"></i>
+                        </span>
+                        {{ form.descripcion|add_class:"form-control" }}
+                    </div>
                     {% if form.descripcion.errors %}
-                        <div class="text-danger">
-                            {% for error in form.descripcion.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
+                    <div class="invalid-feedback d-block">
+                        <strong>Errores en "{{ form.descripcion.label }}":</strong>
+                        {% for error in form.descripcion.errors %}
+                        <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                     {% endif %}
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-dollar-sign me-2"></i>{{ form.precio_compra.label }}</label>
-                    {{ form.precio_compra }}
-                    {% if form.precio_compra.errors %}
-                        <div class="text-danger">
-                            {% for error in form.precio_compra.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.precio_compra.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary text-white">
+                                    <i class="fa-solid fa-dollar-sign"></i>
+                                </span>
+                                {{ form.precio_compra|add_class:"form-control precio-input" }}
+                            </div>
+                            {% if form.precio_compra.errors %}
+                            <div class="invalid-feedback d-block">
+                                <strong>Errores en "{{ form.precio_compra.label }}":</strong>
+                                {% for error in form.precio_compra.errors %}
+                                    <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
-                    {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.precio_venta.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary text-white">
+                                    <i class="fa-solid fa-dollar-sign"></i>
+                                </span>
+                                {{ form.precio_venta|add_class:"form-control precio-input" }}
+                            </div>
+                            {% if form.precio_venta.errors %}
+                            <div class="invalid-feedback d-block">
+                                <strong>Errores en "{{ form.precio_venta.label }}":</strong>
+                                {% for error in form.precio_venta.errors %}
+                                    <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-dollar-sign me-2"></i>Precio Venta</label>
-                    {{ form.precio_venta }}
-                    {% if form.precio.errors %}
-                        <div class="text-danger">
-                            {% for error in form.precio_venta.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-boxes me-2"></i>{{ form.cantidad.label }}</label>
-                    {{ form.cantidad }}
-                    {% if form.cantidad.errors %}
-                        <div class="text-danger">
-                            {% for error in form.cantidad.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-list me-2"></i>{{ form.categoria.label }}</label>
-                    {{ form.categoria }}
+                    <label class="form-label">{{ form.categoria.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-list"></i></span>
+                        {{ form.categoria }}
+                    </div>
                     {% if form.categoria.errors %}
-                        <div class="text-danger">
+                        <div class="invalid-feedback d-block">
+                            <strong>Errores en el campo "{{ form.categoria.label }}":</strong>
                             {% for error in form.categoria.errors %}
-                                <p>{{ error }}</p>
+                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
                             {% endfor %}
                         </div>
                     {% endif %}
                 </div>
-
                 <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-industry me-2"></i>{{ form.proveedor.label }}</label>
-                    {{ form.proveedor }}
+                    <label class="form-label">{{ form.proveedor.label }}</label>
+                    <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-truck-front"></i></span>
+                        {{ form.proveedor }}
+                    </div>
                     {% if form.proveedor.errors %}
-                        <div class="text-danger">
+                        <div class="invalid-feedback d-block">
+                            <strong>Errores en el campo "{{ form.proveedor.label }}":</strong>
                             {% for error in form.proveedor.errors %}
-                                <p>{{ error }}</p>
+                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
                             {% endfor %}
                         </div>
                     {% endif %}
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-bookmark me-2"></i>{{ form.catalogo.label }}</label>
-                    {{ form.catalogo }}
-                    {% if form.catalogo.errors %}
-                        <div class="text-danger">
-                            {% for error in form.catalogo.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
+                <!-- Sección de Oferta en una tarjeta -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <label class="form-label mb-0">
+                        <i class="fas fa-check me-2"></i>{{ form.en_oferta.label }}
+                        </label>
+                        <!-- Switch moderno -->
+                        <div class="form-check form-switch">
+                        {{ form.en_oferta|add_class:"form-check-input" }}
+                        </div>
+                    </div>
+                    {% if form.en_oferta.errors %}
+                        <div class="invalid-feedback d-block">
+                        {% for error in form.en_oferta.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
                         </div>
                     {% endif %}
+                    <!-- Campo Precio Oferta en un collapse -->
+                    <div class="collapse mt-3" id="collapsePrecioOferta">
+                        <label class="form-label">{{ form.precio_oferta.label }}</label>
+                        <div class="input-group shadow">
+                        <span class="input-group-text bg-gradient bg-secondary text-light">
+                            <i class="fa-solid fa-tags"></i>
+                        </span>
+                        {{ form.precio_oferta|add_class:"form-control precio-input" }}
+                        </div>
+                        {% if form.precio_oferta.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.precio_oferta.errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-venus-mars me-2"></i>Género</label><br>
-                    <div class="form-check form-check-inline">
-                        <input type="checkbox" id="es_dama" name="genero" value="dama" {% if form.genero.value == 'dama' %}checked{% endif %}>
-                        <label class="form-check-label" for="es_dama"><i class="fas fa-female"></i> Dama</label>
+                <!-- Sección de Catálogo con botón toggle -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                    <label class="form-label d-block">
+                        <i class="fas fa-shop me-2"></i>¿Es un producto del catálogo?
+                    </label>
+                    <div class="btn-group rounded-pill" role="group">
+                        <input type="radio" class="btn-check" name="catalogo" id="catalogo" value="catalogo" autocomplete="off" {% if form.catalogo.value == 'catalogo' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="catalogo">Catálogo</label>
+                        <input type="radio" class="btn-check" name="catalogo" id="no_catalogo" value="no_catalogo" autocomplete="off" {% if form.catalogo.value == 'no_catalogo' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="no_catalogo">No Catálogo</label>
                     </div>
-                    <div class="form-check form-check-inline">
-                        <input type="checkbox" id="es_caballero" name="genero" value="caballero" {% if form.genero.value == 'caballero' %}checked{% endif %}>
-                        <label class="form-check-label" for="es_caballero"><i class="fas fa-male"></i> Caballero</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input type="checkbox" id="es_unisex" name="genero" value="unisex" {% if form.genero.value == 'unisex' %}checked{% endif %}>
-                        <label class="form-check-label" for="es_unisex"><i class="fas fa-transgender"></i> Unisex</label>
                     </div>
                 </div>  
-
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-tag me-2"></i>{{ form.en_oferta.label }}</label>
-                    {{ form.en_oferta }}
-                </div>
-        
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-dollar-sign me-2"></i>{{ form.precio_oferta.label }}</label>
-                    {{ form.precio_oferta }}
-                </div>
-
-            <!-- Tabla de tallas con checkbox -->
-            <div class="row mb-3">
-                <h4>Tallas Disponibles</h4>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr class="text-center">
-                            <th>Seleccionada</th>
-                            <th>Talla</th>
-                            <th>Cantidad</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for talla in tallas %}
-                        <tr>
-                            <td>
-                                <input type="checkbox" 
-                                    name="activar_talla_{{ talla.id }}" 
-                                    id="activar_talla_{{ talla.id }}"
-                                    {% if tallas_con_cantidad|get_item:talla.id %}checked{% endif %}>
-                            </td>
-                            <td class="text-center">{{ talla.nombre }}</td>
-                            <td>
-                                <input type="number" 
-                                    class="form-control text-center" 
-                                    name="cantidad_talla_{{ talla.id }}" 
-                                    id="cantidad_talla_{{ talla.id }}" 
-                                    value="{{ tallas_con_cantidad|get_item:talla.id }}" 
-                                    min="0">
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </div>
 
-            </div>
-
-            <!-- Columna Derecha -->
+            <!-- Columna Derecha: Imágenes y variantes -->
             <div class="col-md-6">
-                <!-- Imagen 1 -->
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen1.label }}</label>
-                    {% if object.imagen1 %}
-                        <div class="container border rounded align-content-center p-3">
-                            <img src="{{ object.imagen1.url }}" alt="Imagen 1" width="100" class="mb-2">
-                            <p><small>Imagen actual</small></p>
+                <h5 class="fw-bold mb-3">Imágenes del Producto</h5>
+                {% for field in form %}
+                    {% if field.name in image_fields %}
+                        <div class="container border p-3 mb-3 rounded">
+                            <label class="form-label">
+                                <i class="fas fa-image me-2"></i>{{ field.label }}
+                            </label>
+                
+                            {% with image=image_data|get_item:field.name %}
+                                {% if image %}
+                                    <div class="text-center mb-2">
+                                        <img src="{{ image.url }}" alt="Imagen {{ field.name }}" width="100">
+                                        <p><small>Imagen actual</small></p>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                
+                            {{ field }}
+                
+                            {% if field.errors %}
+                                <div class="text-danger">
+                                    {% for error in field.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                     {% endif %}
-                    {{ form.imagen1 }}
-                </div>
+                {% endfor %}
 
-                <!-- Imagen 2 -->
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen2.label }}</label>
-                    {% if object.imagen2 %}
-                        <div class="container border rounded align-content-center p-3">
-                            <img src="{{ object.imagen2.url }}" alt="Imagen 2" width="100" class="mb-2">
-                            <p><small>Imagen actual</small></p>
-                        </div>
-                    {% endif %}
-                    {{ form.imagen2 }}
+                <h5>Variantes del Producto</h5>
+                {{ formset.management_form }}
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped" id="formset-container">
+                        <thead>
+                            <tr>
+                                <th scope="col">Talla</th>
+                                <th scope="col">Cantidad</th>
+                                <th scope="col">Color</th>
+                                <th scope="col">Género</th>
+                                <th scope="col">Eliminar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="formset-body">
+                            {% if formset.forms %}
+                                {% for subform in formset %}
+                                <tr class="formset-form">
+                                    {{ subform.id }} <!-- Campo oculto necesario para identificar objetos existentes -->
+                                    <td>
+                                        <div class="form-floating">
+                                            {{ subform.talla }}
+                                            <label for="{{ subform.talla.id_for_label }}">Talla</label>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="form-floating">
+                                            {{ subform.cantidad }}
+                                            <label for="{{ subform.cantidad.id_for_label }}">Cantidad</label>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="form-floating">
+                                            {{ subform.color }}
+                                            <label for="{{ subform.color.id_for_label }}">Color</label>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="form-floating">
+                                            {{ subform.genero }}
+                                            <label for="{{ subform.genero.id_for_label }}">Género</label>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-danger btn-sm delete-form" title="Eliminar variante">
+                                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        No hay variantes disponibles. Agrega una nueva utilizando el botón de abajo.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
-
-                <!-- Imagen 3 -->
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen3.label }}</label>
-                    {% if object.imagen3 %}
-                        <div class="container border rounded align-content-center p-3">
-                            <img src="{{ object.imagen3.url }}" alt="Imagen 3" width="100" class="mb-2">
-                            <p><small>Imagen actual</small></p>
-                        </div>
-                    {% endif %}
-                    {{ form.imagen3 }}
-                </div>
-
-                <!-- Imagen 4 -->
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen4.label }}</label>
-                    {% if object.imagen4 %}
-                        <div class="container border rounded align-content-center p-3">
-                            <img src="{{ object.imagen4.url }}" alt="Imagen 4" width="100" class="mb-2">
-                            <p><small>Imagen actual</small></p>
-                        </div>
-                    {% endif %}
-                    {{ form.imagen4 }}
-                </div>
-
-                <!-- Imagen 5 -->
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen5.label }}</label>
-                    {% if object.imagen5 %}
-                        <div class="container border rounded align-content-center p-3">
-                            <img src="{{ object.imagen5.url }}" alt="Imagen 5" width="100" class="mb-2">
-                            <p><small>Imagen actual</small></p>
-                        </div>
-                    {% endif %}
-                    {{ form.imagen5 }}
-                </div>          
+                
+                <!-- Botón para agregar más variantes -->
+                <button type="button" id="add-form" class="btn btn-success btn-sm bg-gradient">
+                    <i class="fas fa-plus"></i> Añadir Variante
+                </button>
+                
+                
+                
+            
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Guardar cambios</button>
-        <a href="{% url 'contenido_productos' %}" class="btn btn-secondary">Cancelar</a>
+        <div class="d-flex justify-content-end mt-4">
+            <button type="submit" class="btn btn-primary me-2">Guardar cambios</button>
+            <a href="{% url 'contenido_productos' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
     </form>
 </div>
 
 <script>
-    const checkboxes = document.querySelectorAll('input[name="genero"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            checkboxes.forEach(item => {
-                if (item !== this) {
-                    item.checked = false;
-                }
-            });
+document.addEventListener("DOMContentLoaded", function () {
+    const container = document.getElementById("formset-container");
+    const addButton = document.getElementById("add-form");
+    const totalForms = document.getElementById("id_producto_tallas-TOTAL_FORMS");
+
+    if (!container || !addButton || !totalForms) {
+        console.error("No se encontró algún elemento clave.");
+        return;
+    }
+
+    addButton.addEventListener("click", function () {
+        const currentFormCount = parseInt(totalForms.value, 10);
+        const firstForm = container.querySelector(".formset-form");
+
+        if (!firstForm) {
+            console.error("No se encontró ninguna .formset-form para clonar.");
+            return;
+        }
+
+        const newForm = firstForm.cloneNode(true);
+
+        // Reemplazar índices
+        newForm.querySelectorAll("input, select, label").forEach(el => {
+            if (el.name) {
+                el.name = el.name.replace(/producto_tallas-\d+-/, `producto_tallas-${currentFormCount}-`);
+            }
+            if (el.id) {
+                el.id = el.id.replace(/producto_tallas-\d+-/, `producto_tallas-${currentFormCount}-`);
+            }
+            if (el.tagName.toLowerCase() === "label" && el.htmlFor) {
+                el.htmlFor = el.htmlFor.replace(/producto_tallas-\d+-/, `producto_tallas-${currentFormCount}-`);
+            }
         });
+
+        // Limpiar valores de inputs (excepto input hidden "id")
+        newForm.querySelectorAll("input, select").forEach(el => {
+            if (el.name.endsWith("-id")) {
+                // Este input NO se elimina, solo se limpia si es un nuevo form
+                el.value = ""; // <- solo para nuevos, aquí sí lo limpiamos
+            } else if (el.type === "checkbox") {
+                el.checked = false;
+            } else if (el.type !== "hidden") {
+                el.value = "";
+            }
+        });
+
+        // Limpiar errores visibles
+        newForm.querySelectorAll(".text-danger").forEach(el => el.innerHTML = "");
+
+        container.querySelector("tbody").appendChild(newForm);
+        totalForms.value = currentFormCount + 1;
+    });
+
+    // Eliminar dinámico
+    container.addEventListener("click", function (e) {
+        const deleteButton = e.target.closest(".delete-form");
+        if (deleteButton) {
+            const formRow = deleteButton.closest(".formset-form");
+            formRow.remove();
+            totalForms.value = parseInt(totalForms.value, 10) - 1;
+        }
+    });
+});
+
+</script>
+
+
+
+{% block extra_js %}
+<script src="{% static 'js/formato.js' %}"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+    const enOfertaInput = document.getElementById("id_en_oferta");
+    const collapsePrecio = new bootstrap.Collapse(document.getElementById("collapsePrecioOferta"), {
+        toggle: false
+    });
+    
+    // Función para actualizar el collapse según el estado del switch
+    function togglePrecioOferta() {
+        if(enOfertaInput.checked) {
+        collapsePrecio.show();
+        } else {
+        collapsePrecio.hide();
+        }
+    }
+    
+    // Inicializar el estado
+    togglePrecioOferta();
+    
+    // Escuchamos cambios en el switch "En Oferta"
+    enOfertaInput.addEventListener("change", togglePrecioOferta);
     });
 </script>
+{% endblock %}
+
+
 {% endblock %}

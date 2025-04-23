@@ -225,7 +225,7 @@ body {
 .btn:hover .svgIcon {
     transform: rotate(250deg);
     transition-duration: 1.5s;
-  }
+}
 
 .texto-luminoso {
     letter-spacing: 1.1px;

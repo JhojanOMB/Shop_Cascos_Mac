@@ -1,0 +1,20 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Editar Talla</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ form.nombre.label_tag }}
+      {{ form.nombre }}
+      {% if form.nombre.errors %}
+        <div class="text-danger">{{ form.nombre.errors }}</div>
+      {% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar</button>
+    <a href="{% url 'contenido_adicionales' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

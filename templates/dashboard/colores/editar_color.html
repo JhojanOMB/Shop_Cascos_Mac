@@ -1,0 +1,42 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-warning text-dark">
+      <h4 class="mb-0">Editar Color</h4>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre del Color</label>
+          {{ form.nombre }}
+          {% if form.nombre.errors %}
+            <div class="text-danger small">{{ form.nombre.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label for="{{ form.codigo_hex.id_for_label }}" class="form-label">Selecciona el Color</label>
+          {{ form.codigo_hex }}
+          {% if form.codigo_hex.errors %}
+            <div class="text-danger small">{{ form.codigo_hex.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa fa-edit me-1"></i> Actualizar
+          </button>
+          <a href="{% url 'contenido_adicionales' %}" class="btn btn-secondary">
+            <i class="fa fa-times me-1"></i> Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

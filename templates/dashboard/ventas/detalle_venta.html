@@ -2,14 +2,105 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}Detalle de Venta{% endblock %}
+{% block title %}Vista Previa de Factura{% endblock %}
 
 {% block content %}
-<h1>Factura {{ venta.numero_factura }}</h1>
-<p>Fecha: {{ venta.fecha }}</p>
-<p>Empleado: {{ venta.empleado.get_full_name|default:venta.empleado.username }}</p>
-<p>Total: ${{ venta.total|floatformat:0|intcomma }}</p>
-{% if venta.qr_code %}
-    <img src="{{ venta.qr_code.url }}" alt="Código QR">
-{% endif %}
+<div class="container mt-5 printable-area">
+    <h4 class="fw-bold mb-4 text-center text-dark">Factura de Venta</h4>
+    
+    <!-- Datos de la empresa -->
+    <div class="text-center mb-3">
+        <h5 class="fw-semibold text-dark">W CASCOS</h5>
+        <p class="text-muted mb-0">Calle 7 #13-43, La Pincha, Madrid, Cundinamarca, Colombia</p>
+        <p class="text-muted">Tel: +57 321 269 2311</p>
+    </div>
+    
+    <div class="border p-4 shadow-sm rounded-3 bg-white">
+        <div class="mb-3">
+            <p class="text-muted mb-1"><strong>Fecha:</strong> {{ venta.fecha }}</p>
+            <p class="text-muted mb-1"><strong>Factura N°:</strong> {{ venta.numero_factura }}</p>
+            <p class="text-muted mb-1"><strong>Empleado:</strong> {{ venta.empleado.get_full_name|default:venta.empleado.username }}</p>
+        </div>
+
+        <!-- Datos del Cliente -->
+        <div class="mb-3">
+            <p class="text-muted mb-1"><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
+            <p class="text-muted mb-1"><strong>Cédula/NIT:</strong> {{ venta.cliente.nit }}</p>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead class="border-bottom">
+                    <tr class="text-center text-muted">
+                        <th>Producto</th>
+                        <th>Talla</th>
+                        <th>Color</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalle in detalles %}
+                        <tr class="text-center text-dark">
+                            <td>{{ detalle.producto_talla.producto.nombre }}</td>
+                            <td>{{ detalle.producto_talla.talla.nombre }}</td>
+                            <td>{{ detalle.producto_talla.color }}</td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td class="text-end">${{ detalle.precio|floatformat:2|intcomma }}</td>
+                            <td class="text-end fw-bold">${{ detalle.total|floatformat:2|intcomma }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No hay productos registrados en esta venta.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totales -->
+        <div class="mt-4 p-2 bg-light rounded shadow-sm">
+            <table class="table table-borderless small">
+                <tbody>
+                    <tr>
+                        <td class="text-end text-muted"><strong>Subtotal:</strong></td>
+                        <td class="text-end text-dark fw-bold">${{ venta.subtotal|floatformat:2|intcomma }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-end text-muted"><strong>IVA (19%):</strong></td>
+                        <td class="text-end text-dark fw-bold">${{ venta.iva|floatformat:2|intcomma }}</td>
+                    </tr>
+                    <tr class="border-top">
+                        <td class="text-end fs-6 fw-bold text-dark">Total de la Venta:</td>
+                        <td class="text-end fs-6 fw-bold">
+                            <span class="badge bg-dark p-1 fs-6">${{ venta.total|floatformat:2|intcomma }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-end text-muted py-1"><strong>Método de Pago:</strong></td>
+                        <td class="text-end py-1">
+                            <span class="badge bg-success p-1">
+                                {{ venta.get_metodo_pago_display|default:"No especificado" }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Código QR -->
+        <div class="text-center mt-4">
+            <p class="text-muted">Escanea el código QR para más información:</p>
+            <img class="img-fluid w-25 border rounded shadow-sm" src="data:image/png;base64,{{ qr_base64 }}" alt="Código QR">
+        </div>
+
+        <!-- Botones -->
+        <div class="mt-4 d-print-none text-center">
+            <button onclick="window.print()" class="btn btn-dark px-4 py-2 rounded-3 shadow-sm">Imprimir</button>
+            <!-- Un botón para regresar o, si es necesario, otra acción -->
+            <a href="{% url 'ventas:contenido_ventas' %}" class="btn btn-outline-dark px-4 py-2 rounded-3 shadow-sm">Volver</a>
+        </div>
+    </div>
+</div>
 {% endblock %}

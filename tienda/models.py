@@ -7,13 +7,19 @@ from usuarios.models import Usuario
 from django.utils.timezone import now
 from inventario.models import *
 from django.apps import apps
+import re
+from django.utils.text import slugify
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     descripcion = models.TextField(blank=True, null=True)
 
+    class Meta:
+        ordering = ['nombre']  # Ordena por el campo nombre de forma ascendente
+
     def __str__(self):
         return self.nombre
+
 
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=50)
@@ -27,48 +33,18 @@ class Proveedor(models.Model):
 
 class Talla(models.Model):
     nombre = models.CharField(max_length=10, unique=True)
+    class Meta:
+        ordering = ['nombre']
 
     def __str__(self):
         return self.nombre
 
-class ProductoTalla(models.Model):
-    producto = models.ForeignKey('Producto', related_name='producto_tallas', on_delete=models.CASCADE)
-    talla = models.ForeignKey(Talla, related_name='producto_tallas', on_delete=models.CASCADE)
-    cantidad = models.PositiveIntegerField(default=0)
-    activa = models.BooleanField(default=False)
-    codigo_barras = models.CharField(max_length=13, unique=True, blank=True, null=True)  # Campo para el código de barras
-
-    class Meta:
-        unique_together = ('producto', 'talla')  # Evitar duplicados para el mismo producto y talla
-
-    def save(self, *args, **kwargs):
-        # Generar automáticamente un código de barras si no existe
-        if not self.codigo_barras:
-            # Combinar la referencia del producto con el ID de la talla para generar un código único
-            referencia = self.producto.referencia or str(uuid.uuid4().hex[:12]).upper()
-            talla_id = f"{self.talla.id:03}"  # Asegura que el ID de la talla tenga siempre 3 dígitos
-            # Crear una base de 12 dígitos (combinación de referencia y talla)
-            base_codigo = (referencia + talla_id)[-12:]  # Ajustar al tamaño máximo de 12 caracteres
-            # Asegurarse de que el código base sea numérico
-            base_codigo = ''.join([c for c in base_codigo if c.isdigit()])[:12]
-            base_codigo = base_codigo.zfill(12)  # Completa con ceros a la izquierda si es necesario
-            self.codigo_barras = self.generar_codigo_ean13(base_codigo)
-        super().save(*args, **kwargs)
-
-    @staticmethod
-    def generar_codigo_ean13(base_codigo):
-        """
-        Genera un código de barras válido en formato EAN-13 calculando el dígito verificador.
-        """
-        if len(base_codigo) != 12 or not base_codigo.isdigit():
-            raise ValueError("El código base debe ser numérico y tener exactamente 12 caracteres.")
-        suma_impares = sum(int(base_codigo[i]) for i in range(0, 12, 2))
-        suma_pares = sum(int(base_codigo[i]) for i in range(1, 12, 2))
-        checksum = (10 - ((suma_impares + suma_pares * 3) % 10)) % 10
-        return f"{base_codigo}{checksum}"
+class Color(models.Model):
+    nombre = models.CharField(max_length=50)
+    codigo_hex = models.CharField(max_length=7, default='#000000')
 
     def __str__(self):
-        return f"{self.producto.nombre} - {self.talla.nombre} - Cantidad: {self.cantidad} - Código: {self.codigo_barras}"
+        return self.nombre
 
 class Producto(models.Model):
 
@@ -81,8 +57,14 @@ class Producto(models.Model):
     ]
 
     referencia = models.CharField(max_length=12, unique=True, blank=True, null=True)
-    codigo_barras = models.CharField(max_length=13, unique=True, blank=True, null=True)
-    nombre = models.CharField(max_length=120, unique=True)
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        error_messages={
+            'unique': "Ya existe un Producto con este Nombre.",
+        }
+    )
+    slug = models.SlugField(unique=False, blank=True, null=True)
     descripcion = models.TextField(blank=True, null=True)
     precio_venta = models.DecimalField(max_digits=10, decimal_places=0)  # Precio de venta
     categoria = models.ForeignKey('Categoria', on_delete=models.CASCADE, related_name='productos')
@@ -94,14 +76,6 @@ class Producto(models.Model):
     imagen3 = models.ImageField(upload_to='productos/', blank=True, null=True)
     imagen4 = models.ImageField(upload_to='productos/', blank=True, null=True)
     imagen5 = models.ImageField(upload_to='productos/', blank=True, null=True)
-
-    # Género del producto
-    genero = models.CharField(
-        max_length=15,
-        choices=GENERO_CHOICES,
-        blank=True,
-        null=True
-    )
 
     CATALOG_CHOICES = [
         ('', 'Seleccione una opción'),
@@ -126,17 +100,34 @@ class Producto(models.Model):
     # Fecha de creación
     created_date = models.DateField(auto_now_add=True)
 
+    @staticmethod
+    def generate_unique_slug(instance, slug_field='slug', from_field='nombre'):
+        slug_base = slugify(getattr(instance, from_field))
+        unique_slug = slug_base
+        ModelClass = instance.__class__
+        counter = 1
+
+        while ModelClass.objects.filter(**{slug_field: unique_slug}).exists():
+            unique_slug = f"{slug_base}-{counter}"
+            counter += 1
+
+        return unique_slug
+
     def generar_referencia(self):
         """
-        Genera una referencia basada en una parte del nombre del producto y una secuencia.
-        Por ejemplo, para un producto llamado "Casco Shaft Pro", se podría generar:
-            CAS-0001
+        Genera una referencia única basada en una parte limpia del nombre del producto.
+        Ejemplo: para un producto llamado "Casco Shaft Pro", se genera: CAS-0001
         """
-        # Tomamos las 3 primeras letras del nombre; si el nombre es muy corto, completamos con la palabra completa.
-        prefijo = self.nombre[:3].upper()
-        # Contamos los productos que ya tienen una referencia que inicia con ese prefijo
-        secuencia = Producto.objects.filter(referencia__startswith=prefijo).count() + 1
-        return f"{prefijo}-{secuencia:04}"  # Formato: "CAS-0001"
+        import re
+        nombre_clean = re.sub(r'[^A-Za-z]', '', self.nombre)
+        prefijo = nombre_clean[:3].upper()
+
+        secuencia = 1
+        while True:
+            referencia = f"{prefijo}-{secuencia:04}"
+            if not Producto.objects.filter(referencia=referencia).exists():
+                return referencia
+            secuencia += 1
 
     def clean(self):
         # Validar que el precio de venta no sea negativo ni esté vacío
@@ -151,22 +142,20 @@ class Producto(models.Model):
                 raise ValidationError({'precio_oferta': 'El precio de oferta debe ser menor que el precio de venta.'})
 
     def save(self, *args, **kwargs):
-        # Convertir el nombre a Title Case (por ejemplo, "Casco Shaft Pro")
+        # Convertir el nombre a Title Case
         if self.nombre:
             self.nombre = self.nombre.title()
-        
+
         # Generar la referencia única si no existe
         if not self.referencia:
             self.referencia = self.generar_referencia()
 
-        # Generar el código de barras único si no existe
-        if not self.codigo_barras:
-            self.codigo_barras = str(uuid.uuid4().int)[:13]
+        # Generar el slug único si no existe
+        if not self.slug:
+            self.slug = Producto.generate_unique_slug(self)
 
-        # Validar la lógica definida en el método clean
+        # Validar la lógica definida en clean
         self.full_clean()
-
-        # Guardar la instancia
         super().save(*args, **kwargs)
 
     def calcular_costo_total_pedido(self):
@@ -203,6 +192,19 @@ class Producto(models.Model):
         for detalle in self.producto_tallas.filter(activa=True):
             cantidades[detalle.talla.nombre] = detalle.cantidad
         return cantidades
+    
+    @property
+    def detalles_por_talla_color_genero(self):
+        """Retorna todos los detalles (talla, color, género y cantidad) asociados al producto."""
+        detalles = []
+        for detalle in self.producto_tallas.all():
+            detalles.append({
+                'talla': detalle.talla.nombre,
+                'color': detalle.color.nombre,
+                'genero': detalle.genero,
+                'cantidad': detalle.cantidad
+            })
+        return detalles
 
     @property
     def total_cantidad(self):
@@ -210,3 +212,77 @@ class Producto(models.Model):
         Retorna la cantidad total de productos sumando todas las tallas.
         """
         return sum(detalle.cantidad for detalle in self.producto_tallas.all())
+
+class ProductoTalla(models.Model):
+    producto = models.ForeignKey('Producto', related_name='producto_tallas', on_delete=models.CASCADE)
+    talla = models.ForeignKey(Talla, related_name='producto_tallas', on_delete=models.CASCADE)
+    color = models.ForeignKey(Color, on_delete=models.CASCADE, blank=True, null=True)
+    genero = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        choices=Producto.GENERO_CHOICES,
+        default='no_necesita'
+    )
+    cantidad = models.PositiveIntegerField(default=0)
+    codigo_barras = models.CharField(max_length=13, unique=True, blank=True, null=True)
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('producto', 'talla', 'color', 'genero')
+
+    def save(self, *args, **kwargs):
+        # Generar automáticamente un código de barras si no existe
+        if not self.codigo_barras:
+            self.codigo_barras = self.generar_codigo_unico()
+        super().save(*args, **kwargs)
+
+    def generar_codigo_unico(self):
+        """
+        Genera un código EAN-13 único basado en referencia, talla y UUID si es necesario.
+        """
+        base_codigo = self.crear_base_codigo()
+        codigo = self.generar_codigo_ean13(base_codigo)
+
+        # Asegurar unicidad
+        while ProductoTalla.objects.filter(codigo_barras=codigo).exists():
+            base_codigo = self.crear_base_codigo(extra_uuid=True)
+            codigo = self.generar_codigo_ean13(base_codigo)
+
+        return codigo
+
+    def crear_base_codigo(self, extra_uuid=False):
+        """
+        Crea una base de 12 dígitos para generar un EAN-13.
+        Si extra_uuid es True, se añade un UUID para asegurar unicidad.
+        """
+        referencia = self.producto.referencia or ""
+        talla_id = f"{self.talla.id:03}" if self.talla_id else "000"
+
+        base = referencia + talla_id
+        if extra_uuid:
+            base += str(uuid.uuid4().int)
+
+        base_numerica = ''.join(filter(str.isdigit, base))[:12]
+        return base_numerica.zfill(12)
+
+    @staticmethod
+    def generar_codigo_ean13(base_codigo):
+        """
+        Genera el dígito verificador del código EAN-13.
+        """
+        if len(base_codigo) != 12 or not base_codigo.isdigit():
+            raise ValueError("El código base debe tener exactamente 12 dígitos numéricos.")
+        suma_impares = sum(int(base_codigo[i]) for i in range(0, 12, 2))
+        suma_pares = sum(int(base_codigo[i]) for i in range(1, 12, 2))
+        checksum = (10 - ((suma_impares + suma_pares * 3) % 10)) % 10
+        return f"{base_codigo}{checksum}"
+
+    def __str__(self):
+        producto = self.producto.nombre if self.producto else "Sin producto"
+        talla = self.talla.nombre if self.talla else "Sin talla"
+        color = self.color.nombre if self.color else "Sin color"
+        genero = self.genero if self.genero else "Sin género"
+        cantidad = self.cantidad if self.cantidad is not None else "Sin cantidad"
+        codigo = self.codigo_barras if self.codigo_barras else "Sin código"
+        return f"{producto} - Talla: {talla} - Color: {color} - Género: {genero} - Cantidad: {cantidad} - Código: {codigo}"
