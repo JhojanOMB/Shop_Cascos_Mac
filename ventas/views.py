@@ -9,10 +9,14 @@ from .models import *
 from tienda.models import *
 from django.contrib import messages
 from django.utils import timezone
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden, FileResponse
 from django.views.decorators.http import require_POST
 from django.forms import inlineformset_factory,  ValidationError
 import platform
+from reportlab.lib.units import cm
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 try:
     import win32print
 except ImportError:
@@ -189,64 +193,179 @@ def facturar_venta(request, venta_id):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
+
 def imprimir_factura(request, venta_id):
+    # Obtén la venta y sus detalles
     venta = get_object_or_404(Venta, id=venta_id)
     detalles = DetalleVenta.objects.filter(venta=venta)
-
-    # Contenido de impresión
-    contenido = f"""
-    FACTURA N°: {venta.numero_factura}
-    Fecha: {venta.fecha.strftime("%d/%m/%Y %H:%M")}
-    Cliente: {venta.cliente or "Consumidor Final"}
-    ----------------------------------------
-    Producto       Cant.   Precio   Total
-    ----------------------------------------
-    """
-    for detalle in detalles:
-        contenido += f"{detalle.producto_talla.producto.nombre[:12]:12}  {detalle.cantidad:5}  ${detalle.precio:7.2f}  ${detalle.total:7.2f}\n"
-
-    contenido += f"""
-    ----------------------------------------
-    TOTAL: ${venta.total:.2f}
-    MÉTODO DE PAGO: {venta.get_metodo_pago_display()}
-    ----------------------------------------
-    GRACIAS POR SU COMPRA
-    """
-
-    # Generar código QR
-    qr = qrcode.make(f"http://127.0.0.1:8000/ventas/factura/{venta.id}/")
-    qr_buffer = BytesIO()
-    qr.save(qr_buffer, format='PNG')
-    qr_base64 = base64.b64encode(qr_buffer.getvalue()).decode('utf-8')
-
     sistema = platform.system()
 
-    # Si es POST, intentar imprimir
+    # Genera el QR en memoria
+    qr = qrcode.make(f"Factura {venta.numero_factura}")
+    qr_buffer = BytesIO()
+    qr.save(qr_buffer, format='PNG')
+    qr_buffer.seek(0)
+
+    # 1) Si en GET viene ?pdf=1, genera y descarga el PDF
+    if request.GET.get('pdf') == '1':
+        buf = BytesIO()
+        width, height = 58 * mm, 270 * mm
+        pdf = canvas.Canvas(buf, pagesize=(width, height))
+        y = height - 10 * mm
+
+        # — Logo centrado —
+        try:
+            logo = ImageReader('img/logo2')  # ajusta la ruta
+            logo_w, logo_h = 30 * mm, 12 * mm
+            pdf.drawImage(logo,
+                          (width - logo_w) / 2,
+                          y - logo_h,
+                          logo_w,
+                          logo_h,
+                          mask='auto')
+            y -= logo_h + 5 * mm
+        except Exception:
+            y -= 5 * mm
+
+        # — Cabecera sombreada con nombre —
+        pdf.setFillGray(0.9)
+        pdf.rect(2 * mm, y - 5 * mm, width - 4 * mm, 8 * mm, fill=1, stroke=0)
+        pdf.setFillGray(0)
+        pdf.setFont("Helvetica-Bold", 11)
+        pdf.drawCentredString(width / 2, y, "CASCOS MAC")
+        y -= 10 * mm
+
+        # — Línea punteada separadora —
+        pdf.setLineWidth(0.3)
+        pdf.setDash(1, 2)
+        pdf.line(2 * mm, y, width - 2 * mm, y)
+        pdf.setDash()
+        y -= 4 * mm
+
+        # — Datos de la venta —
+        pdf.setFont("Helvetica", 6)
+        for txt in (
+            f"Fecha: {venta.fecha:%d/%m/%Y %H:%M}",
+            f"Factura: {venta.numero_factura}",
+            f"Cliente: {venta.cliente or 'Consumidor Final'}",
+        ):
+            pdf.drawString(2 * mm, y, txt)
+            y -= 6 * mm
+
+        # — Otra línea punteada —
+        pdf.setLineWidth(0.3)
+        pdf.setDash(1, 2)
+        pdf.line(2 * mm, y, width - 2 * mm, y)
+        pdf.setDash()
+        y -= 4 * mm
+
+        # — Encabezado de tabla de productos —
+        pdf.setFont("Helvetica-Bold", 7)
+        pdf.drawString(2 * mm, y, "Producto")
+        pdf.drawRightString(width - 22 * mm, y, "Cant.")
+        pdf.drawRightString(width - 12 * mm, y, "Precio")
+        pdf.drawRightString(width -  2 * mm, y, "Total")
+        y -= 8 * mm
+        pdf.line(2 * mm, y, width - 2 * mm, y)
+        y -= 4 * mm
+
+        # — Filas de productos —
+        pdf.setFont("Courier", 6)
+        for d in detalles:
+            name = d.producto_talla.producto.nombre[:16]
+            pdf.drawString(2 * mm, y, name)
+            pdf.drawRightString(width - 22 * mm, y, str(d.cantidad))
+            pdf.drawRightString(width - 12 * mm, y, f"${d.precio:,.0f}")
+            pdf.drawRightString(width -  2 * mm, y, f"${d.total:,.0f}")
+            y -= 7 * mm
+
+        y -= 4 * mm
+        pdf.line(2 * mm, y, width - 2 * mm, y)
+        y -= 8 * mm
+
+        # — Recuadro y resaltado del TOTAL —
+        pdf.setLineWidth(0.5)
+        pdf.rect(2 * mm, y - 12, width - 4 * mm, 14, fill=0, stroke=1)
+        pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(4 * mm, y, "TOTAL A PAGAR:")
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawRightString(width - 4 * mm, y, f"${venta.total:,.0f}")
+        y -= 18 * mm
+
+        # — Método de pago —
+        pdf.setFont("Helvetica-Bold", 7)
+        pdf.drawString(2 * mm, y, "Método Pago:")
+        pdf.drawRightString(width - 4 * mm, y, venta.get_metodo_pago_display())
+        y -= 20 * mm
+
+        # — Línea final —
+        pdf.setLineWidth(0.3)
+        pdf.line(2 * mm, y, width - 2 * mm, y)
+        y -= 8 * mm
+
+        # — QR centrado y enmarcado —
+        qr_img = ImageReader(qr_buffer)
+        qr_size = 25 * mm
+        x_qr = (width - qr_size) / 2
+        pdf.rect(x_qr - 2 * mm, y - qr_size - 2 * mm,
+                 qr_size + 4 * mm, qr_size + 4 * mm,
+                 fill=0, stroke=1)
+        pdf.drawImage(qr_img, x_qr, y - qr_size, qr_size, qr_size)
+        y -= qr_size + 8 * mm
+
+        # — Mensaje final —
+        pdf.setFont("Helvetica-Oblique", 6)
+        pdf.drawCentredString(width / 2, y, "¡Gracias por tu preferencia!")
+
+        pdf.save()
+        buf.seek(0)
+        filename = f"factura_{venta.numero_factura}.pdf"
+        return FileResponse(buf, as_attachment=True, filename=filename)
+
+    # 2) Si es POST, impresión directa en Windows
     if request.method == "POST":
-        if sistema == "Windows" and win32print:
+        if sistema == "Windows":
             try:
-                printer_name = win32print.GetDefaultPrinter()
-                hprinter = win32print.OpenPrinter(printer_name)
-                win32print.StartDocPrinter(hprinter, 1, ("Factura", None, "RAW"))
-                win32print.StartPagePrinter(hprinter)
-                win32print.WritePrinter(hprinter, contenido.encode('utf-8'))
-                win32print.EndPagePrinter(hprinter)
-                win32print.EndDocPrinter(hprinter)
-                win32print.ClosePrinter(hprinter)
-                return JsonResponse({'success': True, 'message': 'Factura enviada a la impresora correctamente.'})
+                # Reconstruye el contenido de texto
+                contenido = f"FACTURA N°: {venta.numero_factura}\n"
+                contenido += f"Fecha: {venta.fecha:%d/%m/%Y %H:%M}\n\n"
+                for d in detalles:
+                    contenido += (
+                        f"{d.producto_talla.producto.nombre[:12]:12}"
+                        f" {d.cantidad:3} x ${d.precio:7.2f}\n"
+                    )
+                contenido += f"\nTOTAL: ${venta.total:.2f}\n"
+                contenido += f"MÉTODO: {venta.get_metodo_pago_display()}\n"
+
+                import win32print
+                printer = win32print.GetDefaultPrinter()
+                h = win32print.OpenPrinter(printer)
+                win32print.StartDocPrinter(h, 1, ("Factura", None, "RAW"))
+                win32print.StartPagePrinter(h)
+                win32print.WritePrinter(h, contenido.encode("utf-8"))
+                win32print.EndPagePrinter(h)
+                win32print.EndDocPrinter(h)
+                win32print.ClosePrinter(h)
+
+                return JsonResponse({"success": True})
             except Exception as e:
-                return JsonResponse({'success': False, 'message': f'Error al imprimir: {str(e)}'})
+                return JsonResponse({"success": False, "error": str(e)})
         else:
-            return JsonResponse({'success': False, 'message': f'La impresión directa solo funciona en Windows. Estás usando: {sistema}'})
+            return JsonResponse({
+                "success": False,
+                "error": f"Impresión directa solo en Windows ({sistema})"
+            })
 
-    # Si es GET, mostrar vista previa
-    return render(request, 'dashboard/ventas/imprimir_factura.html', {
-        'venta': venta,
-        'detalles': detalles,
-        'qr_base64': qr_base64,
-        'sistema': sistema
-    })
-
+    # 3) GET normal: vista previa en pantalla
+    return render(request,
+                  'dashboard/ventas/imprimir_factura.html',
+                  {
+                      'venta': venta,
+                      'detalles': detalles,
+                      'qr_base64': base64.b64encode(qr_buffer.getvalue()).decode('utf-8'),
+                      'sistema': sistema,
+                  }
+    )
 
 class PublicVentaDetalleView(DetailView):
     model = Venta

@@ -3,6 +3,11 @@
 {% load humanize %}
 
 {% block content %}
+<form method="POST" id="formulario">
+    {% csrf_token %}
+    <button class="btn btn-dark btn-sm" type="button" id="btnActualizarTodosCodigosBarras">Actualizar Todos los Códigos de Barras</button>
+</form>
+
 <!-- Controles de filtro y búsqueda -->
 <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
     <!-- Botón "Crear Productos" -->
@@ -227,7 +232,7 @@
                 <h5 class="modal-title" id="codigoBarrasModalLabel-{{ producto.id }}">
                     Códigos de barras para: {{ producto.nombre }}
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
                 {% if producto.producto_tallas.all %}
@@ -253,8 +258,9 @@
                                             value="{{ pt.codigo_barras }}"
                                             data-talla="{{ pt.talla.nombre }}"
                                             data-color="{{ pt.color }}"
-                                            data-genero="{{ pt.genero }}">
-                                    </td>
+                                            data-genero="{{ pt.genero }}"
+                                            data-img-url="{% url 'barcode_image_talla' pt.id %}">
+                                    </td>                                      
                                     
                                     <td class="text-center align-middle">
                                         {% if producto.variantes %}
@@ -306,7 +312,7 @@
                 {% endif %}
             </div>
             <div class="modal-footer text-center">
-                <button type="button" class="btn btn-primary" onclick="imprimirCodigos({{ producto.id }})">
+                <button type="button" class="btn btn-primary" onclick="imprimirCodigos('{{ producto.id }}')">
                     <i class="fa-solid fa-print me-2"></i>Imprimir seleccionados
                 </button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -316,32 +322,29 @@
 </div>
 
 <!-- Submodal para definir cantidades antes de imprimir -->
-<div class="modal fade" id="cantidadModal" tabindex="-1" aria-labelledby="cantidadModalLabel" aria-hidden="true">
+<div class="modal fade" id="cantidadModal" tabindex="-1" …>
     <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content shadow-lg rounded-4">
-        <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="cantidadModalLabel">
-            Selecciona la cantidad por variante
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <div class="modal-content">
+        <div class="modal-header bg-primary text-white">…</div>
+            <div class="modal-body">
+                <form id="form-cantidades">
+                {% csrf_token %}
+                <div id="contenedor-cantidades" class="row g-4"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="btn-enviar-impresion">
+                <i class="fa-solid fa-print me-2"></i> Imprimir
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="volverAlModalOriginal()">
+                Cancelar
+                </button>
+            </div>
         </div>
-        <div class="modal-body">
-        <form id="form-cantidades">
-            <div id="contenedor-cantidades" class="row g-4"></div>
-        </form>
-        </div>
-        <div class="modal-footer justify-content-between px-4 py-3">
-        <button type="button" class="btn btn-success px-4" onclick="enviarImpresion()">
-            <i class="fa-solid fa-print me-2"></i>Imprimir
-        </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="volverAlModalOriginal()">
-            <i class="bi bi-arrow-left-circle me-1"></i> Cancelar
-        </button>
-        
-        </div>
-    </div>
     </div>
 </div>
+
+  
 {% endfor %}
 
 <!-- Script para copiar código de barras -->
@@ -419,97 +422,164 @@
             new bootstrap.Tooltip(tooltipTriggerEl);
         });
     });
+</script> 
+
+{% block extra_js %}
+<script>
+    (function(){
+        // Aseguramos la variable global sin redeclarar
+        window.ultimoModalId = window.ultimoModalId || null;
+
+        // 1) Abre el submodal de cantidades
+        window.imprimirCodigos = function(productoId) {
+            // Quita foco del botón anterior
+            if (document.activeElement) document.activeElement.blur();
+
+            var mainModalId  = 'codigoBarrasModal-' + productoId;
+            var mainModalEl  = document.getElementById(mainModalId);
+            var mainModal    = bootstrap.Modal.getInstance(mainModalEl);
+
+            // Oculta el modal principal
+            if (mainModal) {
+                mainModal.hide();
+                window.ultimoModalId = mainModalId;
+            }
+
+            // Recoge solo los checkboxes marcados
+            var checks = mainModalEl.querySelectorAll('.imprimir-codigo:checked');
+            if (checks.length === 0) {
+                alert('Selecciona al menos un código.');
+                if (mainModal) mainModal.show();
+                return;
+            }
+
+            // Rellena el submodal
+            var cont = document.getElementById('contenedor-cantidades');
+            cont.innerHTML = '';
+            checks.forEach(function(cb) {
+                var code   = cb.value;
+                var imgUrlRelativa = cb.dataset.imgUrl;
+                var imgUrlCompleta = window.location.origin + imgUrlRelativa; 
+                var talla  = cb.dataset.talla;
+                var color  = cb.dataset.color;
+                var genero = cb.dataset.genero;
+
+                cont.insertAdjacentHTML('beforeend',
+                    '<div class="col-md-6 mb-4">' +
+                    '<label class="form-label"><strong>' + code + '</strong></label><br>' +
+                    '<small class="text-muted">Talla: ' + talla + ' | Color: ' + color + ' | Género: ' + genero + '</small><br>' +
+                    '<img src="' + imgUrlCompleta + '" class="img-fluid my-2" style="max-height:100px;">' +
+                    '<input type="hidden" name="codigos[]" value="'+ code +'">' +
+                    '<input type="hidden" name="img_urls[]" value="'+ imgUrlCompleta +'">' +
+                    '<input type="number" name="cantidades[]" class="form-control" min="1" value="1">' +
+                    '</div>'
+                );
+            });
+
+            // Muestra el submodal
+            var subModalEl = document.getElementById('cantidadModal');
+            var subModal   = new bootstrap.Modal(subModalEl);
+            subModal.show();
+
+            // Tras mostrarse, mueve el foco al primer input
+            setTimeout(function(){
+                var firstInput = subModalEl.querySelector('input[name="cantidades[]"]');
+                if (firstInput) firstInput.focus();
+            }, 300);
+        };
+
+        // 2) Vuelve al modal original
+        window.volverAlModalOriginal = function() {
+            var sub = bootstrap.Modal.getInstance(document.getElementById('cantidadModal'));
+            if (sub) sub.hide();
+            if (window.ultimoModalId) {
+                new bootstrap.Modal(document.getElementById(window.ultimoModalId)).show();
+                window.ultimoModalId = null;
+            }
+        };
+
+        // 3) Enviar el formulario y abrir PDF
+        document.addEventListener('DOMContentLoaded', function() {
+            var btn = document.getElementById('btn-enviar-impresion');
+            if (!btn) return;
+
+            // Remover cualquier listener anterior (por si acaso)
+            btn.replaceWith(btn.cloneNode(true));
+            btn = document.getElementById('btn-enviar-impresion');
+
+            btn.addEventListener('click', function() {
+                var form = document.getElementById('form-cantidades');
+                var fd   = new FormData(form);
+
+                console.log('Payload:', Array.from(fd.entries()));
+
+                btn.disabled = true;
+
+                fetch("{% url 'imprimir_codigos_barras' %}", {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-CSRFToken': fd.get('csrfmiddlewaretoken'),
+                        'Accept': 'application/pdf'
+                    },
+                    body: fd
+                })
+                .then(function(resp) {
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    return resp.arrayBuffer();
+                })
+                .then(function(buf) {
+                    var blob = new Blob([buf], { type: 'application/pdf' });
+                    window.open(URL.createObjectURL(blob), '_blank').focus();
+                })
+                .catch(function(err) {
+                    console.error('Error generando PDF:', err);
+                    alert('No se pudo generar el PDF. Revisa la consola.');
+                })
+                .finally(function() {
+                    window.volverAlModalOriginal();
+                    setTimeout(function() {
+                        btn.disabled = false;
+                    }, 1000);
+                });
+            });
+        });
+
+    })();
 </script>
 
 <script>
-    let ultimoModalId = null;
+    document.getElementById("btnActualizarTodosCodigosBarras").addEventListener("click", function() {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    function imprimirCodigos(productoId) {
-        const modalId = `codigoBarrasModal-${productoId}`;
-        const modalElement = document.getElementById(modalId);
-        const modalInstance = bootstrap.Modal.getInstance(modalElement);
-        
-        if (modalInstance) {
-            modalInstance.hide();
-            ultimoModalId = modalId;
-        }
-
-        const checkboxes = modalElement.querySelectorAll(".imprimir-codigo:checked");
-        const contenedor = document.getElementById("contenedor-cantidades");
-        contenedor.innerHTML = "";
-
-        if (checkboxes.length === 0) {
-            alert("Selecciona al menos un código para imprimir.");
-            if (modalInstance) modalInstance.show();
-            return;
-        }
-
-        checkboxes.forEach((checkbox) => {
-            const codigo = checkbox.value;
-            const nombreVariante = checkbox.getAttribute("data-nombre") || "Sin nombre";
-            const talla = checkbox.dataset.talla;
-            const color = checkbox.dataset.color;
-            const genero = checkbox.dataset.genero;
-
-            const div = document.createElement("div");
-            div.classList.add("col-md-6");
-            div.innerHTML = `
-                <label class="form-label">
-                    <strong>${codigo}</strong><br>
-                    <small class="text-muted">Talla: ${talla} | Color: ${color} | Género: ${genero}</small>
-                </label>
-                <input type="hidden" name="codigos[]" value="${codigo}">
-                <input type="number" class="form-control" name="cantidad_${codigo}" min="1" value="1">
-            `;
-
-            contenedor.appendChild(div);
-        });
-
-        const cantidadModal = new bootstrap.Modal(document.getElementById('cantidadModal'));
-        cantidadModal.show();
-    }
-
-    function volverAlModalOriginal() {
-        const submodal = bootstrap.Modal.getInstance(document.getElementById('cantidadModal'));
-        if (submodal) submodal.hide();
-
-        if (ultimoModalId) {
-            const modalOriginal = new bootstrap.Modal(document.getElementById(ultimoModalId));
-            modalOriginal.show();
-        }
-    }
-
-    function enviarImpresion() {
-        const form = document.getElementById("form-cantidades");
-        const formData = new FormData(form);
-
-        fetch("{% url 'imprimir_codigos_barras' %}", {
-            method: "POST",
+        fetch('/tienda/actualizar-todos-codigos-barras/', {
+            method: 'POST',
             headers: {
-                "X-CSRFToken": "{{ csrf_token }}",
-            },
-            body: formData,
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
         })
-        .then((response) => {
-            if (response.ok) return response.blob();
-            throw new Error("Error al generar PDF");
+        .then(response => {
+            console.log(response);  // Verifica la respuesta aquí
+            return response.json(); 
         })
-        .then((blob) => {
-            const url = URL.createObjectURL(blob);
-            const win = window.open(url, "_blank");
-            win.focus();
+        .then(data => {
+            if (data.errores.length > 0) {
+                alert("Hubo errores al actualizar algunos códigos de barras.");
+                console.log(data.errores);
+            } else {
+                alert("Todos los códigos de barras han sido actualizados.");
+            }
         })
-        .catch((error) => {
-            console.error("Error:", error);
-            alert("No se pudo generar el PDF.");
+        .catch(error => {
+            console.error("Error en la solicitud:", error);
+            alert("Error en la solicitud: " + error);
         });
 
-        const submodal = bootstrap.Modal.getInstance(document.getElementById('cantidadModal'));
-        if (submodal) submodal.hide();
-        ultimoModalId = null;
-    }
+    });
 </script>
-
+    
+{% endblock %}
         
 
 {% endblock %}

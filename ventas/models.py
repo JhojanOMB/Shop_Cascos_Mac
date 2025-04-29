@@ -82,6 +82,7 @@ class DetalleVenta(models.Model):
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     codigo_barras = models.CharField(max_length=13, blank=True, null=True)
+    anulado = models.BooleanField(default=False)
 
     def calcular_total(self):
         """Calcula el total del detalle multiplicando la cantidad por el precio."""

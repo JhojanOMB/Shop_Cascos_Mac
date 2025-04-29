@@ -19,7 +19,8 @@ urlpatterns = [
 
     # Gestión códigos de barras
     path('codigo-barras/talla/<int:talla_id>/', views.generar_codigo_barras_talla, name='codigo_barras_talla'),
-    
+    path('actualizar-todos-codigos-barras/', views.actualizar_todos_codigos_barras, name='actualizar_todos_codigos_barras'),
+
     # Gestión de productos
     path('producto/', views.ProductoContenidoView.as_view(), name='contenido_productos'),
     path('producto/crear/', views.ProductoCreateView.as_view(), name='crear_producto'),

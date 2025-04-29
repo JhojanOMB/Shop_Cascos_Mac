@@ -10,6 +10,7 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse_lazy, reverse
 from django.template.loader import render_to_string
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.csrf import csrf_exempt
 # Códigos de barras
 import barcode
 from barcode import get
@@ -41,26 +42,84 @@ logger = logging.getLogger(__name__)
 def generar_codigo_barras(request, codigo_barras):
     """
     Genera una imagen PNG del código de barras para el código proporcionado,
-    utilizando el estándar EAN-13.
+    utilizando el estándar EAN-13 con márgenes personalizados para todos los productos,
+    y recorta los márgenes laterales.
     """
     try:
+        # Genera el código de barras sin recortar (con margen original)
         codigo_barras_class = barcode.get('ean13', codigo_barras, writer=ImageWriter())
+
+        # Establece los márgenes para el código de barras
+        codigo_barras_class.writer.set_options({
+            'module_height': 15,  # Establece la altura de las barras
+            'module_width': 0.3,  # Establece el grosor de las barras
+            'quiet_zone': 3,      # Márgenes laterales estándar (se recortarán)
+        })
+
+        # Guarda el código de barras en un buffer
         buffer = BytesIO()
         codigo_barras_class.write(buffer)
         buffer.seek(0)
-        return HttpResponse(buffer, content_type='image/png')
+
+        # Abre la imagen generada con Pillow
+        image = Image.open(buffer)
+
+        # Recorta la imagen para eliminar los márgenes laterales
+        left, top, right, bottom = image.getbbox()  # Obtiene el bounding box de la imagen
+        image = image.crop((left + 60, top, right - 60, bottom))  # Recorta # pixeles de cada lado
+
+        # Guarda la imagen recortada en un buffer
+        output = BytesIO()
+        image.save(output, format="PNG")
+        output.seek(0)
+
+        # Retorna la imagen recortada como respuesta HTTP
+        return HttpResponse(output, content_type='image/png')
+
     except barcode.errors.BarcodeError as e:
         return HttpResponse(f"Error al generar el código de barras: {str(e)}", status=400)
 
 def generar_codigo_barras_talla(request, producto_talla_id):
     """
     Genera la imagen PNG del código de barras para la variante de producto (ProductoTalla)
-    identificada por producto_talla_id.
+    identificada por producto_talla_id, aplicando los márgenes ajustados a todos los productos.
     """
     producto_talla = get_object_or_404(ProductoTalla, pk=producto_talla_id)
     if not producto_talla.codigo_barras:
         return HttpResponse("La variante no tiene un código de barras asignado.", status=404)
     return generar_codigo_barras(request, producto_talla.codigo_barras)
+
+@login_required
+def actualizar_todos_codigos_barras(request):
+    if request.method == 'POST':
+        productos_talla = ProductoTalla.objects.all()
+        actualizados = []
+        errores = []
+
+        for producto_talla in productos_talla:
+            try:
+                if not producto_talla.codigo_barras:
+                    codigo_barras = str(producto_talla.id).zfill(12)  # Ejemplo de código de barras
+                    producto_talla.codigo_barras = codigo_barras
+                    producto_talla.save()
+
+                actualizados.append({
+                    'producto_talla_id': producto_talla.id,
+                    'codigo_barras': producto_talla.codigo_barras,
+                })
+            except Exception as e:
+                errores.append({
+                    'producto_talla_id': producto_talla.id,
+                    'error': str(e)
+                })
+
+        return JsonResponse({
+            'actualizados': actualizados,
+            'errores': errores
+        })
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
 
 def index(request):
     categorias = Categoria.objects.all()
@@ -743,94 +802,90 @@ def productos_vendidos_hoy(request):
         'metodos_pago': metodos_pago_dict
     })
 
-# Vista para imprimir códigos de barras
 def imprimir_codigos_barras(request):
-    if request.method == 'POST':
-        # Se obtienen los códigos seleccionados y se repiten según la cantidad solicitada.
-        selected_codes = request.POST.getlist('codigos[]')
-        codigos_final = []
-        for code in selected_codes:
-            qty_str = request.POST.get('cantidad_' + code, '1')
-            try:
-                qty = int(qty_str)
-            except ValueError:
-                qty = 1
-            codigos_final.extend([code] * qty)
+    if request.method != 'POST':
+        return JsonResponse({"mensaje": "Método no permitido"}, status=405)
 
-        # Dimensiones de la hoja en puntos (1 cm ≈ 28.35 pts)
-        page_width = 5.8 * 28.35    # ~164 pts
-        page_height = 20.99 * 28.35  # ~595 pts
+    codigos = request.POST.getlist('codigos[]')
+    cantidades = request.POST.getlist('cantidades[]')
+    img_urls = request.POST.getlist('img_urls[]')
 
-        buffer = BytesIO()
-        pdf = canvas.Canvas(buffer, pagesize=(page_width, page_height))
-        
-        # Eliminar márgenes y espaciados
-        margin_left = -10
-        margin_right = 0
-        margin_top = 2      
-        margin_bottom = 0   
-        horizontal_spacing = 10
-        vertical_spacing = 0    
-        
-        # Calcular el ancho para cada imagen en 2 columnas (sin separación)
-        image_width = (page_width - margin_left - margin_right - horizontal_spacing) / 1
-        image_height = 80  # Altura fija para cada imagen (ajústala según necesites)
-        
-        # Calcular la cantidad máxima de filas que caben en una hoja
-        max_rows = math.floor((page_height - margin_top - margin_bottom + vertical_spacing) / (image_height + vertical_spacing))
-        
-        current_index = 0
-        total_items = len(codigos_final)
-        
-        while current_index < total_items:
-            # Imprimir hasta max_rows x 2 imágenes por página
-            for row in range(max_rows):
-                for col in range(2):
-                    if current_index >= total_items:
-                        break
-                    # Para la primera columna: x = 0; para la segunda: x = image_width
-                    x_position = margin_left if col == 0 else margin_left + image_width
-                    y_position = page_height - margin_top - image_height - row * (image_height + vertical_spacing)
-                    
-                    code = codigos_final[current_index]
-                    
-                    # Obtener URL según el tipo de código
-                    if code.startswith("general-"):
-                        product_id = code.split("-")[1]
-                        barcode_url = request.build_absolute_uri(
-                            reverse('codigo_barras_producto', args=[product_id])
-                        )
-                    elif code.startswith("talla-"):
-                        talla_id = code.split("-")[1]
-                        barcode_url = request.build_absolute_uri(
-                            reverse('codigo_barras_talla', args=[talla_id])
-                        )
-                    else:
-                        current_index += 1
-                        continue
+    images_to_print = []
+    for code, qty, url in zip(codigos, cantidades, img_urls):
+        try:
+            q = int(qty)
+        except ValueError:
+            q = 1
+        images_to_print += [url] * q
 
-                    response = requests.get(barcode_url)
-                    if response.status_code == 200:
-                        image = ImageReader(BytesIO(response.content))
-                        pdf.drawImage(
-                            image,
-                            x_position,
-                            y_position,
-                            width=image_width,
-                            height=image_height,
-                            preserveAspectRatio=False  # Fija la imagen para llenar todo el espacio
-                        )
-                    current_index += 1
-                if current_index >= total_items:
+    if not images_to_print:
+        return JsonResponse({"mensaje": "No se recibieron códigos de barras para imprimir"}, status=400)
+
+    cm_to_pt = 28.35
+    page_width = 5.8 * cm_to_pt  
+    page_height = 20.99 * cm_to_pt  
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=(page_width, page_height))
+
+    # Márgenes 0
+    ml, mr, mt, mb = 0, 0, 0, 0  
+
+    columnas = 2  # siempre 2 códigos por fila
+    filas_por_pagina = 12  # FIJAS: 12 filas
+
+    # Nuevo tamaño más grande
+    scale_factor = 1.08 # Aumento de tamaño
+
+    image_width = (page_width / columnas) * scale_factor
+    image_height = (page_height / filas_por_pagina) * scale_factor
+
+    # Reducir el espacio entre columnas
+    espacio_entre_columnas = -0.45 * cm_to_pt  # Espacio entre columnas
+
+    idx = 0
+    total = len(images_to_print)
+
+    while idx < total:
+        for row in range(filas_por_pagina):
+            if idx >= total:
+                break
+
+            y = page_height - (row + 1) * image_height
+
+            for col in range(columnas):
+                if idx >= total:
                     break
-            if current_index < total_items:
-                pdf.showPage()  # Nueva página si quedan códigos
 
-        pdf.save()
-        buffer.seek(0)
-        return HttpResponse(buffer, content_type='application/pdf')
-    
-    return HttpResponse("Método no permitido", status=405)
+                # Ajuste de la posición x para reducir el espacio entre columnas
+                x = col * (image_width + espacio_entre_columnas)
+
+                url = images_to_print[idx]
+
+                try:
+                    resp = requests.get(url)
+                    resp.raise_for_status()
+                    img = ImageReader(BytesIO(resp.content))
+                    pdf.drawImage(
+                        img,
+                        x,
+                        y,
+                        width=image_width,
+                        height=image_height,
+                        preserveAspectRatio=True
+                    )
+                except Exception as e:
+                    print(f"Error al procesar la imagen con URL {url}: {e}")
+
+                idx += 1
+
+        if idx < total:
+            pdf.showPage()
+
+    pdf.save()
+    buffer.seek(0)
+
+    return HttpResponse(buffer, content_type='application/pdf')
 
 def eliminar_productos_seleccionados(request):
     if request.method == "POST":
@@ -899,3 +954,5 @@ class AdicionalesListView(TemplateView):
         context['tallas'] = Talla.objects.all()
         context['colores'] = Color.objects.all()
         return context
+    
+    

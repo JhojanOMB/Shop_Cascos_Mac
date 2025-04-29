@@ -32,54 +32,40 @@ def obtener_cantidades_inventario(producto_id):
 @login_required
 def inventario_view(request):
     query = request.GET.get('search', '')
-    
-    productos = Producto.objects.all().order_by('nombre')
+
+    # Obtenemos todas las variantes con sus relaciones de producto, talla y color
+    variantes = (
+        ProductoTalla.objects
+        .select_related('producto', 'talla', 'color')
+        .all()
+    )
     if query:
-        productos = productos.filter(
-            Q(nombre__icontains=query) |
-            Q(referencia__icontains=query) |
+        variantes = variantes.filter(
+            Q(producto__nombre__icontains=query) |
+            Q(producto__referencia__icontains=query) |
             Q(codigo_barras__icontains=query)
         )
 
-    # Convertir la QuerySet en lista para clasificar según stock
-    productos = list(productos)
-    productos_con_stock = []
-    productos_sin_stock = []
-    productos_bajo_stock = []
-    
-    for producto in productos:
-        total_cantidad = producto.total_cantidad  # La propiedad que debe considerar variantes o el campo cantidad
-        if total_cantidad == 0:
-            productos_sin_stock.append(producto)
-        elif total_cantidad <= 5:
-            productos_bajo_stock.append(producto)
-        else:
-            productos_con_stock.append(producto)
-            
-    # Opcional: asignar variantes a cada producto (si es necesario para mostrar en la tabla)
-    for producto in productos:
-        producto.variantes = ProductoTalla.objects.filter(
-            producto=producto,
-            cantidad__gt=0
-        ).select_related('talla', 'color')
+    # Separamos por stock
+    variantes_sin_stock  = variantes.filter(cantidad=0)
+    variantes_bajo_stock = variantes.filter(cantidad__gt=0, cantidad__lte=5)
+    variantes_con_stock  = variantes.filter(cantidad__gt=5)
 
-    # Paginación para cada lista (10 productos por página)
-    paginator_con = Paginator(productos_con_stock, 10)
-    paginator_sin = Paginator(productos_sin_stock, 10)
-    page_con = request.GET.get('page_con')
-    page_sin = request.GET.get('page_sin')
-    page_obj_con = paginator_con.get_page(page_con)
-    page_obj_sin = paginator_sin.get_page(page_sin)
-    
+    # Paginación para cada grupo de variantes
+    page_sin  = Paginator(variantes_sin_stock, 10).get_page(request.GET.get('page_sin'))
+    page_bajo = Paginator(variantes_bajo_stock, 10).get_page(request.GET.get('page_bajo'))
+    page_con  = Paginator(variantes_con_stock, 10).get_page(request.GET.get('page_con'))
+
     context = {
-        'productos_con_stock': page_obj_con,  # Este es el objeto Page para productos con stock
-        'productos_sin_stock': page_obj_sin,    # Objeto Page para productos sin stock
-        'productos_bajo_stock': productos_bajo_stock,  # Si querés mostrarlos sin paginación o aplicá la misma lógica
+        'variantes_sin_stock': page_sin,
+        'variantes_bajo_stock': page_bajo,
+        'variantes_con_stock': page_con,
         'search_query': query,
         'categorias': Categoria.objects.all(),
         'proveedores': Proveedor.objects.all(),
     }
     return render(request, 'dashboard/inventario/inventario.html', context)
+
 
 @login_required
 def actualizar_cantidad_view(request, pk):

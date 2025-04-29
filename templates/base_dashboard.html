@@ -30,6 +30,10 @@
     <!-- Incluir iconos de bootstrap -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+    <!-- Incluir html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+
 </head>
 
 <body class="d-flex flex-column min-vh-100">
@@ -53,7 +57,7 @@
     <nav class="navbar d-md-none border-bottom shadow-sm sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'index' %}">
-                <img src="{% static 'img/logo.png' %}" alt="Logo Mac Cascos" width="30" class="me-2"> Mac Cascos
+                <img src="{% static 'img/logo2.png' %}" alt="Logo Mac Cascos" width="30" class="me-2"> Mac Cascos
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -270,7 +274,6 @@
         <!-- Main Contenido -->
         <main class="flex-grow-1 overflow-auto p-4 container-fluid">
             {% block content %}
-            <!-- Contenido cargado de los enlaces cargados del sidebar-->
             {% endblock %}
         </main>
     </div>
@@ -304,7 +307,14 @@
         integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
         crossorigin="anonymous"></script>
 
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+
     {% block extra_js %}
+    {% endblock %}
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const sidebarToggleBtn = document.getElementById('sidebar-toggle');
@@ -347,8 +357,17 @@
             });
         });
     </script>
-    {% endblock %}
 
+    <script>
+        $(document).ready(function() {
+          // Aplica Select2 a todos los selects con clase .select2
+          $('select.select2').select2({
+            placeholder: "Buscar variante…",
+            allowClear: true,
+            width: '100%'
+          });
+        });
+      </script>
 
 </body>
 

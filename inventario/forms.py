@@ -32,6 +32,9 @@ class MovimientoInventarioForm(forms.ModelForm):
     class Meta:
         model = MovimientoInventario
         fields = ['producto_talla', 'motivo', 'cantidad', 'comentario']
+        widgets = {
+            'producto_talla': forms.Select(attrs={'class': 'form-select select2'}),
+        }
 
     def __init__(self, *args, **kwargs):
         # Capturamos producto_talla_id si se envía explícitamente
