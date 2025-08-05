@@ -1,0 +1,39 @@
+{% extends 'base_dashboard.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Transferir Stock</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="form-group">
+          {{ form.producto.label_tag }}
+          {{ form.producto| }}
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          {{ form.bodega_origen.label_tag }}
+          {{ form.bodega_origen| }}
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          {{ form.bodega_destino.label_tag }}
+          {{ form.bodega_destino| }}
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          {{ form.cantidad.label_tag }}
+          {{ form.cantidad| }}
+        </div>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">
+      <i class="bi bi-send"></i> Transferir
+    </button>
+  </form>
+</div>
+{% endblock %}

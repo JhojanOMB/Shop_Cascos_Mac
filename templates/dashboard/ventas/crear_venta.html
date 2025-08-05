@@ -20,13 +20,13 @@
                     <thead class="thead-dark">
                         <tr class="text-center align-middle">
                             <th>Producto</th>
-                            <th class="text-center">Color</th>
-                            <th class="text-center">Género</th>
-                            <th class="text-center">Talla</th>
-                            <th class="text-center">Precio</th>
-                            <th class="text-center">Cantidad</th>
-                            <th class="text-center">Total</th>
-                            <th class="text-center">Acciones</th>
+                            <th>Color</th>
+                            <th>Género</th>
+                            <th>Talla</th>
+                            <th>Precio</th>
+                            <th>Cantidad</th>
+                            <th>Total</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="productos-list">
@@ -85,134 +85,155 @@
 
 
 <script>
-    // Formateador para COP sin decimales
-    const formatter = new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
+  // Formateador COP sin decimales
+  const formatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency', currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
 
-    let totalVenta = 0;
+  let totalVenta = 0;
 
-    document.getElementById('codigo_barras').addEventListener('keypress', function (event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            buscarProducto();
-        }
-    });
-
-    function buscarProducto() {
-        const codigoBarras = document.getElementById('codigo_barras').value.trim();
-        if (!codigoBarras) {
-            alert('Por favor ingresa un código de barras válido.');
-            return;
-        }
-
-        document.getElementById('btn-agregar-producto').disabled = true;
-
-        fetch(`{% url 'ventas:obtener_producto_por_codigo' %}?codigo_barras=${codigoBarras}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    agregarProducto(data.producto);
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Ocurrió un error al buscar el producto.');
-            })
-            .finally(() => {
-                document.getElementById('btn-agregar-producto').disabled = false;
-            });
+  // Al presionar Enter en el input de código de barras
+  document.getElementById('codigo_barras')
+          .addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      buscarProducto();
     }
+  });
 
-    function agregarProducto(producto) {
-        const tablaProductos = document.getElementById('productos-list');
-
-        // Verifica si ya existe una fila para este producto, comparando por id
-        const filaExistente = Array.from(tablaProductos.children).find(row =>
-            row.querySelector('input[name="productos_ids"]').value == producto.id);
-
-        if (filaExistente) {
-            const cantidadInput = filaExistente.querySelector('input[name="cantidades"]');
-            let cantidadActual = parseInt(cantidadInput.value);
-            const cantidadNueva = cantidadActual + 1;
-
-            if (cantidadNueva > producto.stock) {
-                alert(`No hay suficiente stock para "${producto.nombre}". Máximo disponible: ${producto.stock}`);
-                return;
-            }
-
-            cantidadInput.value = cantidadNueva;
-            actualizarTotal(cantidadInput, producto.precio, producto.stock);
+  // Llama a tu vista que devuelve JSON con datos de producto
+  function buscarProducto() {
+    const input = document.getElementById('codigo_barras');
+    const codigo = input.value.trim();
+    if (!codigo) {
+      alert('Ingresa un código de barras válido');
+      return;
+    }
+    fetch(`{% url 'ventas:obtener_producto_por_codigo' %}?codigo_barras=${codigo}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          agregarProducto(data.producto);
         } else {
-            if (producto.stock <= 0) {
-                alert(`El producto "${producto.nombre}" no tiene stock disponible.`);
-                return;
-            }
-
-            const fila = document.createElement('tr');
-            // Se asignan clases "text-center" a las celdas deseadas
-            fila.innerHTML = `
-                <td>${producto.nombre} <input type="hidden" name="productos_ids" value="${producto.id}"></td>
-                <td class="text-center">${producto.color}</td>
-                <td class="text-center">${producto.genero}</td>
-                <td class="text-center">${producto.talla}</td>
-                <td class="text-center precio">${formatter.format(producto.precio)}</td>
-                <td class="text-center">
-                    <input type="number" name="cantidades" value="1" min="1" max="${producto.stock}" class="form-control text-center"
-                        onchange="actualizarTotal(this, ${producto.precio}, ${producto.stock})" required>
-                </td>
-                <td class="text-center total">${formatter.format(producto.precio)}</td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">Eliminar</button>
-                </td>
-            `;
-
-            tablaProductos.appendChild(fila);
-            totalVenta += parseFloat(producto.precio);
-            document.getElementById('total-venta').textContent = formatter.format(totalVenta);
+          alert(data.message);
         }
+      })
+      .catch(() => alert('Error al buscar el producto'))
+      .finally(() => input.value = '');
+  }
 
-        document.getElementById('codigo_barras').value = '';
+  // Añade una fila nueva o incrementa cantidad
+  function agregarProducto(prod) {
+    const tbody = document.getElementById('productos-list');
+    // Busca si ya existe
+    let fila = Array.from(tbody.children)
+      .find(r => r.dataset.id == prod.id);
+
+    if (fila) {
+      const cantInput = fila.querySelector('input[name="cantidades"]');
+      let nueva = Math.min(prod.stock, parseInt(cantInput.value) + 1);
+      cantInput.value = nueva;
+      actualizarFila(fila);
+      return;
     }
 
-    function actualizarTotal(input, precio, stock) {
-        const cantidad = parseInt(input.value);
-
-        if (cantidad > stock) {
-            alert(`La cantidad solicitada excede el stock disponible (${stock} unidades).`);
-            input.value = stock;
-            return;
-        }
-
-        const totalCelda = input.parentElement.nextElementSibling;
-        const totalAnterior = parseFloat(totalCelda.textContent.replace(/[^0-9.-]+/g,""));
-        const totalNuevo = cantidad * precio;
-
-        totalVenta += totalNuevo - totalAnterior;
-        totalCelda.textContent = formatter.format(totalNuevo);
-        document.getElementById('total-venta').textContent = formatter.format(totalVenta);
+    if (prod.stock <= 0) {
+      alert(`Sin stock: ${prod.nombre}`);
+      return;
     }
 
-    function eliminarProducto(button) {
-        const fila = button.closest('tr');
-        const totalCelda = fila.querySelector('.total');
-        const totalProducto = parseFloat(totalCelda.textContent.replace(/[^0-9.-]+/g,""));
+    // Crea fila
+    fila = document.createElement('tr');
+    fila.dataset.id    = prod.id;
+    fila.dataset.stock = prod.stock;
 
-        totalVenta -= totalProducto;
-        document.getElementById('total-venta').textContent = formatter.format(totalVenta);
+    fila.innerHTML = `
+      <td class="align-middle text-wrap">
+        ${prod.nombre}
+        <input type="hidden" name="productos_ids" value="${prod.id}">
+      </td>
+      <td class="text-center align-middle">${prod.color}</td>
+      <td class="text-center align-middle">${prod.genero}</td>
+      <td class="text-center align-middle">${prod.talla}</td>
+      <td class="text-center align-middle">
+        <input type="number"
+               name="precios"
+               class="form-control precio-input text-end"
+               step="1"
+               min="0"
+               value="${prod.precio}"
+               onchange="onPrecioChange(this)">
+      </td>
+      <td class="text-center align-middle">
+        <input type="number"
+               name="cantidades"
+               class="form-control cantidad-input text-center"
+               value="1"
+               min="1"
+               max="${prod.stock}"
+               onchange="onCantidadChange(this)">
+      </td>
+      <td class="text-center align-middle total-cell">
+        ${formatter.format(prod.precio)}
+      </td>
+      <td class="text-center align-middle">
+        <button type="button" class="btn btn-sm btn-danger"
+                onclick="eliminarProducto(this)">
+          Eliminar
+        </button>
+      </td>
+    `;
+    tbody.appendChild(fila);
+    totalVenta += prod.precio;
+    document.getElementById('total-venta').textContent = formatter.format(totalVenta);
+  }
 
-        fila.remove();
+  // Cuando cambia la cantidad
+  function onCantidadChange(input) {
+    const fila  = input.closest('tr');
+    const max   = parseInt(fila.dataset.stock);
+    let val     = parseInt(input.value) || 1;
+    if (val < 1) val = 1;
+    if (val > max) {
+      alert(`Máximo disponible: ${max}`);
+      val = max;
     }
+    input.value = val;
+    actualizarFila(fila);
+  }
+
+  // Cuando cambia el precio
+  function onPrecioChange(input) {
+    const val = parseFloat(input.value) || 0;
+    if (val < 0) input.value = 0;
+    actualizarFila(input.closest('tr'));
+  }
+
+  // Elimina la fila
+  function eliminarProducto(btn) {
+    const fila = btn.closest('tr');
+    const totalCell = fila.querySelector('.total-cell');
+    const valor      = parseFloat(totalCell.textContent.replace(/[^0-9]/g, '')) || 0;
+    totalVenta     -= valor;
+    document.getElementById('total-venta').textContent = formatter.format(totalVenta);
+    fila.remove();
+  }
+
+  // Recalcula subtotal de la fila y totalVenta
+  function actualizarFila(fila) {
+    const cantidad = parseInt(fila.querySelector('.cantidad-input').value) || 0;
+    const precio   = parseFloat(fila.querySelector('.precio-input').value) || 0;
+    const subtotal = cantidad * precio;
+    // Ajusta totalVenta: sumamos el cambio (nuevo - viejo)
+    const viejaCelda = parseFloat(fila.querySelector('.total-cell')
+                          .textContent.replace(/[^0-9]/g, '')) || 0;
+    totalVenta += subtotal - viejaCelda;
+    // Actualiza celdas
+    fila.querySelector('.total-cell').textContent = formatter.format(subtotal);
+    document.getElementById('total-venta').textContent = formatter.format(totalVenta);
+  }
 </script>
 
 <script>

@@ -1,0 +1,6 @@
+{% extends 'error_base.html' %}
+{% block content %}
+    {% with codigo_error="405" titulo_error="¡Página no encontrada!" mensaje_error="Lo sentimos, la página que buscas no existe o fue movida." %}
+        {{ block.super }}
+    {% endwith %}
+{% endblock %}

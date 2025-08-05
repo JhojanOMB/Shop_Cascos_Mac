@@ -1,0 +1,28 @@
+{% extends 'base_dashboard.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Editar Bodega - {{ bodega.nombre }}</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ form.nombre.label_tag }}
+      {{ form.nombre|add_class:"form-control" }}
+      {% if form.nombre.errors %}
+        <div class="text-danger small">{{ form.nombre.errors }}</div>
+      {% endif %}
+    </div>
+    <div class="mb-3">
+      {{ form.direccion.label_tag }}
+      {{ form.direccion|add_class:"form-control" }}
+      {% if form.direccion.errors %}
+        <div class="text-danger small">{{ form.direccion.errors }}</div>
+      {% endif %}
+    </div>
+    <button type="submit" class="btn btn-warning mt-3">
+      <i class="bi bi-pencil-square"></i> Guardar Cambios
+    </button>
+  </form>
+</div>
+{% endblock %}

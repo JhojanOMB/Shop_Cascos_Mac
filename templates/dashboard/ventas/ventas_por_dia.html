@@ -1,0 +1,131 @@
+{% extends 'base_dashboard.html' %}
+{% load humanize %}
+
+{% block content %}
+<h2 class="fw-bold">Ventas por día</h2>
+
+<hr>
+
+<form method="get" class="mb-4 d-flex gap-2 flex-wrap">
+    <label for="fecha" class="form-label">Selecciona la fecha:</label>
+    <input type="date" name="fecha" id="fecha" value="{{ fecha }}" class="form-control w-auto">
+    <button type="submit" class="btn btn-primary">Consultar</button>
+    <a href="?ayer=1" class="btn btn-secondary">Ventas de Ayer</a>
+</form>
+
+{% if not fecha %}
+    <div class="alert alert-info">Por favor selecciona una fecha para ver las ventas.</div>
+{% endif %}
+
+<hr>
+
+{% if fecha %}
+    <h5 class="mb-4">Resumen del {{ fecha }}</h5>
+    <div class="row g-3 justify-content-around">
+        <!-- Tarjeta de Ingresos -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card shadow-sm border-dark rounded-4 bg-light h-100">
+                <h6 class="card-header text-center fw-bold text-dark">
+                    Vendido el {{ fecha }}
+                </h6>
+                <div class="card-body text-center">
+                    <p class="fs-4 fw-bold text-success">
+                        <span class="border rounded-circle border-3 p-2 border-success">
+                            <i class="fa-solid fa-coins text-warning"></i>
+                        </span>
+                        ${{ total_ventas_dia|intcomma }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Gastos -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card shadow-sm border-dark rounded-4 bg-light h-100">
+                <h6 class="card-header text-center fw-bold text-dark">Gastos</h6>
+                <div class="card-body text-center">
+                    {% if caja %}
+                        <p class="fs-4 fw-bold text-danger">
+                            <span class="border rounded-circle border-3 p-2 border-danger">
+                                <i class="fa-solid fa-money-bill-wave"></i>
+                            </span>
+                            ${{ caja.gastos|intcomma }}
+                        </p>
+                    {% else %}
+                        <p class="fs-4 fw-bold text-danger">
+                            <span class="border rounded-circle border-3 p-2 border-danger">
+                                <i class="fa-solid fa-money-bill-wave"></i>
+                            </span>
+                            $0
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta de Neto -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card shadow-sm border-dark rounded-4 bg-light h-100">
+                <h6 class="card-header text-center fw-bold text-dark">Total Neto</h6>
+                <div class="card-body text-center">
+                    {% if caja %}
+                        <p class="fs-4 fw-bold text-primary">
+                            <span class="border rounded-circle border-3 p-2 border-primary">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </span>
+                            ${{ caja.neto|intcomma }}
+                        </p>
+                    {% else %}
+                        <p class="fs-4 fw-bold text-primary">
+                            <span class="border rounded-circle border-3 p-2 border-primary">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </span>
+                            ${{ total_ventas_dia|intcomma }}
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de ventas -->
+    {% if ventas %}
+        <div class="table-responsive mt-4">
+            <table class="table table-bordered table-striped align-middle text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th># Factura</th>
+                        <th>Cliente</th>
+                        <th>Empleado</th>
+                        <th>Método de pago</th>
+                        <th>Total</th>
+                        <th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas %}
+                    <tr>
+                        <td>{{ venta.numero_factura }}</td>
+                        <td>{{ venta.cliente }}</td>
+                        <td>{{ venta.empleado.get_full_name }}</td>
+                        <td>{{ venta.get_metodo_pago_display }}</td>
+                        <td>${{ venta.total|intcomma }}</td>
+                        <td>
+                            <ul class="list-unstyled text-start mb-0">
+                                {% for detalle in venta.detalles.all %}
+                                    <li>
+                                        {{ detalle.producto_talla }} – Cant: {{ detalle.cantidad }} – ${{ detalle.total|intcomma }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4">No hay ventas registradas para esta fecha.</div>
+    {% endif %}
+{% endif %}
+{% endblock %}

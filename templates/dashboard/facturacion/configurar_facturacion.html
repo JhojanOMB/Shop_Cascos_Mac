@@ -1,0 +1,45 @@
+{% extends "base_dashboard.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Configuración de Facturación Electrónica{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto mt-10 bg-white shadow-md rounded-md p-6">
+  <h2 class="text-2xl font-bold mb-4">Configuración de Facturación Electrónica DIAN</h2>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+
+    {% for field in form %}
+      <div class="relative">
+        <label class="block text-sm font-medium text-gray-700">
+          {{ field.label }}
+          <span class="ml-1 text-blue-500 cursor-pointer group relative inline-block align-middle">
+            <i class="bi bi-question-circle-fill"></i>
+            <div
+              class="absolute z-10 hidden group-hover:block bg-white border border-gray-300
+                    text-xs text-gray-600 rounded-md p-2 w-64 shadow-md left-6 top-0">
+              {{ field.help_text|default:"Aquí puedes ingresar el valor de este campo." }}
+            </div>
+          </span>
+        </label>
+
+        {{ field }}
+
+        {% for error in field.errors %}
+          <p class="text-sm text-red-600 mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endfor %}
+
+    <button type="submit"
+            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+      Guardar configuración
+    </button>
+  </form>
+</div>
+
+{% endblock %}

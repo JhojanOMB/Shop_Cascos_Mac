@@ -127,7 +127,6 @@ class EditarUsuarioView(LoginRequiredMixin,UpdateView):
             for error in errors:
                 messages.error(self.request, f"{form.fields[field].label or field}: {error}")
         return self.render_to_response(self.get_context_data(form=form))
-
 class EliminarUsuarioView(LoginRequiredMixin,DeleteView):
     login_url = 'login'  # Redirige si no está autenticado
     model = Usuario

@@ -17,5 +17,12 @@ urlpatterns = [
     path('ver-factura/<str:numero_factura>/', PublicVentaDetalleView.as_view(), name='ver_factura'),
     path('ver-factura-restringida/<str:numero_factura>/', VentaDetalleView.as_view(), name='ver_factura_restringida'),
     path('detalle/anular/<int:detalle_id>/', views.anular_detalle_venta, name='anular_detalle'),
+    path('ventas-por-dia/', ventas_por_dia, name='ventas_por_dia'),
 
+    # Gestión de borradores
+    path('borrador/', views.VentaBorradorContenidoView.as_view(), name='venta_borrador'),
+    path('borrador/agregar/', views.AgregarDetalleBorrador.as_view(), name='borrador_agregar'),
+    path('borrador/editar/<int:pk>/', EditarBorradorView.as_view(), name='editar_borrador'),
+    path('borrador/eliminar/<int:pk>/', EliminarDetalleBorrador.as_view(), name='borrador_eliminar'),
+    path('borrador/finalizar/', views.FinalizarVentaFromBorrador.as_view(), name='borrador_finalizar'),
 ]

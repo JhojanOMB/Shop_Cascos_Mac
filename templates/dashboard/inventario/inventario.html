@@ -3,6 +3,21 @@
 {% load humanize %}
 
 {% block content %}
+
+<style>
+  .icono-redondo {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.5rem;
+}
+
+</style>
+
+
 <div class="container mt-4">
     <h2>Inventario</h2>
   
@@ -44,6 +59,56 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
       </div>
     {% endif %}
+
+{% if user.rol == "gerente" %}
+  <div class="row g-4 mb-5">
+    <!-- Tarjeta Valor Total Compra -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow rounded-4">
+        <div class="card-body d-flex align-items-center">
+          <div class="icono-redondo bg-primary text-white me-4">
+            <i class="bi bi-currency-dollar fs-3"></i>
+          </div>
+          <div>
+            <p class="text-uppercase text-muted small mb-1">Valor Total Compra</p>
+            <h4 class="mb-0 fw-bold">${{ total_compra|floatformat:0|intcomma }}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta Valor Total Venta -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow rounded-4">
+        <div class="card-body d-flex align-items-center">
+          <div class="icono-redondo bg-success text-white me-4">
+            <i class="bi bi-cart-check fs-3"></i>
+          </div>
+          <div>
+            <p class="text-uppercase text-muted small mb-1">Valor Total Venta</p>
+            <h4 class="mb-0 fw-bold">${{ total_venta|floatformat:0|intcomma }}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta Total Unidades -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow rounded-4">
+        <div class="card-body d-flex align-items-center">
+          <div class="icono-redondo bg-cafe text-white me-4">
+            <i class="bi bi-box-seam fs-3"></i>
+          </div>
+          <div>
+            <p class="text-uppercase text-muted small mb-1">Total Unidades</p>
+            <h4 class="mb-0 fw-bold">{{ total_unidades|intcomma }}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
   
     <div id="stock-section">
       <h3>Productos con Stock</h3>

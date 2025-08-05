@@ -2,10 +2,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
 from tienda.models import *
 from inventario.models import *
 from .forms import *
+from django.db.models import Q, Sum, F, FloatField
 
 # Función auxiliar para obtener cantidades por talla y el total del producto
 def obtener_cantidades_por_talla_y_total(producto_id):
@@ -33,7 +33,6 @@ def obtener_cantidades_inventario(producto_id):
 def inventario_view(request):
     query = request.GET.get('search', '')
 
-    # Obtenemos todas las variantes con sus relaciones de producto, talla y color
     variantes = (
         ProductoTalla.objects
         .select_related('producto', 'talla', 'color')
@@ -46,15 +45,20 @@ def inventario_view(request):
             Q(codigo_barras__icontains=query)
         )
 
-    # Separamos por stock
     variantes_sin_stock  = variantes.filter(cantidad=0)
     variantes_bajo_stock = variantes.filter(cantidad__gt=0, cantidad__lte=5)
     variantes_con_stock  = variantes.filter(cantidad__gt=5)
 
-    # Paginación para cada grupo de variantes
     page_sin  = Paginator(variantes_sin_stock, 10).get_page(request.GET.get('page_sin'))
     page_bajo = Paginator(variantes_bajo_stock, 10).get_page(request.GET.get('page_bajo'))
     page_con  = Paginator(variantes_con_stock, 10).get_page(request.GET.get('page_con'))
+
+    # sumando solo variantes con stock
+    totales = variantes_con_stock.aggregate(
+        total_compra=Sum(F('cantidad') * F('producto__precio_compra'), output_field=FloatField()),
+        total_venta=Sum(F('cantidad') * F('producto__precio_venta'), output_field=FloatField()),
+        total_unidades=Sum('cantidad')
+    )
 
     context = {
         'variantes_sin_stock': page_sin,
@@ -63,6 +67,10 @@ def inventario_view(request):
         'search_query': query,
         'categorias': Categoria.objects.all(),
         'proveedores': Proveedor.objects.all(),
+        # Totales para las tarjetas
+        'total_compra': totales['total_compra'] or 0,
+        'total_venta': totales['total_venta'] or 0,
+        'total_unidades': totales['total_unidades'] or 0,
     }
     return render(request, 'dashboard/inventario/inventario.html', context)
 

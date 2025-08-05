@@ -40,3 +40,16 @@ def base64_image(image):
         img.save(image_data, format='PNG')
         return base64.b64encode(image_data.getvalue()).decode('utf-8')
     return ''
+
+@register.filter
+def get_item(dictionary, key):
+    """Devuelve dictionary[key] o cadena vacía si no existe."""
+    try:
+        return dictionary.get(key, '')
+    except Exception:
+        return ''
+    
+
+@register.filter
+def get_img(producto, index):
+    return getattr(producto, f'imagen{index}', None)

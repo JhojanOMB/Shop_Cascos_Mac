@@ -1,0 +1,6 @@
+{% extends 'error_base.html' %}
+{% block content %}
+    {% with codigo_error="400" titulo_error="Solicitud incorrecta" mensaje_error="La solicitud no pudo ser procesada. Verifica los datos enviados." %}
+        {{ block.super }}
+    {% endwith %}
+{% endblock %}

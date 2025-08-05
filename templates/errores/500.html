@@ -1,0 +1,6 @@
+{% extends 'error_base.html' %}
+{% block content %}
+    {% with codigo_error="500" titulo_error="Error interno del servidor" mensaje_error="Ha ocurrido un error inesperado. Por favor, intenta más tarde." %}
+        {{ block.super }}
+    {% endwith %}
+{% endblock %}

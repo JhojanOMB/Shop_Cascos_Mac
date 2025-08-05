@@ -1,3 +1,5 @@
+# app tienda
+
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -76,6 +78,7 @@ class Producto(models.Model):
     imagen3 = models.ImageField(upload_to='productos/', blank=True, null=True)
     imagen4 = models.ImageField(upload_to='productos/', blank=True, null=True)
     imagen5 = models.ImageField(upload_to='productos/', blank=True, null=True)
+
 
     CATALOG_CHOICES = [
         ('', 'Seleccione una opción'),
@@ -212,6 +215,19 @@ class Producto(models.Model):
         Retorna la cantidad total de productos sumando todas las tallas.
         """
         return sum(detalle.cantidad for detalle in self.producto_tallas.all())
+    
+    @property
+    def imagen_miniatura(self):
+        if self.imagen1:
+            return self.imagen1.url
+        return '/static/img/No_hay_imagen.png'
+    
+    @property
+    def tallas_disponibles(self):
+        """
+        Devuelve los objetos ProductoTalla activos y con stock > 0.
+        """
+        return self.producto_tallas.filter(activa=True, cantidad__gt=0).select_related('talla', 'color')
 
 class ProductoTalla(models.Model):
     producto = models.ForeignKey('Producto', related_name='producto_tallas', on_delete=models.CASCADE)

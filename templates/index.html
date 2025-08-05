@@ -3,16 +3,16 @@
 {% load humanize %}
 
 {% block header_links %}
-<div class="d-flex gap-2 justify-content-end align-items-center">
+<div class="flex gap-2 justify-end items-center">
     {% if user.is_authenticated %}
         {% if user.rol == 'gerente' %}
-        <a href="{% url 'dashboard_gerente' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
+        <a href="{% url 'dashboard_gerente' %}" class="btn btn-dark whitespace-nowrap">Mi Perfil</a>
         {% elif user.rol == 'vendedor' %}
-        <a href="{% url 'dashboard_vendedor' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
+        <a href="{% url 'dashboard_vendedor' %}" class="btn btn-dark whitespace-nowrap">Mi Perfil</a>
         {% endif %}
-        <a href="{% url 'logout' %}" class="btn btn-dark w-100 text-nowrap">Cerrar Sesión</a>
+        <a href="{% url 'logout' %}" class="btn btn-dark whitespace-nowrap">Cerrar Sesión</a>
     {% else %}
-        <a href="{% url 'login' %}" class="btn btn-dark w-100 text-nowrap">Iniciar Sesión</a>
+        <a href="{% url 'login' %}" class="btn btn-dark whitespace-nowrap">Iniciar Sesión</a>
     {% endif %}
 </div>
 {% endblock %}
@@ -23,411 +23,408 @@
 
 {% block content %}
 
-<main class="p-lg-4 p-2 mb-2">
-<div class="bg-dark text-white text-center py-5 mb-5 mx-3 mt-4 shadow-lg rounded">
-    <div class="container-fluid">
-        <h1 class="display-2 fw-semibold fs-1" style="font-family: var(--fuente-letra);">Bienvenido a Cascos Mac</h1>
-        <p class="lead fs-5">Tu tienda de confianza para cascos,accesorios y mucho más.</p>
-        <a href="{% url 'ubicanos' %}" class="btn btn-light align-middle">
-            <svg class="svgIcon me-1" width="1.3rem" height="1.6rem" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm50.7-186.9L162.4 380.6c-19.4 7.5-38.5-11.6-31-31l55.5-144.3c3.3-8.5 9.9-15.1 18.4-18.4l144.3-55.5c19.4-7.5 38.5 11.6 31 31L325.1 306.7c-3.2 8.5-9.9 15.1-18.4 18.4zM288 256a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/></svg>
-            <span class="align-middle">
-                Encuentranos en Físico
-            </span>
+  <!-- Hero -->
+  <div class="bg-gray-900 text-white text-center py-6 mb-6 mx-2 mt-4 shadow-lg rounded-2xl sm:py-8 sm:mb-8 sm:mx-4 sm:mt-6">
+    <div class="max-w-4xl mx-auto px-2">
+      <h1 class="text-3xl sm:text-5xl font-bold font-sans">Bienvenido a Cascos Mac</h1>
+      <p class="text-base sm:text-lg mt-2 sm:mt-3">Tu tienda de confianza para cascos, accesorios y mucho más.</p>
+      <a href="{% url 'ubicanos' %}" class="inline-flex items-center mt-4 sm:mt-5 px-4 py-2 sm:px-5 sm:py-2 bg-white text-gray-900 rounded-lg shadow hover:bg-gray-200 transition text-sm sm:text-base">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-gray-900" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm50.7-186.9L162.4 380.6c-19.4 7.5-38.5-11.6-31-31l55.5-144.3c3.3-8.5 9.9-15.1 18.4-18.4l144.3-55.5c19.4-7.5 38.5 11.6 31 31L325.1 306.7c-3.2 8.5-9.9 15.1-18.4 18.4zM288 256a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/></svg>
+        Encuéntranos en Físico
+      </a>
+    </div>
+  </div>
+
+<div class="max-w-7xl mx-auto px-2">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+    <!-- Filtros -->
+<aside class="col-span-1 md:col-span-1 mb-6 md:mb-0 md:sticky md:top-24 h-fit">
+  <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-4 space-y-6">
+    <h2 class="text-center font-semibold text-xl">Filtros</h2>
+    <form method="get" class="space-y-5">
+      <!-- Categoría -->
+      <div>
+        <label for="category-filter" class="block text-sm font-medium text-gray-700 mb-1">
+          <i class="fas fa-list mr-1 text-gray-500"></i> Categoría
+        </label>
+        <select id="category-filter" name="category" onchange="this.form.submit()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200">
+          <option value="">Todas</option>
+          {% for categoria in categorias %}
+            <option value="{{ categoria.id }}"
+                    {% if request.GET.category == categoria.id|stringformat:"s" %}selected{% endif %}>
+              {{ categoria.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Precio -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          <i class="fas fa-dollar-sign mr-1 text-gray-500"></i> Rango de Precio
+        </label>
+        <div class="flex items-center space-x-2">
+          <input type="number" name="price_min" min="0" step="1000"
+                 value="{{ request.GET.price_min|default:0 }}"
+                 class="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200"
+                 placeholder="Mín">
+          <input type="number" name="price_max" min="0" step="1000"
+                 value="{{ request.GET.price_max|default:precio_maximo_producto }}"
+                 class="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200"
+                 placeholder="Máx">
+        </div>
+      </div>
+
+      <!-- Oferta -->
+      <div class="flex items-center">
+        <input type="checkbox" id="en_oferta_check" name="en_oferta" value="1"
+               {% if en_oferta %}checked{% endif %}
+               class="h-4 w-4 text-green-600 border-gray-300 rounded">
+        <label for="en_oferta_check" class="ml-2 text-sm font-medium text-gray-700">
+          <i class="fas fa-tags mr-1 text-red-500"></i>Solo en oferta
+        </label>
+      </div>
+
+      <!-- Género -->
+      <div>
+        <label for="genero-filter" class="block text-sm font-medium text-gray-700 mb-1">
+          <i class="fas fa-venus-mars mr-1 text-gray-500"></i> Género
+        </label>
+        <select id="genero-filter" name="genero" onchange="this.form.submit()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200">
+          <option value="">Todos</option>
+          <option value="dama"   {% if request.GET.genero == 'dama' %}selected{% endif %}>Dama</option>
+          <option value="caballero" {% if request.GET.genero == 'caballero' %}selected{% endif %}>Caballero</option>
+          <option value="unisex" {% if request.GET.genero == 'unisex' %}selected{% endif %}>Unisex</option>
+        </select>
+      </div>
+
+      <!-- Talla -->
+      <div>
+        <label for="talla-filter" class="block text-sm font-medium text-gray-700 mb-1">
+          <i class="fas fa-ruler mr-1 text-gray-500"></i> Talla
+        </label>
+        <select id="talla-filter" name="talla" onchange="this.form.submit()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200">
+          <option value="">Todas</option>
+          {% for t in tallas_disponibles %}
+            <option value="{{ t.nombre }}" {% if request.GET.talla == t.nombre %}selected{% endif %}>
+              {{ t.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Color -->
+      <div>
+        <label for="color-filter" class="block text-sm font-medium text-gray-700 mb-1">
+          <i class="fas fa-palette mr-1 text-gray-500"></i> Color
+        </label>
+        <select id="color-filter" name="color" onchange="this.form.submit()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200">
+          <option value="">Todos</option>
+          {% for c in colores_disponibles %}
+            <option value="{{ c.nombre }}" {% if request.GET.color == c.nombre %}selected{% endif %}>
+              {{ c.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Botones -->
+      <div class="space-y-3 pt-4 border-t border-gray-200">
+        <button type="submit"
+                class="w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition">
+          Aplicar filtros
+        </button>
+        <a href="{% url 'index' %}"
+           class="w-full block px-4 py-2 text-center border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+          Eliminar filtros
         </a>
+      </div>
+    </form>
+  </div>
+</aside>
+
+
+<!-- Productos y Ordenamiento -->
+<div class="col-span-1 md:col-span-3 mb-4 sm:mb-6 p-1 sm:p-2 flex flex-col">
+
+  <!-- Filtros y Ordenamiento -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <form method="get" class="flex flex-wrap items-center gap-3 w-full">
+      <input 
+        type="text" 
+        name="search" 
+        value="{{ request.GET.search }}" 
+        placeholder="Buscar producto..." 
+        class="flex-1 px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+      <select 
+        name="orden" 
+        class="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Ordenar por</option>
+        <option value="precio" {% if request.GET.orden == 'precio' %}selected{% endif %}>Precio (menor a mayor)</option>
+        <option value="-precio" {% if request.GET.orden == '-precio' %}selected{% endif %}>Precio (mayor a menor)</option>
+        <option value="nombre" {% if request.GET.orden == 'nombre' %}selected{% endif %}>Nombre (A-Z)</option>
+        <option value="-nombre" {% if request.GET.orden == '-nombre' %}selected{% endif %}>Nombre (Z-A)</option>
+      </select>
+
+      <button 
+        type="submit" 
+        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+      >
+        Aplicar
+      </button>
+    </form>
+  </div>
+
+    <!-- Grid de Productos -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for producto in productos %}
+        <div class="bg-white rounded-xl shadow hover:shadow-md transition overflow-hidden flex flex-col border border-gray-200 hover:scale-[1.02] duration-300">
+
+        <!-- Carrusel Alpine.js -->
+        <div x-data="{ active: 0, images: [
+            {% if producto.imagen1 %}'{{ producto.imagen1.url }}',{% endif %}
+            {% if producto.imagen2 %}'{{ producto.imagen2.url }}',{% endif %}
+            {% if producto.imagen3 %}'{{ producto.imagen3.url }}',{% endif %}
+            {% if producto.imagen4 %}'{{ producto.imagen4.url }}',{% endif %}
+            {% if producto.imagen5 %}'{{ producto.imagen5.url }}',{% endif %}
+        ] }" class="relative w-full bg-gray-50">
+
+            <!-- Imagen activa -->
+            <template x-if="images.length > 0">
+            <img :src="images[active]" class="w-full h-48 sm:h-56 object-contain mx-auto transition-all duration-300 bg-white">
+            </template>
+
+            <!-- Imagen por defecto -->
+            <template x-if="images.length === 0">
+            <img src="{% static 'img/No_hay_imagen.png' %}" class="w-full h-48 sm:h-56 object-contain mx-auto">
+            </template>
+
+            <!-- Navegación del carrusel -->
+            <div x-show="images.length > 1" class="absolute inset-x-0 bottom-2 flex justify-center gap-2">
+            <template x-for="(img, i) in images" :key="i">
+                <button @click="active = i"
+                :class="i === active ? 'bg-white scale-110' : 'bg-gray-400 opacity-60'"
+                class="w-2.5 h-2.5 rounded-full border border-gray-300 transition-transform duration-200">
+                </button>
+            </template>
+            </div>
+
+            <!-- Badge de oferta -->
+            {% if producto.en_oferta %}
+            <div class="absolute top-2 left-2 bg-red-600 text-white font-semibold text-xs px-3 py-1 rounded-full shadow">
+            Oferta
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Información del producto -->
+        <div class="p-3 flex-1 flex flex-col justify-between">
+            <h4 class="text-center font-semibold text-base sm:text-lg text-gray-900 truncate leading-tight">
+            {{ producto.nombre }}
+            </h4>
+
+            <!-- Precios -->
+            <div class="mt-2 mb-3 flex justify-center items-center gap-2">
+            {% if producto.en_oferta %}
+            <span class="text-green-600 font-bold text-lg">${{ producto.precio_oferta|floatformat:0|intcomma }}</span>
+            <span class="text-red-500 line-through text-sm">${{ producto.precio_venta|floatformat:0|intcomma }}</span>
+            {% else %}
+            <span class="text-green-700 font-bold text-lg">${{ producto.precio_venta|floatformat:0|intcomma }}</span>
+            {% endif %}
+            </div>
+
+            <!-- Géneros disponibles -->
+            <div class="flex flex-wrap justify-center gap-2 mt-1 mb-3">
+            {% if "dama" in producto.generos_disponibles %}
+            <span class="bg-pink-500 text-white rounded-full px-2 py-1 text-[8px] sm:text-xs font-medium shadow">
+                Dama
+            </span>
+            {% endif %}
+            {% if "caballero" in producto.generos_disponibles %}
+            <span class="bg-blue-600 text-white rounded-full px-2 py-1 text-[8px] sm:text-xs font-medium shadow">
+                Caballero
+            </span>
+            {% endif %}
+            {% if "unisex" in producto.generos_disponibles %}
+            <span class="bg-gray-700 text-white rounded-full px-2 py-1 text-[8px] sm:text-xs font-medium shadow">
+                Unisex
+            </span>
+            {% endif %}
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="bg-gray-50 p-3 border-t border-gray-200 space-y-2">
+            <a href="{% url 'detalles_producto_tienda' producto.slug %}"
+            class="inline-flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-medium text-gray-800 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition">
+            <i class="fa-regular fa-eye"></i> Ver Detalles
+            </a>
+
+            <button type="button"
+            onclick="showModal('modalCantidad-{{ producto.id }}')"
+            class="inline-flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-md transition">
+            <i class="fa-solid fa-cart-plus"></i> Añadir al Carrito
+            </button>
+        </div>
+        </div>
+
+        <!-- Modal -->
+        <div id="modalCantidad-{{ producto.id }}" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+            <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 relative">
+            <div class="flex justify-between items-center border-b pb-4 mb-4">
+                <h5 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-cart-shopping"></i> Añadir al Carrito
+                </h5>
+                <button
+                type="button"
+                class="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                onclick="hideModal('modalCantidad-{{ producto.id }}')"
+                aria-label="Cerrar"
+                >&times;</button>
+            </div>
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Imagen -->
+                <div class="md:w-2/5 flex justify-center">
+                <img src="{{ producto.imagen_miniatura }}" alt="{{ producto.nombre }}" class="rounded-xl shadow max-h-64">
+                </div>
+                <!-- Formulario -->
+                <div class="md:w-3/5">
+                <form id="formAgregar-{{ producto.id }}" data-producto="{{ producto.id }}" class="flex flex-col gap-5">
+                    {% csrf_token %}
+                    <!-- Variante -->
+                    <div>
+                    <label for="variante-{{ producto.id }}" class="block font-semibold text-gray-700 mb-2">Elige tu variante</label>
+                    <select
+                        id="variante-{{ producto.id }}"
+                        name="variante"
+                        data-producto="{{ producto.id }}"
+                        required
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none"
+                    >
+                        <option value="" disabled selected>-- Seleccione --</option>
+                        {% for det in producto.tallas_disponibles %}
+                        <option value="{{ det.id }}" data-stock="{{ det.cantidad }}">
+                            Talla {{ det.talla.nombre }} | Color {{ det.color.nombre }} | {{ det.genero|capfirst }}
+                            (Stock: {{ det.cantidad }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div id="info-variante-{{ producto.id }}" class="text-xs text-gray-500 mt-1">
+                        Selecciona una variante para ver el stock.
+                    </div>
+                    </div>
+                    <!-- Cantidad -->
+                    <div>
+                    <label for="cantidad-{{ producto.id }}" class="block font-semibold text-gray-700 mb-2">Cantidad</label>
+                    <input
+                        id="cantidad-{{ producto.id }}"
+                        name="cantidad"
+                        type="number"
+                        min="1"
+                        value="1"
+                        data-producto="{{ producto.id }}"
+                        required
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none"
+                    >
+                    <div id="error-cantidad-{{ producto.id }}" class="text-xs text-red-500 mt-1 hidden">
+                        La cantidad no puede exceder el stock disponible.
+                    </div>
+                    </div>
+                    <!-- Botón -->
+                    <button
+                    type="button"
+                    class="w-full px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition font-semibold btn-agregar"
+                    >
+                    <i class="fa-solid fa-cart-plus mr-2"></i>Agregar al Carrito
+                    </button>
+                </form>
+                </div>
+            </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-1 md:col-span-2 lg:col-span-3">
+            <p class="text-center text-gray-500">No se encontraron productos que coincidan con los filtros seleccionados.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginación -->
+    <div class="mt-6 flex justify-center">
+        <nav aria-label="Página de productos"
+            class="bg-white rounded-xl shadow p-2 md:p-4 border border-gray-200 w-full max-w-2xl">
+        <ul class="flex gap-1 sm:gap-2 flex-wrap justify-center">
+            {% if productos.has_previous %}
+            <li><a class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition" href="?page=1">&laquo; Primero</a></li>
+            <li><a class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
+                    href="?page={{ productos.previous_page_number }}">Anterior</a></li>
+            {% endif %}
+            {% for i in productos.paginator.page_range %}
+            {% if productos.number == i %}
+                <li><span class="px-3 py-1 bg-blue-600 text-white rounded">{{ i }}</span></li>
+            {% else %}
+                <li><a class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
+                    href="?page={{ i }}">{{ i }}</a></li>
+            {% endif %}
+            {% endfor %}
+            {% if productos.has_next %}
+            <li><a class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
+                    href="?page={{ productos.next_page_number }}">Siguiente</a></li>
+            <li><a class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
+                    href="?page={{ productos.paginator.num_pages }}">Último &raquo;</a></li>
+            {% endif %}
+        </ul>
+        </nav>
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="row">
-        <!-- Tabla de Filtros -->
-        <div class="col-md-3 mb-4">
-            <div class="rounded-5 shadow p-4 bg-white border border-black">
-                <h2 class="text-center mb-4 fw-bold f-letter">Filtros</h2>
-                <form method="get">
-                    <!-- Filtro de Categoría -->
-                    <div class="mb-4">
-                        <label for="category-filter" class="form-label fw-semibold text-secondary">Categoría</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted"><i class="fas fa-list"></i></span>
-                            <select name="category" id="category-filter" class="form-select rounded-end" onchange="this.form.submit()">
-                                <option value="">Todas</option>
-                                {% for categoria in categorias %}
-                                    <option value="{{ categoria.id }}" {% if request.GET.category == categoria.id|stringformat:"s" %}selected{% endif %}>{{ categoria.nombre }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
 
-                    <!-- Filtro de Precio -->
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-secondary">Rango de Precio</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="text-muted small">$</span>
-                            <input type="range" class="form-range" name="price_min" id="price-range-min" min="0" max="{{ precio_maximo_producto }}" step="1000" value="{{ request.GET.price_min|default:0 }}" onchange="updatePriceValues()">
-                            <span class="text-muted small">a</span>
-                            <input type="range" class="form-range" name="price_max" id="price-range-max" min="0" max="{{ precio_maximo_producto }}" step="1000" value="{{ request.GET.price_max|default:precio_maximo_producto }}" onchange="updatePriceValues()">
-                        </div>
-                        <div class="d-flex justify-content-between mt-2">
-                            <span class="badge bg-light text-dark rounded-pill px-3 py-2 shadow-sm" id="price-min-label">
-                                ${{ request.GET.price_min|default:0 }}
-                            </span>
-                            <span class="badge bg-light text-dark rounded-pill px-3 py-2 shadow-sm" id="price-max-label">
-                                ${{ request.GET.price_max|default:precio_maximo_producto }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Filtro de Ofertas -->
-                    <div class="form-check form-switch mb-4">
-                        <input type="checkbox" role="switch" name="en_oferta" class="form-check-input" id="en_oferta_check" value="1" {% if en_oferta %}checked{% endif %}>
-                        <label class="form-check-label fw-semibold text-secondary" for="en_oferta_check">
-                            <i class="fas fa-tags text-danger"></i> Solo en oferta
-                        </label>
-                    </div>
-
-                    <!-- Filtro de Género -->
-                    <div class="mb-4">
-                        <label for="genero-filter" class="form-label fw-semibold text-secondary">Género</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted"><i class="fas fa-venus-mars"></i></span>
-                            <select name="genero" id="genero-filter" class="form-select rounded-end" onchange="this.form.submit()">
-                                <option value="">Todos</option>
-                                <option value="dama" {% if request.GET.genero == 'dama' %}selected{% endif %}>Dama</option>
-                                <option value="caballero" {% if request.GET.genero == 'caballero' %}selected{% endif %}>Caballero</option>
-                                <option value="unisex" {% if request.GET.genero == 'unisex' %}selected{% endif %}>Unisex</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Filtro de Talla -->
-                    <div class="mb-4">
-                        <label for="talla-filter" class="form-label fw-semibold text-secondary">Talla</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted"><i class="fas fa-ruler"></i></span>
-                            <select name="talla" id="talla-filter" class="form-select rounded-end" onchange="this.form.submit()">
-                                <option value="">Todas</option>
-                                {% for t in tallas_disponibles %}
-                                    <option value="{{ t.nombre }}" {% if request.GET.talla == t.nombre %}selected{% endif %}>
-                                        {{ t.nombre }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Filtro de Color -->
-                    <div class="mb-4">
-                        <label for="color-filter" class="form-label fw-semibold text-secondary">Color</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted"><i class="fas fa-palette"></i></span>
-                            <select name="color" id="color-filter" class="form-select rounded-end" onchange="this.form.submit()">
-                                <option value="">Todos</option>
-                                {% for c in colores_disponibles %}
-                                    <option value="{{ c.nombre }}" {% if request.GET.color == c.nombre %}selected{% endif %}>
-                                        {{ c.nombre }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Botón para Aplicar Filtros -->
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-outline-secondary fw-bold shadow-sm rounded-pill">
-                            Aplicar Filtros
-                        </button>
-                    </div>
-
-                    <!-- Botón para Reiniciar Filtros -->
-                    <div class="d-grid mt-3">
-                        <a href="{% url 'index' %}" class="btn btn-outline-secondary fw-bold shadow-sm rounded-pill">
-                            Eliminar Filtros
-                        </a>
-                    </div>
-                </form>
-            </div>
+    <!-- Toast Feedback -->
+    <div id="toastContainer"
+        class="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-xs sm:max-w-md md:max-w-lg px-2 z-50 hidden">
+        <div id="toastMessage"
+            class="flex items-center justify-center text-white bg-green-600 rounded-xl shadow-md px-3 py-2 text-center border border-green-700"
+            role="alert" aria-live="assertive" aria-atomic="true">
+        <span class="flex-1 text-xs sm:text-sm md:text-base">Producto añadido al carrito</span>
+        <button type="button"
+                class="ml-2 text-white hover:text-gray-200 text-lg"
+                onclick="document.getElementById('toastContainer').classList.add('hidden')"
+                aria-label="Close">&times;</button>
         </div>
+    </div>
+    </div>
 
-        <script>
-            function updatePriceValues() {
-                const min = document.getElementById("price-range-min").value;
-                const max = document.getElementById("price-range-max").value;
-
-                document.getElementById("price-min-label").textContent = `$${parseInt(min).toLocaleString()}`;
-                document.getElementById("price-max-label").textContent = `$${parseInt(max).toLocaleString()}`;
-            }
-        </script>
-
-
-        <!-- Productos y Ordenamiento -->
-        <div class="col-md-9 mb-4 p-3">
-            <!-- Ordenamiento -->   
-            <div class="justify-content-between mb-3">
-                <h2 class="text-center align-middle fw-semibold fs-1 mb-4">Nuestros Productos</h2>
-                <form method="get" class="d-flex align-items-center">
-                    <!-- Mantener los filtros actuales -->
-                    <input type="hidden" name="category" value="{{ request.GET.category }}">
-                    <input type="hidden" name="price_min" value="{{ request.GET.price_min }}">
-                    <input type="hidden" name="price_max" value="{{ request.GET.price_max }}">
-
-                    <label for="order_by" class="me-2 mb-0">Ordenar por:</label>
-                    <select name="order_by" id="order_by" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                        <option value="nombre" {% if request.GET.order_by == 'nombre' %}selected{% endif %}>Nombre A-Z</option>
-                        <option value="-nombre" {% if request.GET.order_by == '-nombre' %}selected{% endif %}>Nombre Z-A</option>
-                        <option value="precio" {% if request.GET.order_by == 'precio' %}selected{% endif %}>Precio Ascendente</option>
-                        <option value="-precio" {% if request.GET.order_by == '-precio' %}selected{% endif %}>Precio Descendente</option>
-                    </select>
-                </form>
-            </div>
-        <!-- Lista de Productos -->
-        <div class="row g-4">
-            {% for producto in productos %}
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card w-100 h-100 shadow-sm rounded-lg overflow-hidden">
-                    <!-- Carousel de imágenes -->
-                    {% if producto.imagen1 or producto.imagen2 or producto.imagen3 %}
-                    <div id="carousel-{{ producto.id }}" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
-                        <div class="carousel-inner position-relative p-3">
-                            {% if producto.imagen1 %}
-                            <div class="carousel-item active">
-                                <img src="{{ producto.imagen1.url }}" class="d-block mx-auto" alt="{{ producto.nombre }} - Imagen 1">
-                            </div>
-                            {% endif %}
-                            {% if producto.imagen2 %}
-                            <div class="carousel-item {% if not producto.imagen1 %}active{% endif %}">
-                                <img src="{{ producto.imagen2.url }}" class="d-block mx-auto" alt="{{ producto.nombre }} - Imagen 2">
-                            </div>
-                            {% endif %}
-                            {% if producto.imagen3 %}
-                            <div class="carousel-item {% if not producto.imagen1 and not producto.imagen2 %}active{% endif %}">
-                                <img src="{{ producto.imagen3.url }}" class="d-block mx-auto" alt="{{ producto.nombre }} - Imagen 3">
-                            </div>
-                            {% endif %}
-                            {% if producto.en_oferta %}
-                            <div class="offer-label position-absolute top-0 start-0 bg-danger text-white texto-luminoso p-1 rounded-end">Oferta</div>
-                            {% endif %}
-                        </div>
-                        <!-- Controles del Carousel -->
-                        <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ producto.id }}" data-bs-slide="prev">
-                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                            <span class="visually-hidden">Anterior</span>
-                        </button>
-                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ producto.id }}" data-bs-slide="next">
-                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                            <span class="visually-hidden">Siguiente</span>
-                        </button>
-                    </div>
-                    {% else %}
-                    <img src="{% static 'img/No_hay_imagen.png' %}" class="d-block w-100 rounded-4" alt="No image available">
-                    {% if producto.en_oferta %}
-                    <div class="offer-label position-absolute top-0 start-0 bg-danger text-white p-1 rounded-end">Oferta</div>
-                    {% endif %}
-                    {% endif %}
-
-                    <hr class="mt-0 mb-0">
-                    
-                    <!-- Cuerpo de la Tarjeta -->
-                    <div class="card-body">
-                        <h4 class="card-title text-center fw-bold texto-luminoso">{{ producto.nombre }}</h4>
-                        <hr class="mx-5 mt-2">
-
-                        <!-- Mostrar precios -->
-                        <div class="mb-3 text-center">
-                            <div class="d-flex justify-content-center align-items-center">
-                                {% if producto.en_oferta %}
-                                    <p class="price text-success fw-bold mb-0 me-2">${{ producto.precio_oferta|floatformat:0|intcomma }}</p>
-                                    <p class="text-muted text-danger text-decoration-line-through mb-0">
-                                        ${{ producto.precio_venta|floatformat:0|intcomma }}
-                                    </p>
-                                {% else %}
-                                    <p class="price text-success fw-bold mb-0">${{ producto.precio_venta|floatformat:0|intcomma }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Género -->
-                        <div class="text-center">
-                            <div class="d-flex justify-content-center align-items-center">
-                                {% if producto.genero == 'dama' %}
-                                <span class="badge bg-dama rounded-pill px-3 py-2 shadow-sm">Dama</span>
-                                {% elif producto.genero == 'caballero' %}
-                                <span class="badge bg-hombre rounded-pill px-3 py-2 shadow-sm">Caballero</span>
-                                {% elif producto.genero == 'unisex' %}
-                                <span class="badge bg-unisex rounded-pill px-3 py-2 shadow-sm">Unisex</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer de la Tarjeta -->
-                    <div class="card-footer bg-light text-center">
-                        <a href="{% url 'detalles_producto_tienda' producto.slug %}" class="btn btn-outline-dark w-100">
-                            <i class="fa-regular fa-eye me-2"></i>Ver Detalles
-                        </a>
-                        <!-- Botón para abrir el modal -->
-                        <button type="button" class="btn btn-outline-success w-100 mt-2" data-bs-toggle="modal" data-bs-target="#modalCantidad-{{ producto.id }}">
-                            <i class="fa-solid fa-cart-plus me-2"></i>Añadir al Carrito
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal para seleccionar cantidad y talla -->
-            <div class="modal fade" id="modalCantidad-{{ producto.id }}" tabindex="-1" aria-labelledby="modalCantidadLabel-{{ producto.id }}" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <!-- Encabezado del modal -->
-                        <div class="modal-header bg-dark text-white">
-                            <h5 class="modal-title" id="modalCantidadLabel-{{ producto.id }}">
-                                <i class="fa-solid fa-shirt me-2"></i> Seleccionar Cantidad y Talla
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                        </div>
-
-                        <!-- Cuerpo del modal -->
-                        <div class="modal-body">
-                            <form id="formAgregar-{{ producto.id }}" data-producto-id="{{ producto.id }}" onsubmit="agregarAlCarrito(event)" method="POST">
-                                {% csrf_token %}
-
-                                <!-- Cantidad -->
-                                <div class="mb-3">
-                                    <label for="cantidad-{{ producto.id }}" class="form-label fw-bold">
-                                        <i class="fa-solid fa-hashtag me-1"></i> Cantidad
-                                    </label>
-                                    <input type="number" class="form-control form-control-lg" id="cantidad-{{ producto.id }}" name="cantidad" min="1" value="1" required>
-                                </div>
-
-                                <!-- Tallas Disponibles -->
-                                <div class="mb-3">
-                                    <label for="talla-{{ producto.id }}" class="form-label fw-bold">
-                                        <i class="fa-solid fa-ruler me-1"></i> Talla
-                                    </label>
-                                    <select class="form-control" id="talla-{{ producto.id }}" name="talla" required>
-                                        {% for detalle in producto.tallas_disponibles %}
-                                            <option value="{{ detalle.talla.id }}">{{ detalle.talla.nombre }}</option>
-                                        {% endfor %}
-                                    </select>    
-                                </div>
-
-                                <!-- Botón de acción -->
-                                <button type="submit" class="btn btn-success w-100" {% if not producto.tallas_disponibles %}disabled{% endif %}>
-                                    <i class="fa-solid fa-cart-plus me-2"></i>Añadir al Carrito
-                                </button>                                                                               
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% empty %}
-            <div class="col-12">
-                <p class="text-center">No se encontraron productos que coincidan con los filtros seleccionados.</p>
-            </div>
-            {% endfor %}
-        </div>
-
-        <!-- Mensaje de éxito -->
-        <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
-            <div id="toastMessage" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        Producto añadido al carrito
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Paginación -->
-        <div class="pagination-container">
-            <nav aria-label="Página de productos">
-                <ul class="pagination justify-content-center">
-                    {% if productos.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1">&laquo; Primero</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ productos.previous_page_number }}">Anterior</a>
-                    </li>
-                    {% endif %}
-                    
-                    {% for i in productos.paginator.page_range %}
-                        {% if productos.number == i %}
-                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-                        {% else %}
-                        <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if productos.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ productos.next_page_number }}">Siguiente</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ productos.paginator.num_pages }}">Último &raquo;</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        </div>
-
-        </div>
+        
     </div>
 </div>
 
 <div class="wrapper">
     <!-- Botón de WhatsApp -->
-    <div class="icon whatsapp position-fixed end-0 m-4 border border-black border-1" id="whatsapp">
-        <div class="tooltip border border-black">Whatsapp</div>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="40px" height="40px">
+    <div class="fixed bottom-8 right-8 z-50 bg-green-500 hover:bg-green-600 rounded-full shadow-lg border border-black p-2 flex flex-col items-center group" id="whatsapp">
+        <div class="absolute bottom-16 right-0 mb-2 px-3 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity border border-black">Whatsapp</div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="w-10 h-10 text-white">
             <path fill="currentColor" d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7 .9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 60.8 92.8 91.7 20.2 13.3 43.5 20.4 66.1 20.4 19.5 0 27.5-5.3 32.8-11.3 5.2-5.9 7.7-14.4 7.7-22.7 0-8.2-2.7-15.9-8.1-19.4-5.5-3.4-15.8-5.3-23.5-6.4zm0 0" />
         </svg>
     </div>
 
     <!-- Botón del Carrito -->
-    <a href="{% url 'carrito:ver_carrito' %}" class="icon-link">
-        <div class="icon carrito position-fixed end-0 m-4 border border-black border-1" id="carrito">
-            <div class="tooltip border border-black">Carrito</div>
-            <i class="fa-solid fa-cart-shopping fa-xl" width="58px" height="58px"></i>
+    <a href="{% url 'carrito:ver_carrito' %}" class="fixed bottom-28 right-8 z-50 group">
+        <div class="bg-white hover:bg-gray-100 rounded-full shadow-lg border border-black p-2 flex items-center justify-center w-14 h-14 relative">
+            <div class="absolute bottom-16 right-0 mb-2 px-3 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity border border-black">Carrito</div>
+            <i class="fa-solid fa-cart-shopping text-black text-3xl"></i>
         </div>
     </a>
 </div>
 
-</main>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/index.js' %}"></script>
-<script>
-    function agregarAlCarrito(event, productoId) {
-        event.preventDefault();
-        const form = document.getElementById(`formAgregar-${productoId}`);
-        const cantidad = document.getElementById(`cantidad-${productoId}`).value;
-        const talla = document.getElementById(`talla-${productoId}`).value;
-        const url = form.action;
-        const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]').value;
-    
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken
-            },
-            body: new URLSearchParams({
-                'cantidad': cantidad,
-                'talla': talla
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const toastContainer = document.getElementById('toastContainer');
-                const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
-                toast.show();
-            } else {
-                console.error('Error:', data.message);
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
-</script>
+
 {% endblock %}

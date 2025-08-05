@@ -1,0 +1,32 @@
+.texto-error {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Nueva card personalizada */
+.card-error {
+    background-color: transparent;
+    border-radius: 1.5rem;
+    box-shadow: 0 .75rem 2rem rgba(0, 0, 0, 0.1);
+    border-left: .5rem solid #004589;
+    max-width: 600px;
+    margin: auto;
+}
+.card-error .card-title {
+    color: #004589;
+}
+
+.btn-azul-rey-gradient {
+    background: linear-gradient(135deg, #004589, #005fa3) !important;
+    color: #ffffff !important;
+    border-radius: 2rem;
+    padding: .75rem 2rem;
+    box-shadow: 0 .25rem .5rem rgba(0, 0, 0, 0.1);
+}
+
+.btn-azul-rey-gradient:hover {
+    opacity: .9 !important;
+    color: #c0d9f2 !important;
+}

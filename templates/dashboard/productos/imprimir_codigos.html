@@ -1,0 +1,360 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<div class="container py-4">
+  <h3>Imprimir Códigos de Barra</h3>
+
+  <!-- Buscador + filtros -->
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por nombre o referencia…">
+    </div>
+    <div class="col-md-3">
+      <select name="categoria" class="form-select">
+        <option value="">— Todas las categorías —</option>
+        {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == selected_cat %}selected{% endif %}>
+            {{ cat.nombre }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <input type="text" name="barcode" value="{{ barcode_q }}" class="form-control" placeholder="Buscar por código de barras…">
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-primary w-100">Filtrar</button>
+    </div>
+  </form>
+
+  <!-- Botón Generar Impresion -->
+  <div class="text-end mt-3">
+    <button id="btn-generar" class="btn btn-success" disabled>
+      <i class="fa-solid fa-print"></i> Generar Tickets
+    </button>
+  </div>
+
+  <!-- Tabla de productos -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover">
+      <thead class="table-secondary text-center">
+        <tr>
+          <th>Producto</th>
+          <th>Referencia</th>
+          <th>Stock</th>
+          <th>Variantes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for producto in productos %}
+        <tr class="align-middle">
+          <td>{{ producto.nombre }}</td>
+          <td>{{ producto.referencia }}</td>
+          <td class="text-center">{{ producto.total_cantidad }}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-dark"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalVar-{{ producto.id }}">
+              <i class="fa-solid fa-list"></i> Variantes
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+<!-- Paginación inferior -->
+<div class="align-items-center mt-2">
+  <div class="pagination">
+    <ul class="pagination pagination-sm">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?{% if query_params %}{{ query_params }}&{% endif %}page=1"
+             aria-label="First">
+            &laquo; Primero
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link"
+             href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.previous_page_number }}"
+             aria-label="Previous">
+            Anterior
+          </a>
+        </li>
+      {% endif %}
+
+      <li class="page-item disabled">
+        <span class="page-link">
+          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+      </li>
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.next_page_number }}"
+             aria-label="Next">
+            Siguiente
+          </a>
+        </li>
+        <li class="page-item">
+          <a class="page-link"
+             href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+             aria-label="Last">
+            Último &raquo;
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+</div>
+
+
+</div>
+
+<!-- Panel flotante de resumen -->
+<div id="resumen-flotante" class="card border-info shadow-sm">
+  <div class="card-header bg-info text-white py-2">
+    <strong>Seleccionados</strong>
+  </div>
+  <div class="card-body py-2">
+    <ul class="list-unstyled mb-0"></ul>
+  </div>
+</div>
+
+<!-- Modales de variantes -->
+{% for producto in productos %}
+<div class="modal fade" id="modalVar-{{ producto.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">{{ producto.nombre }}</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-sm">
+          <thead class="table-light">
+            <tr class="text-center">
+              <th>✔</th>
+              <th>Talla</th>
+              <th>Color</th>
+              <th>Código</th>
+              <th>Imagen</th>
+              <th>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for var in producto.producto_tallas.all %}
+            <tr class="align-middle text-center">
+              <td>
+                <input type="checkbox"
+                       class="var-checkbox form-check-input"
+                       data-prod-id="{{ producto.id }}"
+                       data-prod-nombre="{{ producto.nombre }}"
+                       data-var-id="{{ var.id }}"
+                       data-varlabel="{{ var.talla.nombre }} / {{ var.color }}"
+                       data-img-url="{% url 'barcode_image_talla' var.id %}">
+              </td>
+              <td>{{ var.talla.nombre }}</td>
+              <td>{{ var.color }}</td>
+              <td>
+                <input type="text"
+                       class="form-control form-control-sm"
+                       value="{{ var.codigo_barras }}"
+                       readonly>
+              </td>
+              <td>
+                <img src="{% url 'barcode_image_talla' var.id %}"
+                     alt="Código {{ var.codigo_barras }}"
+                     class="img-fluid" style="max-height:50px;">
+              </td>
+              <td>
+                <input type="number"
+                       class="form-control form-control-sm var-cantidad"
+                       min="1" value="1"
+                       data-prod-id="{{ producto.id }}"
+                       data-var-id="{{ var.id }}">
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- Panel flotante de resumen -->
+<div id="resumen-flotante" class="card border-info shadow-sm">
+  <div class="card-header bg-info text-white py-2">
+    <strong>Seleccionados</strong>
+  </div>
+  <div class="card-body py-2">
+    <ul class="list-unstyled mb-0"></ul>
+  </div>
+</div>
+
+<style>
+  #resumen-flotante {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    max-height: 350px;
+    overflow-y: auto;
+    z-index: 1055;
+    display: none;
+  }
+  #resumen-flotante ul li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+  }
+  #resumen-flotante ul li input {
+    width: 50px;
+    margin: 0 0.5rem;
+  }
+  #resumen-flotante ul li button {
+    border: none;
+    background: transparent;
+    color: #dc3545;
+    font-weight: bold;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const LS_KEY = 'impr_cod_barras';
+  // Map< key, item >
+  const seleccion = new Map(JSON.parse(localStorage.getItem(LS_KEY) || '[]'));
+
+  const panel = document.getElementById('resumen-flotante');
+  const ul    = panel.querySelector('ul');
+  const btn   = document.getElementById('btn-generar');
+
+  function actualizarUI() {
+    ul.innerHTML = '';
+    if (seleccion.size === 0) {
+      panel.style.display = 'none';
+      btn.disabled = true;
+      localStorage.removeItem(LS_KEY);
+      return;
+    }
+    seleccion.forEach(item => {
+      const li = document.createElement('li');
+      li.dataset.key = `${item.prodId}-${item.varId}`;
+      li.innerHTML = `
+        <span title="${item.prodNombre} → ${item.varLabel}">
+          ${item.prodNombre} → ${item.varLabel}
+        </span>
+        <div class="d-flex align-items-center">
+          <input type="number" min="1" value="${item.qty}" 
+                 class="form-control form-control-sm res-qty" />
+          <button type="button" title="Eliminar">&times;</button>
+        </div>
+      `;
+      ul.appendChild(li);
+    });
+    panel.style.display = 'block';
+    btn.disabled = false;
+    localStorage.setItem(LS_KEY, JSON.stringify(Array.from(seleccion.entries())));
+  }
+
+  // Delegación de eventos en el panel:
+  panel.addEventListener('input', e => {
+    if (e.target.classList.contains('res-qty')) {
+      const li = e.target.closest('li');
+      const key = li.dataset.key;
+      const item = seleccion.get(key);
+      item.qty = e.target.value;
+      seleccion.set(key, item);
+      actualizarUI();
+    }
+  });
+
+  panel.addEventListener('click', e => {
+    if (e.target.tagName === 'BUTTON') {
+      const li = e.target.closest('li');
+      const key = li.dataset.key;
+      seleccion.delete(key);
+      // además desmarcamos en el modal si existe
+      const cb = document.querySelector(`.var-checkbox[data-prod-id="${key.split('-')[0]}"][data-var-id="${key.split('-')[1]}"]`);
+      if (cb) cb.checked = false;
+      actualizarUI();
+    }
+  });
+
+  // Manejadores originales para checkboxes y cantidades en modales
+  document.querySelectorAll('.var-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const key = `${cb.dataset.prodId}-${cb.dataset.varId}`;
+      if (cb.checked) {
+        // reconstruir objeto completo
+        const row    = cb.closest('tr');
+        const item = {
+          prodId:      cb.dataset.prodId,
+          varId:       cb.dataset.varId,
+          prodNombre:  cb.dataset.prodNombre,
+          varLabel:    cb.dataset.varlabel,
+          imgUrl:      window.location.origin + cb.dataset.imgUrl,
+          codigo:      row.querySelector('input[readonly]').value,
+          qty:         row.querySelector('.var-cantidad').value
+        };
+        seleccion.set(key, item);
+      } else {
+        seleccion.delete(key);
+      }
+      actualizarUI();
+    });
+  });
+
+  document.querySelectorAll('.var-cantidad').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const key = `${inp.dataset.prodId}-${inp.dataset.varId}`;
+      if (seleccion.has(key)) {
+        const item = seleccion.get(key);
+        item.qty = inp.value;
+        seleccion.set(key, item);
+        actualizarUI();
+      }
+    });
+  });
+
+  // Enviar formulario
+  btn.addEventListener('click', () => {
+    if (!seleccion.size) {
+      return alert('Selecciona al menos una variante para imprimir.');
+    }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = "{% url 'imprimir_codigos_barras' %}";
+    form.target = '_blank';
+    form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">`;
+
+    seleccion.forEach(item => {
+      form.innerHTML += `
+        <input type="hidden" name="codigos[]"      value="${item.codigo}">
+        <input type="hidden" name="product_ids[]"  value="${item.prodId}">
+        <input type="hidden" name="variante_ids[]" value="${item.varId}">
+        <input type="hidden" name="cantidades[]"   value="${item.qty}">
+        <input type="hidden" name="img_urls[]"     value="${item.imgUrl}">
+      `;
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+    localStorage.removeItem(LS_KEY);
+  });
+
+  // Inicialización
+  actualizarUI();
+});
+</script>
+
+{% endblock %}

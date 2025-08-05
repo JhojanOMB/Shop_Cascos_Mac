@@ -1,0 +1,31 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Detalles de la Bodega: {{ bodega.nombre }}</h2>
+  <p><strong>Dirección:</strong> {{ bodega.direccion|default:'-' }}</p>
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Última Actualización</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for stock in stocks %}
+        <tr>
+          <td>{{ stock.producto.nombre }}</td>
+          <td>{{ stock.cantidad }}</td>
+          <td>{{ stock.updated_at|date:'d/m/Y H:i' }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No hay movimientos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

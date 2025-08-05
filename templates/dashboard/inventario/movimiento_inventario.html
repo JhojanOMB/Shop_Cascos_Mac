@@ -5,40 +5,43 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h3 class="mb-4">Registrar Movimiento de Inventario</h3>
-    <form method="post" novalidate>
-        {% csrf_token %}
-        <div class="row g-4">
-            {% for field in form %}
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                        
-                        {# Si es producto_talla, usamos Select2 #}
-                        {% if field.name == 'producto_talla' %}
-                            {{ field|add_class:"form-select select2" }}
-                        {% else %}
-                            {{ field|add_class:"form-control" }}
-                        {% endif %}
-
-                        {% if field.help_text %}
-                            <div class="form-text">{{ field.help_text }}</div>
-                        {% endif %}
-                        
-                        {% if field.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ field.errors.as_text }}
+    <div class="card shadow rounded-4">
+        <div class="card-body p-4">
+            <h3 class="card-title mb-4">Registrar Movimiento de Inventario</h3>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="row g-3">
+                    {% for field in form %}
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                
+                                {% if field.name == 'producto_talla' %}
+                                    {{ field|add_class:"form-select select2" }}
+                                {% else %}
+                                    {{ field|add_class:"form-control" }}
+                                {% endif %}
+                                
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                
+                                {% if field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ field.errors|striptags }}
+                                    </div>
+                                {% endif %}
                             </div>
-                        {% endif %}
-                    </div>
+                        </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
+                <div class="mt-4 d-flex justify-content-end">
+                    <a href="{% url 'inventario' %}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Guardar Movimiento</button>
+                </div>
+            </form>
         </div>
-        <div class="mt-4 d-flex justify-content-end">
-            <a href="{% url 'inventario' %}" class="btn btn-outline-secondary me-2">Cancelar</a>
-            <button type="submit" class="btn btn-primary">Guardar Movimiento</button>
-        </div>
-    </form>
+    </div>
 </div>
 {% endblock %}
 
@@ -46,7 +49,6 @@
     {{ block.super }}
     <script>
       document.addEventListener('DOMContentLoaded', function () {
-        // Inicializa Select2 en todos los selects con clase .select2
         const $sels = $('select.select2');
         if ($sels.length) {
           $sels.select2({
@@ -56,27 +58,20 @@
           });
         }
       });
-    </script>
 
-<script>
-    $(document).on('click', '.pagination a', function(e) {
-      e.preventDefault();
-  
-      const $link = $(this);
-      const url   = $link.attr('href');
-      const section = $link.closest('.pagination').data('section'); // 'stock', 'bajo' o 'sin'
-      const containerId = '#' + section + '-section';
-  
-      // Petición AJAX
-      $.get(url, function(html) {
-        // Extrae únicamente el div que necesitamos y lo sustituye
-        const newContent = $(html).find(containerId).html();
-        $(containerId).html(newContent);
-      }).fail(function() {
-        console.error('Error cargando la página de ' + section);
+      $(document).on('click', '.pagination a', function(e) {
+        e.preventDefault();
+        const $link = $(this);
+        const url   = $link.attr('href');
+        const section = $link.closest('.pagination').data('section');
+        const containerId = '#' + section + '-section';
+
+        $.get(url, function(html) {
+          const newContent = $(html).find(containerId).html();
+          $(containerId).html(newContent);
+        }).fail(function() {
+          console.error('Error cargando la página de ' + section);
+        });
       });
-    });
-  </script>
-  
-
+    </script>
 {% endblock %}

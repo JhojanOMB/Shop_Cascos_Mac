@@ -1,0 +1,438 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% load custom_filters %}
+{% load humanize %}
+
+{% block content %}
+
+<div class="min-h-full p-6 space-y-8 pb-4 overflow-y-auto">
+  <!-- Día actual -->
+  <div class="flex justify-end">
+    <p class="font-semibold">Hoy es: <span id="fecha"></span></p>
+  </div>
+
+  <!-- Saludo dinámico -->
+  <div class="flex flex-col md:flex-row items-center border border-gray-300 p-4 rounded-lg space-y-4 md:space-y-0 md:space-x-4">
+    <div class="flex-1">
+      <h1 class="text-lg md:text-2xl font-semibold" id="greeting">
+        <span id="greeting-icon-text"></span>
+      </h1>
+      <p class="m-0">Bienvenido de vuelta a tu dashboard gerente</p>
+    </div>
+    <div class="flex justify-end">
+      <div id="greeting-icon-container"
+           class="flex items-center justify-center bg-gray-200 rounded-full w-12 h-12">
+        <i id="greeting-icon" class="bi text-2xl"></i>
+      </div>
+    </div>
+  </div>
+
+  {% if user.is_authenticated %}
+    <span id="user-name" class="hidden">{{ user.get_full_name|default:user.username }}</span>
+
+    <!-- Alertas de stock -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% if productos_sin_stock %}
+        <div class="flex items-center bg-red-50 border-l-4 border-red-600 p-4 rounded-lg space-x-2">
+          <i class="fa-solid fa-circle-xmark text-red-600 text-xl animate-pulse"></i>
+          <p class="text-red-700 font-medium">
+            ¡Atención! Hay {{ productos_sin_stock|length }} producto{{ productos_sin_stock|length|pluralize }} sin stock.
+          </p>
+        </div>
+      {% endif %}
+      {% if productos_bajo_stock %}
+        <div class="flex items-center bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg space-x-2">
+          <i class="fa-solid fa-triangle-exclamation text-yellow-600 text-xl animate-pulse"></i>
+          <p class="text-yellow-700 font-medium">
+            ¡Precaución! Hay {{ productos_bajo_stock|length }} producto{{ productos_bajo_stock|length|pluralize }} con ≤ 5 unidades.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white shadow rounded-lg p-6 flex flex-col justify-between text-center">
+        <h5 class="font-semibold mb-4">Registrar Caja Base</h5>
+        <button data-modal-target="#modalAperturaCaja" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md">
+          Abrir Caja
+        </button>
+      </div>
+      <div class="bg-white shadow rounded-lg p-6 flex flex-col justify-between text-center">
+        <h5 class="font-semibold mb-4">Registrar Gasto</h5>
+        <button data-modal-target="#modalGastoCaja" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md">
+          Añadir Gasto
+        </button>
+      </div>
+      <div class="bg-white shadow rounded-lg p-6 flex flex-col justify-between text-center">
+        <h5 class="font-semibold mb-4">Ver Ventas Antiguas</h5>
+        <a href="{% url 'ventas:ventas_por_dia' %}"
+           class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md inline-flex items-center justify-center">
+          <i class="fa-solid fa-calendar-days mr-2"></i>Ventas por Día
+        </a>
+      </div>
+    </div>
+
+    <!-- Métricas principales -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Neto Hoy -->
+      <div class="bg-gray-50 shadow rounded-lg flex flex-col">
+        <div class="p-4 text-center font-bold">Neto Hoy</div>
+        <div class="flex-1 flex items-center justify-center text-2xl text-green-600">
+          <i class="fa-solid fa-coins text-yellow-500 mr-2"></i>${{ neto|intcomma }}
+        </div>
+        <div class="p-3 text-center">
+          <button data-modal-target="#modalDetallesNeto" class="bg-gray-800 text-white py-1 px-4 rounded-md">Detalles</button>
+        </div>
+      </div>
+      <!-- Vendido Hoy -->
+      <div class="bg-gray-50 shadow rounded-lg flex flex-col">
+        <div class="p-4 text-center font-bold">Vendido Hoy</div>
+        <div class="flex-1 flex items-center justify-center text-2xl text-green-600">
+          <i class="fa-solid fa-coins text-yellow-500 mr-2"></i>${{ total_ventas_dia|intcomma }}
+        </div>
+        <div class="p-3 text-center">
+          <button data-modal-target="#ventasDiaModal" class="bg-gray-800 text-white py-1 px-4 rounded-md">Detalles</button>
+        </div>
+      </div>
+      <!-- Ingresos Este Mes -->
+      <div class="bg-gray-50 shadow rounded-lg flex flex-col">
+        <div class="p-4 text-center font-bold">Ingresos Este Mes</div>
+        <div class="flex-1 flex items-center justify-center text-2xl text-green-600">
+          <i class="fa-solid fa-coins text-yellow-500 mr-2"></i>${{ total_ventas_mes_actual|intcomma }}
+        </div>
+        <div class="p-3 text-center text-gray-500 text-sm">Sin más detalles</div>
+      </div>
+      <!-- Diferencia Mes Pasado -->
+      <div class="bg-gray-50 shadow rounded-lg flex flex-col">
+        <div class="p-4 text-center font-bold">Diferencia con el Mes Pasado</div>
+        <div class="flex-1 flex items-center justify-center text-2xl {% if porcentaje_diferencia > 0 %}text-green-600{% elif porcentaje_diferencia < 0 %}text-red-600{% else %}text-gray-600{% endif %}">
+          <i class="fa-solid {% if porcentaje_diferencia > 0 %}fa-arrow-trend-up{% elif porcentaje_diferencia < 0 %}fa-arrow-trend-down{% else %}fa-arrows-alt-h{% endif %} mr-2"></i>
+          {{ porcentaje_diferencia|floatformat:2 }}%
+        </div>
+        <div class="p-3 text-center text-gray-500 text-sm">Actualizado recientemente</div>
+      </div>
+    </div>
+
+    <!-- Métricas secundarias -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Ventas Hechas Este Mes -->
+      <div class="bg-gray-50 shadow rounded-lg flex flex-col">
+        <div class="p-4 text-center font-bold">Ventas Hechas Este Mes</div>
+        <div class="flex-1 flex items-center justify-center text-2xl text-black">
+          <i class="fa-solid fa-store text-blue-500 mr-2"></i>{{ cantidad_ventas_mes_actual|intcomma }}
+        </div>
+        <div class="p-3 text-center text-gray-500 text-sm">Actualizado esta semana</div>
+      </div>
+      <!-- Mejor Vendedor -->
+      <div class="bg-gray-50 shadow rounded-lg flex flex-col">
+        <div class="p-4 text-center font-bold">Mejor Vendedor</div>
+        <div class="flex-1 flex flex-col items-center justify-center text-center">
+          <i class="fa-solid fa-star text-yellow-500 text-xl mb-1"></i>
+          <p class="font-semibold text-lg text-blue-600">{{ mejor_vendedor_nombre|default:"—" }}</p>
+          <p class="text-gray-600">Ventas: ${{ mejor_vendedor_total|intcomma }}</p>
+        </div>
+        <div class="p-3 text-center text-gray-500 text-sm">¡Gran desempeño!</div>
+      </div>
+    </div>
+
+    <!-- Selector de Año y Gráficos -->
+    <div class="mt-6 space-y-6">
+    <!-- Selector de Año -->
+    <div class="flex justify-end items-center space-x-2">
+        <label for="yearSelect" class="font-medium">Año:</label>
+        <select id="yearSelect" class="border rounded p-2"></select>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Productos Más Vendidos -->
+        <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-green-600 mb-4 text-center">
+            Productos Más Vendidos
+        </h2>
+        <ul id="productosMasVendidos"
+            class="list-none p-0 flex flex-col gap-3 text-gray-700">
+            <li class="text-center text-gray-500">Cargando productos...</li>
+        </ul>
+        </div>
+
+        <!-- Gráfico de Ventas Totales por Mes -->
+        <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold text-blue-600 mb-4 text-center">
+            Ventas Totales por Mes
+        </h2>
+        <canvas id="ventasChart" class="w-full h-64"></canvas>
+        </div>
+    </div>
+    </div>
+
+    <!-- Modales -->
+
+    <!-- Modal Apertura Caja -->
+    <div id="modalAperturaCaja" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h5 class="text-lg font-semibold">Saldo de Apertura</h5>
+          <button data-modal-close class="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <form method="post" novalidate class="space-y-4">
+          {% csrf_token %}
+          <div>
+            {{ form_apertura.apertura.label_tag }}
+            {{ form_apertura.apertura|add_class:"w-full border rounded p-2" }}
+            {% for err in form_apertura.apertura.errors %}
+              <p class="text-red-500 text-sm">{{ err }}</p>
+            {% endfor %}
+          </div>
+          <div class="flex justify-end space-x-2">
+            <button type="button" data-modal-close class="px-4 py-2 rounded bg-gray-200">Cancelar</button>
+            <button type="submit" name="action" value="apertura" class="px-4 py-2 rounded bg-blue-600 text-white">Guardar Apertura</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Registrar Gasto -->
+    <div id="modalGastoCaja" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h5 class="text-lg font-semibold">Registrar Gasto</h5>
+          <button data-modal-close class="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <form method="post" novalidate class="space-y-4">
+          {% csrf_token %}
+          <div>
+            {{ form_gastos.gastos.label_tag }}
+            {{ form_gastos.gastos|add_class:"w-full border rounded p-2" }}
+            {% for err in form_gastos.gastos.errors %}
+              <p class="text-red-500 text-sm">{{ err }}</p>
+            {% endfor %}
+          </div>
+          <div class="flex justify-end space-x-2">
+            <button type="button" data-modal-close class="px-4 py-2 rounded bg-gray-200">Cancelar</button>
+            <button type="submit" name="action" value="gasto" class="px-4 py-2 rounded bg-blue-600 text-white">Guardar Gasto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Detalles Neto -->
+    <div id="modalDetallesNeto" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-sm p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h5 class="text-lg font-semibold">Detalles del Neto del Día</h5>
+          <button data-modal-close class="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <div class="space-y-2">
+          <p><strong>Saldo de Apertura:</strong> {{ caja.apertura|floatformat:2 }}</p>
+          <p><strong>Gastos del Día:</strong> {{ caja.gastos|floatformat:2 }}</p>
+          <p><strong>Ventas del Día:</strong> {{ total_ventas_dia|floatformat:2 }}</p>
+          <hr>
+          <p><strong>Neto del Día:</strong> {{ neto|floatformat:2 }}</p>
+        </div>
+        <div class="mt-4 text-right">
+          <button data-modal-close class="px-4 py-2 rounded bg-gray-200">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Ventas Día -->
+    <div id="ventasDiaModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 overflow-auto max-h-full">
+        <div class="flex justify-between items-center mb-4">
+          <h5 class="text-lg font-semibold">
+            Productos Vendidos Hoy ({{ current_date|date:"d M Y" }})
+          </h5>
+          <button data-modal-close class="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <div class="space-y-6">
+          <!-- 1) Detalle por Producto -->
+          <div>
+            <h6 class="font-semibold mb-2">Detalle por Producto</h6>
+            {% if productos_hoy %}
+              <ul class="divide-y divide-gray-200">
+                {% for p in productos_hoy %}
+                  <li class="py-3 flex justify-between items-center">
+                    <div>
+                      <p class="font-medium">{{ p.nombre }}</p>
+                      <p class="text-sm text-gray-500">
+                        Cantidad: {{ p.cantidad }} · Pago: {{ p.forma_pago }}
+                      </p>
+                    </div>
+                    <span class="text-right font-semibold">
+                      ${{ p.subtotal|intcomma }}
+                    </span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-gray-500 italic">No se vendió ningún producto hoy.</p>
+            {% endif %}
+          </div>
+
+          <!-- 2) Métodos de Pago Utilizados -->
+          <div>
+            <h6 class="font-semibold mb-2">Métodos de Pago Utilizados</h6>
+            {% if metodos_pago %}
+              <ul class="divide-y divide-gray-200">
+                {% for m in metodos_pago %}
+                  <li class="py-3 flex justify-between items-center">
+                    <span class="font-medium">
+                      {{ m.metodo_pago }}
+                    </span>
+                    <span class="text-right font-semibold">
+                      ${{ m.monto|intcomma }}  
+                      <span class="text-sm text-gray-500">({{ m.veces }} veces)</span>
+                    </span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-gray-500 italic">Sin registros de pago hoy.</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-6 text-right">
+          <button data-modal-close class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="text-center text-red-600 mt-8">
+      <p>Bienvenido, Invitado</p>
+      <p>Por favor, inicia sesión para acceder a esta vista. Serás redirigido al inicio.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Scripts: saludo, fecha, modales, datos y Chart.js -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // 🕒 Saludo según la hora
+    const userName = document.getElementById('user-name')?.textContent.trim() || 'Invitado';
+    const hour     = new Date().getHours();
+    let saludo, iconClass, ringColor;
+    if (hour < 12) {
+      saludo = 'Buenos días'; iconClass = 'bi-cup-hot'; ringColor = 'ring-yellow-500';
+    } else if (hour < 18) {
+      saludo = 'Buenas tardes'; iconClass = 'bi-sun'; ringColor = 'ring-orange-500';
+    } else {
+      saludo = 'Buenas noches'; iconClass = 'bi-moon-stars'; ringColor = 'ring-indigo-500';
+    }
+    const iconEl  = document.getElementById('greeting-icon'),
+          contEl  = document.getElementById('greeting-icon-container'),
+          textEl  = document.getElementById('greeting-icon-text');
+    if (iconEl) iconEl.classList.add(iconClass);
+    if (contEl) contEl.classList.add('ring-2', ringColor);
+    if (textEl) textEl.textContent = `${saludo}, ${userName}`;
+
+    // 📅 Fecha actual
+    const hoy = new Date(),
+          meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    document.getElementById('fecha').textContent = `${meses[hoy.getMonth()]} ${hoy.getDate()}`;
+
+    // 🔘 Abrir modales
+    document.querySelectorAll('[data-modal-target]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const modal = document.querySelector(btn.getAttribute('data-modal-target'));
+        if (modal) modal.classList.remove('hidden');
+      });
+    });
+
+    // ❌ Cerrar modales
+    document.querySelectorAll('[data-modal-close]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const modal = btn.closest('.fixed');
+        if (modal) modal.classList.add('hidden');
+      });
+    });
+
+    // 📊 Selector de año y gráfica de ventas
+    const yearSelect = document.getElementById('yearSelect'),
+          prodList   = document.getElementById('productosMasVendidos'),
+          ctx        = document.getElementById('ventasChart')?.getContext('2d');
+
+    const ventasChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Ventas ($)',
+          data: [],
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: '#374151',
+              font: { size: 14, weight: 'bold' }
+            }
+          }
+        }
+      }
+    });
+
+    function cargarDatos(year) {
+      fetch(`/tienda/datos/?año=${year}`)
+        .then(r => r.json())
+        .then(data => {
+          // Año actual y selector
+          yearSelect.innerHTML = '';
+          data.years.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            if (y === data.current_year) opt.selected = true;
+            yearSelect.appendChild(opt);
+          });
+
+          // Gráfica
+          ventasChart.data.labels = data.monthly_labels;
+          ventasChart.data.datasets[0].data = data.monthly_values;
+          ventasChart.update();
+
+          // Productos más vendidos
+          prodList.innerHTML = '';
+          data.productos_labels.forEach((nombre, i) => {
+            const unidades = data.productos_values[i];
+            const li = document.createElement('li');
+            li.className = 'flex items-center space-x-3 text-gray-700';
+            li.innerHTML = `
+              <i class="fa-solid fa-box-seam text-green-500 text-2xl"></i>
+              <span>${nombre} — <strong>${unidades} unidades</strong></span>
+            `;
+            prodList.appendChild(li);
+          });
+        })
+        .catch(e => {
+          console.error('Error cargando datos:', e);
+          prodList.innerHTML = '<li class="text-red-500">Error al cargar productos.</li>';
+        });
+    }
+
+    // Cargar año actual al inicio
+    const currentYear = new Date().getFullYear();
+    cargarDatos(currentYear);
+
+    // Cambio de año en selector
+    yearSelect.addEventListener('change', (e) => {
+      cargarDatos(e.target.value);
+    });
+  });
+</script>
+
+{% endblock %}

@@ -11,17 +11,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-0ee!fl%7vm)6@&!-g)hn4uh_5+wtn5e_m#&h2$l0s)j++t=!5='
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
 ALLOWED_HOSTS = [
-    "web-production-482151.up.railway.app",  # En producción
-    "localhost",  # Para entorno local
-    "127.0.0.1",  # Para acceder desde localhost
+    "localhost",
+    "127.0.0.1",
+    "217.196.48.97",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://web-production-482151.up.railway.app",  # En producción
     "http://localhost:8000",  # Para entorno local
     "http://127.0.0.1:8000",  # Para entorno local
 ]
@@ -42,7 +38,11 @@ INSTALLED_APPS = [
     'usuarios.apps.UsuariosConfig',
     'inventario.apps.InventarioConfig',
     'ventas.apps.VentasConfig',
-    'carrito.apps.CarritoConfig'
+    'carrito.apps.CarritoConfig',
+    'dashboards.apps.DashboardsConfig',
+    'bodega.apps.BodegaConfig',
+    'facturacion.apps.FacturacionConfig',
+    'configuracion.apps.ConfiguracionConfig',
 ]
 
 # Middleware
@@ -72,6 +72,12 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+
+                
+                'carrito.context_processors.carrito_total_items',
+                'configuracion.context_processors.ui_configuracion',
+                'configuracion.context_processors.ui_colors',
+                'configuracion.menu.menu_items',  # Context processor para el menú
             ],
         },
     },
@@ -149,3 +155,47 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
     }
 }
+
+# Configuración de íconos (Font Awesome)
+UI_ICON_MAP = {
+    'dashboard': 'fa-house',
+    'inventario': 'fa-boxes',
+    'bodega': 'fa-warehouse',
+    'productos': 'fa-box',
+    'categorias': 'fa-tags',
+    'ventas': 'fa-shopping-cart',
+    'usuarios': 'fa-users',
+    'proveedores': 'fa-truck',
+    'adicionales': 'fa-layer-group',
+    'perfil': 'fa-user',
+    'facturacion': 'fa-paper-plane',
+    'configuracion': 'fa-cog',  # icono para configuración
+}
+
+# Configuración de colores (clases Tailwind)
+UI_COLORS = {
+    'sidebar_bg': 'bg-gray-100',
+    'sidebar_text': 'text-white-700',
+    'sidebar_hover': 'hover:bg-gray-200',
+    'navbar_bg': 'bg-gray-800',
+    'navbar_text': 'text-white',
+    'button_bg': 'bg-gray-700',
+    'button_hover': 'hover:bg-gray-600',
+    'mobile_menu_bg': 'bg-white',
+    'config_panel_bg': 'bg-white',
+    'config_panel_text': 'text-gray-800',
+}
+
+# Permisos por rol
+UI_PERMISSIONS = {
+    'gerente': [
+        'dashboard','inventario','bodega','productos','categorias',
+        'ventas','usuarios','proveedores','adicionales','perfil','facturacion','configuracion'
+    ],
+    'vendedor': [
+        'dashboard','inventario','bodega','productos','adicionales','perfil','configuracion'
+    ],
+}
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True

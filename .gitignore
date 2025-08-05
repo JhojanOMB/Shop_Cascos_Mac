@@ -18,3 +18,6 @@ node_modules/
 
 # Archivos estaticos
 staticfiles
+
+# ===== Variables de entorno =====
+.env

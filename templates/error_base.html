@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/errores.css' %}">
+
+{% endblock %}
+
+{% block header_links %}
+
+<style>
+    @media (max-width: 768px) {
+    .fondo-error {
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+
+    .img-error {
+        max-width: 16rem !important;
+        margin-bottom: 2rem;
+    }
+
+    .card-error {
+        padding: 1.5rem;
+    }
+    }
+
+    .img-error {
+        max-width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+
+    .card-error {
+        background-color: #fff;
+        border-radius: 1.5rem;
+        box-shadow: 0 .75rem 2rem rgba(0, 0, 0, 0.1);
+        border-left: .5rem solid #ce5504;
+        padding: 1.5rem;
+    }
+
+    .card-error .card-title {
+        color: #ce5504;
+    }
+
+    .btn-naranja-rey-gradient {
+        background: linear-gradient(135deg, #ce5504, #f26b04) !important;
+        color: #fff !important;
+        border-radius: 2rem;
+        padding: .75rem 2rem;
+        box-shadow: 0 .25rem .5rem rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-naranja-rey-gradient:hover {
+        opacity: .9 !important;
+        color: #fff3e6 !important;
+    }
+
+    .icono-error {
+        color: #ce5504;
+    }
+
+    #counter {
+        font-weight: bold;
+        color: #004589;
+    }
+</style>
+
+{% if user.is_authenticated %}
+    <li class="nav-item mx-2">
+        {% if user.rol == 'gerente' %}
+            <a href="{% url 'dashboard_gerente' %}" class="btn btn-dark">Mi Perfil</a>
+        {% elif user.rol == 'vendedor' %}
+            <a href="{% url 'dashboard_vendedor' %}" class="btn btn-dark">Mi Perfil</a>
+        {% endif %}
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'index' %}" class="btn btn-dark">Volver al inicio</a>
+        <a href="{% url 'logout' %}" class="btn btn-dark">Cerrar Sesión</a>
+    </li>
+{% else %}
+    <li class="nav-item">
+        <a href="{% url 'login' %}" class="btn btn-dark">Iniciar Sesión</a>
+        <a href="{% url 'index' %}" class="btn btn-dark">Volver al inicio</a>
+    </li>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="fondo-error container-fluid py-5">
+  <div class="row justify-content-center align-items-center g-5">
+    <!-- Imagen decorativa -->
+    <div class="col-lg-5 text-center">
+      <img src="{% static 'img/fondo_errores_cascos.webp' %}" alt="Error Casco" class="img-fluid img-error animate__animated animate__fadeInLeft" style="max-width: 28rem;">
+    </div>
+
+    <!-- Contenido del error -->
+    <div class="col-lg-6">
+      <div class="card-error text-center p-4 animate__animated animate__fadeInRight">
+        <div class="mb-3">
+          <i class="fa-solid fa-triangle-exclamation fa-3x icono-error"></i>
+        </div>
+
+        <h1 class="display-4 fw-bold text-naranja-rey mb-2">{{ codigo_error }}</h1>
+        <h2 class="card-title mb-3">{{ titulo_error }}</h2>
+        <p class="card-text mb-4">{{ mensaje_error }}</p>
+
+        <a href="{% url 'index' %}" class="btn btn-naranja-rey-gradient border border-black mb-3">
+          <i class="fa-solid fa-house me-2"></i>Volver al Inicio
+        </a>
+
+        <p class="text-muted mb-0">
+          Serás redirigido automáticamente en <span id="counter">15</span> segundos...
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+    let count = 15;
+    const counter = document.getElementById('counter');
+    const interval = setInterval(() => {
+        count--;
+        counter.textContent = count;
+        if (count <= 0) {
+            clearInterval(interval);
+            window.location.href = '{% url "index" %}';
+        }
+    }, 1000);
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+{# tienda/grid_productos.html #}
+<div id="productos-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+  {% for producto in productos %}
+    {# aquí va la tarjeta que ya tienes diseñada con Alpine.js para el carrusel #}
+  {% empty %}
+    <p class="col-span-full text-center text-gray-500">No hay productos.</p>
+  {% endfor %}
+</div>
+
+<div class="mt-6 flex justify-center">
+  <nav class="space-x-2">
+    {% if productos.has_previous %}
+      <button hx-get="?page=1" hx-target="#productos-grid" class="px-3 py-1 border rounded">&laquo; Primero</button>
+      <button hx-get="?page={{ productos.previous_page_number }}" hx-target="#productos-grid" class="px-3 py-1 border rounded">Anterior</button>
+    {% endif %}
+    {% for i in productos.paginator.page_range %}
+      <button
+        hx-get="?page={{ i }}"
+        hx-target="#productos-grid"
+        class="px-3 py-1 border rounded {{ productos.number == i and 'bg-gray-200' }}"
+      >{{ i }}</button>
+    {% endfor %}
+    {% if productos.has_next %}
+      <button hx-get="?page={{ productos.next_page_number }}" hx-target="#productos-grid" class="px-3 py-1 border rounded">Siguiente</button>
+      <button hx-get="?page={{ productos.paginator.num_pages }}" hx-target="#productos-grid" class="px-3 py-1 border rounded">Último &raquo;</button>
+    {% endif %}
+  </nav>
+</div>

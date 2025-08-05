@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, UpdateView, DeleteView, CreateView, DetailView
+from django.views.generic import ListView, UpdateView, DeleteView, CreateView, DetailView, View, RedirectView
 from django.db import transaction
 from django.urls import reverse_lazy
 from .forms import *
@@ -27,6 +27,7 @@ from django.http import HttpResponse
 from io import BytesIO
 from django.db.models import Q
 from .services import VentaService
+from datetime import date, timedelta
 
 # FormSet inline para manejar los detalles de la venta
 DetalleVentaFormSet = inlineformset_factory(Venta, DetalleVenta, fields=('producto_talla', 'cantidad'), extra=1)
@@ -156,15 +157,26 @@ class VentaUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('ventas:contenido_ventas')
 
     def form_valid(self, form):
+        # Deja que UpdateView guarde primero la instancia
         response = super().form_valid(form)
-        if self.request.is_ajax():
-            return JsonResponse({'success': True, 'message': 'Venta actualizada exitosamente.'})
+
+        # Nuevo chequeo de AJAX en Django 4+:
+        is_ajax = (
+            self.request.headers.get('x-requested-with') == 'XMLHttpRequest'
+            or self.request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
+        )
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'message': 'Venta actualizada exitosamente.'
+            })
+
         return response
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Asegúrate de pasar todos los detalles, incluso los anulados si los quieres mostrar
-        # Si solo quieres los activos, filtra por anulado=False
+        # Pasamos todos los detalles, incluidos los anulados
         context['detalles'] = self.object.detalles.all()
         return context
 
@@ -178,6 +190,114 @@ class VentaDeleteView(LoginRequiredMixin, DeleteView):
         if self.request.is_ajax():
             return JsonResponse({'success': True, 'message': 'Venta eliminada exitosamente.'})
         return response
+
+class VentaBorradorContenidoView(DetailView):
+    model = VentaBorrador
+    template_name = 'dashboard/ventas/venta_borrador.html'
+
+    def get_object(self):
+        borrador, _ = VentaBorrador.objects.get_or_create(usuario=self.request.user)
+        return borrador
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # Lleva al template todas las tallas de productos disponibles
+        ctx['producto_tallas'] = ProductoTalla.objects.filter(cantidad__gt=0)
+        return ctx
+
+class AgregarDetalleBorrador(View):
+    def post(self, request):
+        borrador, _ = VentaBorrador.objects.get_or_create(usuario=request.user)
+        pt_id = request.POST.get('producto_talla')
+        cantidad = request.POST.get('cantidad')
+
+        if not pt_id or not cantidad:
+            messages.error(request, "Debes seleccionar un producto y definir una cantidad.")
+            return redirect('ventas:venta_borrador')
+
+        try:
+            cantidad = int(cantidad)
+        except ValueError:
+            messages.error(request, "La cantidad debe ser un número válido.")
+            return redirect('ventas:venta_borrador')
+
+        DetalleBorrador.objects.update_or_create(
+            venta_borrador=borrador,
+            producto_talla_id=pt_id,
+            defaults={'cantidad': cantidad}
+        )
+        return redirect('ventas:venta_borrador')
+
+class EditarBorradorView(View):
+    def post(self, request):
+        borrador = get_object_or_404(VentaBorrador, usuario=request.user)
+        pt_id = request.POST.get('producto_talla')
+        cantidad = request.POST.get('cantidad')
+
+        if not pt_id or not cantidad:
+            messages.error(request, "Debes seleccionar un producto y definir una cantidad.")
+            return redirect('ventas:venta_borrador')
+
+        try:
+            cantidad = int(cantidad)
+        except ValueError:
+            messages.error(request, "La cantidad debe ser un número válido.")
+            return redirect('ventas:venta_borrador')
+
+        detalle = borrador.detalles.filter(producto_talla_id=pt_id).first()
+        if detalle:
+            detalle.cantidad = cantidad
+            detalle.save()
+        else:
+            DetalleBorrador.objects.create(
+                venta_borrador=borrador,
+                producto_talla_id=pt_id,
+                cantidad=cantidad
+            )
+        
+        return redirect('ventas:venta_borrador')
+
+class EliminarDetalleBorrador(DeleteView):
+    model = DetalleBorrador
+    template_name = 'dashboard/ventas/borrador_eliminar.html'
+    success_url = reverse_lazy('ventas:venta_borrador')  # <- Redirige a la vista sin usar pk
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self.object.venta_borrador.usuario == request.user:
+            self.object.delete()
+        return redirect(self.success_url)
+
+class FinalizarVentaFromBorrador(View):
+    def post(self, request):
+        borrador = get_object_or_404(VentaBorrador, usuario=request.user)
+        if not borrador.detalles.exists():
+            messages.error(request, "No hay productos en el borrador.")
+            return redirect('ventas:venta_borrador')
+
+        # 1) Crear Venta definitiva
+        venta = Venta.objects.create(empleado=request.user, metodo_pago=request.POST.get('metodo_pago'))
+        total = 0
+        # 2) Convertir cada DetalleBorrador en DetalleVenta
+        for d in borrador.detalles.all():
+            subtotal = d.subtotal()
+            DetalleVenta.objects.create(
+                venta=venta,
+                producto_talla=d.producto_talla,
+                cantidad=d.cantidad,
+                precio=d.producto_talla.precio,
+                total=subtotal
+            )
+            total += subtotal
+        venta.total = total
+        venta.save()
+
+        # 3) Limpiar el borrador
+        borrador.detalles.all().delete()
+
+        messages.success(request, f"Venta finalizada – total ${total:,}")
+        return redirect('ventas:imprimir_factura', venta_id=venta.id)
+
 
 @require_POST
 def facturar_venta(request, venta_id):
@@ -380,7 +500,6 @@ class PublicVentaDetalleView(DetailView):
         context['detalles'] = venta.detalles.all()
         return context
 
-
 class VentaDetalleView(LoginRequiredMixin, DetailView):
     model = Venta
     template_name = 'dashboard/ventas/detalle_venta.html'
@@ -394,10 +513,9 @@ class VentaDetalleView(LoginRequiredMixin, DetailView):
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        venta = self.get_object()
-        context['detalles'] = venta.detalles.all()
-        return context
+        ctx = super().get_context_data(**kwargs)
+        ctx['detalles'] = self.object.detalles.all()
+        return ctx
 
 
 @require_POST
@@ -420,3 +538,76 @@ def anular_detalle_venta(request, detalle_id):
         return JsonResponse({'success': True, 'message': 'Producto anulado y devuelto al inventario.'})
     else:
         return JsonResponse({'success': False, 'message': 'Este producto ya está anulado.'})
+
+def caja_diaria_view(request):
+    hoy = timezone.localdate()
+    caja, creada = CajaDiaria.objects.get_or_create(fecha=hoy)
+    if request.method == 'POST':
+        form = CajaDiariaForm(request.POST, instance=caja)
+        if form.is_valid():
+            form.save()
+            return redirect('ventas:caja_diaria')
+    else:
+        form = CajaDiariaForm(instance=caja)
+
+    contexto = {
+        'form': form,
+        'caja': caja,
+        'ventas_totales': caja.ventas_totales,
+        'neto': caja.neto,
+    }
+    return render(request, 'ventas/caja_diaria.html', contexto)
+
+
+@login_required
+def ventas_por_dia(request):
+    fecha_str = request.GET.get('fecha')
+    ayer = request.GET.get('ayer')
+    ventas = []
+    caja = None
+    fecha = None
+
+    if ayer:
+        fecha = timezone.now().date() - timedelta(days=1)
+        ventas = Venta.objects.filter(fecha__date=fecha).prefetch_related('detalles__producto_talla')
+        caja = CajaDiaria.objects.filter(fecha=fecha).first()
+    elif fecha_str:
+        try:
+            fecha = timezone.datetime.strptime(fecha_str, "%Y-%m-%d").date()
+            ventas = Venta.objects.filter(fecha__date=fecha).prefetch_related('detalles__producto_talla')
+            caja = CajaDiaria.objects.filter(fecha=fecha).first()
+        except ValueError:
+            pass
+
+    total_ventas = sum(v.total for v in ventas)
+
+    context = {
+        'ventas': ventas,
+        'fecha': fecha,
+        'total_ventas_dia': total_ventas,
+        'caja': caja,
+    }
+    return render(request, 'dashboard/ventas/ventas_por_dia.html', context)
+
+# Métodos de Pago
+class MetodoPagoListView(ListView):
+    model = MetodoPago
+    template_name = 'dashboard/ventas/listado_metodopago.html'
+    context_object_name = 'metodos'
+
+class MetodoPagoCreateView(CreateView):
+    model = MetodoPago
+    form_class = MetodoPagoForm
+    template_name = 'dashboard/ventas/metodopago_form.html'
+    success_url = reverse_lazy('ventas:metodopago_list')
+
+class MetodoPagoUpdateView(UpdateView):
+    model = MetodoPago
+    form_class = MetodoPagoForm
+    template_name = 'dashboard/ventas/metodopago_form.html'
+    success_url = reverse_lazy('ventas:metodopago_list')
+
+class MetodoPagoDeleteView(DeleteView):
+    model = MetodoPago
+    template_name = 'dashboard/ventas/metodopago_confirm_delete.html'
+    success_url = reverse_lazy('ventas:metodopago_list')

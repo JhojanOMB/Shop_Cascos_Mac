@@ -1,0 +1,145 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Venta en Borrador{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+  {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="font-semibold">Venta en Borrador</h1>
+  </div>
+
+  <!-- Escaneo de código de barras -->
+  <div class="mb-4">
+    <label for="codigo_input" class="form-label">Escanea el código de barras:</label>
+    <input type="text" id="codigo_input" class="form-control" placeholder="Código de barras">
+  </div>
+
+  <!-- Formulario para agregar/actualizar detalle -->
+  <form method="post" action="{% url 'ventas:borrador_agregar' %}" class="row g-2 align-items-end mb-4">
+    {% csrf_token %}
+    <div class="col-auto">
+      <label for="producto_talla" class="form-label">Producto:</label>
+      <select id="producto_talla" name="producto_talla" class="form-select" required>
+        <option value="" disabled {% if not request.POST.producto_talla %}selected{% endif %}>Selecciona...</option>
+        {% for pt in producto_tallas %}
+          <option value="{{ pt.id }}">
+            {{ pt.producto.nombre }} – Talla {{ pt.talla }} (${{ pt.producto.precio|floatformat:0 }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="cantidad" class="form-label">Cantidad:</label>
+      <input type="number" id="cantidad" name="cantidad" min="1" value="1" class="form-control" required>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">Agregar / Actualizar</button>
+    </div>
+  </form>
+
+  <!-- Tabla de detalles borrador -->
+  <div class="table-responsive mb-4">
+    <table class="table table-striped table-hover">
+      <thead class="table-dark">
+        <tr>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Subtotal</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in object.detalles.all %}
+          <tr>
+            <td>{{ d.producto_talla.producto.nombre }} (Talla {{ d.producto_talla.talla }})</td>
+            <td>{{ d.cantidad }}</td>
+            <td>${{ d.subtotal|intcomma }}</td>
+            <td>
+              <a href="{% url 'ventas:borrador_eliminar' d.pk %}" class="btn btn-sm btn-danger">Eliminar</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="text-center">No hay productos agregados.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      {% if object.detalles.exists %}
+      <tfoot>
+        <tr>
+          <td colspan="2" class="text-end"><strong>Total:</strong></td>
+          <td colspan="2"><strong>${{ object.total|intcomma }}</strong></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+
+  <!-- Formulario para finalizar venta -->
+  <form method="post" action="{% url 'ventas:borrador_finalizar' %}" class="row g-2 align-items-end">
+    {% csrf_token %}
+    <div class="col-auto">
+      <label for="metodo_pago" class="form-label">Método de Pago:</label>
+      <select id="metodo_pago" name="metodo_pago" class="form-select" required>
+        <option value="" disabled selected>Selecciona...</option>
+        {% for code, label in METODOS_PAGO %}
+          <option value="{{ code }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-success">Finalizar Venta</button>
+    </div>
+  </form>
+</div>
+
+<!-- Script para buscar producto por código de barras -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const codigoInput = document.getElementById("codigo_input");
+  const selectProducto = document.querySelector("select[name='producto_talla']");
+
+  codigoInput.addEventListener("keydown", async function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const codigo = codigoInput.value.trim();
+      if (!codigo) return;
+
+      try {
+        const response = await fetch("{% url 'ventas:obtener_producto_por_codigo' %}?codigo=" + encodeURIComponent(codigo));
+        const data = await response.json();
+
+        if (data.success) {
+          const id = data.id.toString();
+          const optionToSelect = Array.from(selectProducto.options).find(opt => opt.value === id);
+          if (optionToSelect) {
+            optionToSelect.selected = true;
+            alert("Producto seleccionado: " + optionToSelect.text);
+          } else {
+            alert("Producto encontrado pero no está en la lista.");
+          }
+        } else {
+          alert("Producto no encontrado.");
+        }
+      } catch (error) {
+        alert("Error al buscar el producto.");
+        console.error(error);
+      }
+
+      codigoInput.value = ""; // Limpiar input
+    }
+  });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Listado de Bodegas</h2>
+  <a href="{% url 'crear_bodega' %}" class="btn btn-primary mb-3">
+    <i class="bi bi-plus-circle"></i> Crear Bodega
+  </a>
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Dirección</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bodega in bodegas %}
+        <tr>
+          <td>{{ bodega.nombre }}</td>
+          <td>{{ bodega.direccion|default:'-' }}</td>
+          <td>
+            <a href="{% url 'detalle_bodega' bodega.id %}" class="btn btn-sm btn-info">
+              <i class="bi bi-box"></i> Ver Stock
+            </a>
+            <a href="{% url 'editar_bodega' bodega.id %}" class="btn btn-sm btn-warning">
+              <i class="bi bi-pencil"></i> Editar
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No hay bodegas registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

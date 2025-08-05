@@ -32,6 +32,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Prefetch, OuterRef, Exists
 from django.db.models import Max
 from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import portrait, landscape
 from reportlab.lib.utils import ImageReader
 import requests
 import math
@@ -120,26 +121,25 @@ def actualizar_todos_codigos_barras(request):
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-
 def index(request):
     categorias = Categoria.objects.all()
 
-    # Prefetch ajustado para obtener tallas activas por producto
+    # Prefetch para tallas activas
     productos = Producto.objects.filter(catalogo='catalogo').prefetch_related(
         Prefetch(
             'producto_tallas',
             queryset=ProductoTalla.objects.filter(activa=True),
-            to_attr='tallas_activas'  # Tallas activas específicas del producto
+            to_attr='tallas_activas'
         )
     )
 
-    # Obtener el precio máximo de los productos disponibles
+    # Precio máximo para filtro
     precio_maximo_producto = productos.aggregate(Max('precio_venta'))['precio_venta__max']
 
-    # Recuperar parámetros con valores por defecto
+    # Filtros desde GET
     categoria_id = request.GET.get('category')
-    price_min = request.GET.get('price_min', 0)
-    price_max = request.GET.get('price_max', precio_maximo_producto)
+    price_min = float(request.GET.get('price_min', 0))
+    price_max = float(request.GET.get('price_max', precio_maximo_producto))
     en_oferta = request.GET.get('en_oferta')
     genero = request.GET.get('genero')
     talla = request.GET.get('talla')
@@ -151,11 +151,7 @@ def index(request):
         categoria = get_object_or_404(Categoria, id=categoria_id)
         productos = productos.filter(categoria=categoria)
 
-    if price_min is not None:
-        productos = productos.filter(precio_venta__gte=float(price_min))
-
-    if price_max is not None:
-        productos = productos.filter(precio_venta__lte=float(price_max))
+    productos = productos.filter(precio_venta__gte=price_min, precio_venta__lte=price_max)
 
     if en_oferta:
         productos = productos.filter(en_oferta=True)
@@ -167,9 +163,20 @@ def index(request):
         productos = productos.filter(producto_tallas__talla__nombre=talla, producto_tallas__activa=True)
 
     if color:
-        productos = productos.filter(producto_tallas__color__iexact=color, producto_tallas__activa=True)
+        productos = productos.filter(
+            producto_tallas__color__nombre__iexact=color,
+            producto_tallas__activa=True
+        )
 
     productos = productos.order_by(order_by)
+
+    # Agregar géneros únicos y manejar imágenes
+    for producto in productos:
+        generos = set()
+        for variante in getattr(producto, "tallas_activas", []):
+            if variante.genero:
+                generos.add(variante.genero.lower())
+        producto.generos_disponibles = generos
 
     # Paginación
     paginator = Paginator(productos, 20)
@@ -181,16 +188,16 @@ def index(request):
     except EmptyPage:
         productos_paginados = paginator.page(paginator.num_pages)
 
-    # Obtener tallas y colores únicos disponibles
+    # Tallas y colores únicos
     tallas_disponibles = Talla.objects.filter(
         producto_tallas__producto__in=productos,
         producto_tallas__activa=True
     ).distinct()
 
-    colores_disponibles = ProductoTalla.objects.filter(
-        producto__in=productos,
-        activa=True
-    ).values_list('color', flat=True).distinct()
+    colores_disponibles = Color.objects.filter(
+        productotalla__producto__in=productos,
+        productotalla__activa=True
+    ).distinct()
 
     return render(request, 'index.html', {
         'categorias': categorias,
@@ -198,75 +205,12 @@ def index(request):
         'precio_maximo_producto': precio_maximo_producto,
         'tallas_disponibles': tallas_disponibles,
         'colores_disponibles': colores_disponibles,
+        'order_by': order_by,
     })
-
 
 # Vista para la página de "Ubícanos"
 def ubicanos(request):
     return render(request, 'ubicanos.html')
-
-# Vista del dashboard para el gerente
-@login_required
-def dashboard_gerente(request):
-    # Obtener fecha actual
-    today = now()
-    current_date = today.date()
-    current_year = today.year
-    current_month = today.month
-
-    # Ventas diarias (fecha actual)
-    ventas_del_dia = Venta.objects.filter(fecha__date=current_date)
-    total_ventas_dia = ventas_del_dia.aggregate(total=Sum('total'))['total'] or 0
-    cantidad_ventas_dia = ventas_del_dia.count()
-
-    # Ventas agrupadas por mes del año actual
-    ventas_por_mes = Venta.objects.filter(fecha__year=current_year) \
-        .annotate(month=ExtractMonth('fecha')) \
-        .values('month') \
-        .annotate(total=Sum('total')) \
-        .order_by('month')
-
-    # Inicializar datos mensuales con 0 para los 12 meses
-    ventas_mensuales = {i: 0 for i in range(1, 13)}
-    for venta in ventas_por_mes:
-        ventas_mensuales[venta['month']] = venta['total']
-
-    # Calcular totales y diferencias
-    total_ventas_mes_actual = ventas_mensuales.get(current_month, 0)
-    mes_anterior = current_month - 1 if current_month > 1 else 12
-    total_ventas_mes_anterior = ventas_mensuales.get(mes_anterior, 0)
-
-    if total_ventas_mes_anterior > 0:
-        porcentaje_diferencia = ((total_ventas_mes_actual - total_ventas_mes_anterior) / total_ventas_mes_anterior) * 100
-    elif total_ventas_mes_actual > 0:
-        porcentaje_diferencia = 100
-    else:
-        porcentaje_diferencia = 0
-
-    # Productos con bajo inventario (considerando tallas)
-    productos_bajo_stock = Producto.objects.filter(producto_tallas__cantidad__lte=5).distinct()
-
-    # Productos sin inventario (considerando tallas)
-    productos_sin_stock = Producto.objects.filter(producto_tallas__cantidad=0).distinct()
-
-    # Total de ventas del mes actual y cantidad de ventas realizadas
-    cantidad_ventas_mes_actual = Venta.objects.filter(fecha__year=current_year, fecha__month=current_month).count()
-
-    # Pasar datos al contexto
-    context = {
-        'total_ventas_dia': total_ventas_dia,
-        'cantidad_ventas_dia': cantidad_ventas_dia,
-        'total_ventas_mes_actual': total_ventas_mes_actual,
-        'total_ventas_mes_anterior': total_ventas_mes_anterior,
-        'porcentaje_diferencia': round(porcentaje_diferencia, 2),
-        'cantidad_ventas_mes_actual': cantidad_ventas_mes_actual,
-        'productos_bajo_stock': productos_bajo_stock,
-        'productos_sin_stock': productos_sin_stock,
-        'ventas_mensuales': ventas_mensuales,
-        'show_sidebar': True,
-    }
-
-    return render(request, 'dashboard/dashboard_gerente.html', context)
 
 def obtener_datos_ventas(request):
     año = int(request.GET.get('año', date.today().year))
@@ -278,13 +222,12 @@ def obtener_datos_ventas(request):
         .annotate(total=Sum('total')) \
         .order_by('month')
 
-    # Nombres de meses en español
     nombres_meses = [
         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
     ]
     monthly_labels = nombres_meses
-    monthly_values = [0] * 12  # Inicia con 0 para cada mes
+    monthly_values = [0] * 12
 
     for venta in ventas_por_mes:
         monthly_values[venta['month'] - 1] = venta['total']
@@ -298,74 +241,31 @@ def obtener_datos_ventas(request):
     productos_labels = [p['producto_talla__producto__nombre'] for p in productos_mas_vendidos]
     productos_values = [p['total_vendido'] for p in productos_mas_vendidos]
 
+    # Mejor vendedor (empleado con mayor total de ventas)
+    mejor_vendedor_data = Venta.objects.filter(fecha__year=año) \
+        .values('empleado__first_name', 'empleado__last_name') \
+        .annotate(total_ventas=Sum('total')) \
+        .order_by('-total_ventas') \
+        .first()
+
+    if mejor_vendedor_data:
+        mejor_vendedor = f"{mejor_vendedor_data['empleado__first_name']} {mejor_vendedor_data['empleado__last_name']}"
+        total_mejor_vendedor = mejor_vendedor_data['total_ventas']
+    else:
+        mejor_vendedor = "Ninguno"
+        total_mejor_vendedor = 0
+
     data = {
         'monthly_labels': monthly_labels,
         'monthly_values': monthly_values,
         'productos_labels': productos_labels,
         'productos_values': productos_values,
+        'mejor_vendedor': mejor_vendedor,
+        'total_mejor_vendedor': total_mejor_vendedor,
         'current_year': año,
-        'years': list(range(2020, date.today().year + 1)),  # Años disponibles
+        'years': list(range(2020, date.today().year + 1)),
     }
     return JsonResponse(data)
-
-# Vista del dashboard para el vendedor
-@login_required
-def dashboard_vendedor(request):
-    # Forzar español Colombia
-    locale.setlocale(locale.LC_TIME, 'es_CO.UTF-8')
-
-    # Obtener todos los productos y ventas
-    productos = Producto.objects.all()
-    ventas = Venta.objects.all()
-
-    # Filtrar productos con bajo stock (cantidad <= 5) y sin stock (cantidad == 0)
-
-    # Obtener la fecha actual
-    today = timezone.now()  # Obtener la fecha y hora actual
-        # Consultar las ventas agrupadas por mes del año actual
-
-    monthly_data = ventas.filter(fecha__year=today.year) \
-        .extra(select={'month': "strftime('%%m', fecha)"}) \
-        .values('month') \
-        .annotate(total=Sum('total')) \
-        .order_by('month')
-
-    # Nombres de meses en español
-    nombres_meses = {
-        '01': "Enero", '02': "Febrero", '03': "Marzo", '04': "Abril", '05': "Mayo", '06': "Junio",
-        '07': "Julio", '08': "Agosto", '09': "Septiembre", '10': "Octubre", '11': "Noviembre", '12': "Diciembre"
-    }
-        # Inicializa listas con 0 para cada mes
-    monthly_values = {str(i).zfill(2): 0 for i in range(1, 13)}  # Diccionario con 0 para cada mes
-
-    # Rellenar los valores con los datos reales de ventas
-    for data in monthly_data:
-        month = data['month']  # Mes como string '01', '02', ..., '12'
-        total = data['total'] or 0  # Total de ventas del mes (0 si no hay ventas)
-        monthly_values[month] = total  # Asigna el total de ventas al mes correspondiente
-
-    # Obtener el mes actual y mes pasado
-    mes_actual = today.month
-    mes_pasado = mes_actual - 1 if mes_actual > 1 else 12  # Si es enero, el mes pasado es diciembre
-
-    # Obtener los totales de ventas para los meses actual y pasado
-    total_ventas_mes_actual = monthly_values[str(mes_actual).zfill(2)]  # Ventas del mes actual
-
-        # Cantidad de ventas realizadas este mes
-    cantidad_ventas_mes_actual = ventas.filter(fecha__year=today.year, fecha__month=mes_actual).count()
-
-    # Pasar las variables al contexto para renderizar en el template
-    context = {
-        'productos': productos,
-        'ventas': ventas,
-        'total_ventas_mes_actual': total_ventas_mes_actual,
-        'cantidad_ventas_mes_actual': cantidad_ventas_mes_actual,
-        'mes_actual': nombres_meses[str(mes_actual).zfill(2)],  # Mes actual en formato legible
-        'mes_pasado': nombres_meses[str(mes_pasado).zfill(2)],  # Mes pasado en formato legible
-        'show_sidebar': True,  # Para mostrar la barra lateral
-    }
-
-    return render(request, 'dashboard/dashboard_vendedor.html', context)
 
 # Vista para el contenido de productos
 class ProductoContenidoView(LoginRequiredMixin, ListView):
@@ -390,7 +290,6 @@ class ProductoContenidoView(LoginRequiredMixin, ListView):
 
         # Ordenar por los más recientes primero (por ID descendente)
         queryset = queryset.order_by('-id')
-
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -398,16 +297,22 @@ class ProductoContenidoView(LoginRequiredMixin, ListView):
         context['categorias'] = Categoria.objects.all()
         context['proveedores'] = Proveedor.objects.all()
 
+        # Variantes para cada producto
         productos = context['productos']
         for producto in productos:
-            # Todas las combinaciones de talla, color, género y cantidad del producto
             producto.variantes = ProductoTalla.objects.filter(
                 producto=producto,
                 cantidad__gt=0
             ).select_related('talla')
 
-        return context
+        # Construye la querystring con todos los parámetros menos 'page'
+        params = self.request.GET.copy()
+        if 'page' in params:
+            params.pop('page')
+        context['query_params'] = params.urlencode()
 
+        return context
+    
 # Formset para crear
 ProductoTallaCreateFormSet = inlineformset_factory(
     Producto,
@@ -660,12 +565,13 @@ class ProductDetailShopView(DetailView):
 
         return context
 
-
 def buscar_productos(request):
     query = request.GET.get('q')
-    productos = Producto.objects.all()
+    # Partimos de todos los productos en catálogo
+    productos = Producto.objects.filter(catalogo='catalogo')
 
     if query:
+        # Además filtramos por nombre si hay término de búsqueda
         productos = productos.filter(nombre__icontains=query)
 
     context = {
@@ -673,6 +579,7 @@ def buscar_productos(request):
         'query': query,
     }
     return render(request, 'tienda/buscar_productos.html', context)
+
 
 # Vista para el contenido de categorias
 class CategoriaContenidoView(LoginRequiredMixin, ListView):
@@ -769,7 +676,6 @@ class ProveedorDeleteView(LoginRequiredMixin, DeleteView):
             return JsonResponse({'success': True, 'message': 'Proveedor eliminado exitosamente.'})
         return response
 
-
 def productos_vendidos_hoy(request):
     hoy = timezone.now().date()
     
@@ -802,91 +708,6 @@ def productos_vendidos_hoy(request):
         'metodos_pago': metodos_pago_dict
     })
 
-def imprimir_codigos_barras(request):
-    if request.method != 'POST':
-        return JsonResponse({"mensaje": "Método no permitido"}, status=405)
-
-    codigos = request.POST.getlist('codigos[]')
-    cantidades = request.POST.getlist('cantidades[]')
-    img_urls = request.POST.getlist('img_urls[]')
-
-    images_to_print = []
-    for code, qty, url in zip(codigos, cantidades, img_urls):
-        try:
-            q = int(qty)
-        except ValueError:
-            q = 1
-        images_to_print += [url] * q
-
-    if not images_to_print:
-        return JsonResponse({"mensaje": "No se recibieron códigos de barras para imprimir"}, status=400)
-
-    cm_to_pt = 28.35
-    page_width = 5.8 * cm_to_pt  
-    page_height = 20.99 * cm_to_pt  
-
-    buffer = BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=(page_width, page_height))
-
-    # Márgenes 0
-    ml, mr, mt, mb = 0, 0, 0, 0  
-
-    columnas = 2  # siempre 2 códigos por fila
-    filas_por_pagina = 12  # FIJAS: 12 filas
-
-    # Nuevo tamaño más grande
-    scale_factor = 1.08 # Aumento de tamaño
-
-    image_width = (page_width / columnas) * scale_factor
-    image_height = (page_height / filas_por_pagina) * scale_factor
-
-    # Reducir el espacio entre columnas
-    espacio_entre_columnas = -0.45 * cm_to_pt  # Espacio entre columnas
-
-    idx = 0
-    total = len(images_to_print)
-
-    while idx < total:
-        for row in range(filas_por_pagina):
-            if idx >= total:
-                break
-
-            y = page_height - (row + 1) * image_height
-
-            for col in range(columnas):
-                if idx >= total:
-                    break
-
-                # Ajuste de la posición x para reducir el espacio entre columnas
-                x = col * (image_width + espacio_entre_columnas)
-
-                url = images_to_print[idx]
-
-                try:
-                    resp = requests.get(url)
-                    resp.raise_for_status()
-                    img = ImageReader(BytesIO(resp.content))
-                    pdf.drawImage(
-                        img,
-                        x,
-                        y,
-                        width=image_width,
-                        height=image_height,
-                        preserveAspectRatio=True
-                    )
-                except Exception as e:
-                    print(f"Error al procesar la imagen con URL {url}: {e}")
-
-                idx += 1
-
-        if idx < total:
-            pdf.showPage()
-
-    pdf.save()
-    buffer.seek(0)
-
-    return HttpResponse(buffer, content_type='application/pdf')
-
 def eliminar_productos_seleccionados(request):
     if request.method == "POST":
         ids = request.POST.getlist('productos_seleccionados')
@@ -897,7 +718,6 @@ def eliminar_productos_seleccionados(request):
         else:
             messages.warning(request, 'No seleccionaste ningún producto.')
     return redirect('contenido_productos')
-
 
 # --- VISTAS CRUD PARA TALLAS ---
 class TallaListView(ListView):
@@ -954,5 +774,131 @@ class AdicionalesListView(TemplateView):
         context['tallas'] = Talla.objects.all()
         context['colores'] = Color.objects.all()
         return context
-    
-    
+
+def imprimir_codigos_view(request):
+    q         = request.GET.get('q', '').strip()
+    cat_id    = request.GET.get('categoria', '')
+    barcode_q = request.GET.get('barcode', '').strip()
+
+    # Base: todos los productos
+    productos_list = Producto.objects.all()
+
+    # Filtrar por nombre o referencia
+    if q:
+        productos_list = (
+            productos_list.filter(nombre__icontains=q) |
+            productos_list.filter(referencia__icontains=q)
+        )
+
+    # Filtrar por categoría
+    if cat_id.isdigit():
+        productos_list = productos_list.filter(categoria_id=cat_id)
+
+    # Filtrar por código de barras en sus variantes
+    if barcode_q:
+        productos_list = productos_list.filter(
+            producto_tallas__codigo_barras__icontains=barcode_q
+        ).distinct()
+
+    productos_list = productos_list.order_by('nombre')
+
+    # Paginación
+    paginator = Paginator(productos_list, 20)
+    page_number = request.GET.get('page', 1)
+    try:
+        page_obj = paginator.page(page_number)
+    except (PageNotAnInteger, EmptyPage):
+        page_obj = paginator.page(1)
+
+    # Construir query_params con todos los GET menos 'page'
+    params = request.GET.copy()
+    if 'page' in params:
+        params.pop('page')
+    query_params = params.urlencode()
+
+    context = {
+        'productos': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'q': q,
+        'categories': Categoria.objects.all().order_by('nombre'),
+        'selected_cat': cat_id,
+        'barcode_q': barcode_q,
+        'query_params': query_params,
+    }
+    return render(request, 'dashboard/productos/imprimir_codigos.html', context)
+
+def imprimir_codigos_barras(request):
+    if request.method != 'POST':
+        return JsonResponse({"mensaje": "Método no permitido"}, status=405)
+
+    # 1. Leer inputs
+    codigos    = request.POST.getlist('codigos[]')
+    cantidades = request.POST.getlist('cantidades[]')
+    img_urls   = request.POST.getlist('img_urls[]')
+
+    # 2. Construir lista de URLs según cantidad
+    images_to_print = []
+    for _, qty, url in zip(codigos, cantidades, img_urls):
+        try:
+            q = int(qty)
+        except ValueError:
+            q = 1
+        images_to_print += [url] * max(1, q)
+
+    if not images_to_print:
+        return JsonResponse({"mensaje": "No se recibieron códigos de barras para imprimir"}, status=400)
+
+    # 3. Definir dimensiones (mm → pt)
+    mm_to_pt   = 2.834645669
+    w_label_mm = 75
+    h_label_mm = 49
+    w_label = w_label_mm * mm_to_pt
+    h_label = h_label_mm * mm_to_pt
+
+    # 4. Tamaño total de página: 2×2 etiquetas
+    page_size = (2 * w_label, 2 * h_label)   # 150×98 mm
+    buffer = BytesIO()
+
+    # 5. Crear canvas forzando siempre landscape
+    pdf = canvas.Canvas(buffer, pagesize=landscape(page_size))
+    page_w, page_h = pdf._pagesize
+
+    # 6. Dibujar las imágenes en 2 columnas × 2 filas
+    total = len(images_to_print)
+    idx   = 0
+    cols, rows = 2, 2
+
+    while idx < total:
+        for row in range(rows):
+            for col in range(cols):
+                if idx >= total:
+                    break
+
+                x0 = col * (page_w / cols)
+                y0 = row * (page_h / rows)
+
+                url = images_to_print[idx]
+                try:
+                    resp = requests.get(url)
+                    resp.raise_for_status()
+                    img = ImageReader(BytesIO(resp.content))
+                    pdf.drawImage(
+                        img,
+                        x0, y0,
+                        width=page_w/cols,
+                        height=page_h/rows,
+                        preserveAspectRatio=True,
+                        anchor='sw'
+                    )
+                except Exception as e:
+                    print(f"Error procesando imagen {url}: {e}")
+
+                idx += 1
+
+        if idx < total:
+            pdf.showPage()
+
+    pdf.save()
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type='application/pdf')

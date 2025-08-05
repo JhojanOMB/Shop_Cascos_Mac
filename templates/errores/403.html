@@ -1,14 +1,6 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Acceso Denegado</title>
-</head>
-<body>
-    <div class="container">
-        <h1>403 - Acceso Denegado</h1>
-        <p>No tienes permisos para acceder a esta página.</p>
-        <a href="{% url 'index' %}">Volver al inicio</a>
-    </div>
-</body>
-</html>
+{% extends 'error_base.html' %}
+{% block content %}
+    {% with codigo_error="403" titulo_error="Acceso denegado" mensaje_error="No tienes permisos para acceder a esta página." %}
+        {{ block.super }}
+    {% endwith %}
+{% endblock %}

@@ -9,11 +9,6 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('ubicanos', views.ubicanos, name='ubicanos'),
 
-
-    # Dashboard por roles
-    path('dashboard/gerente/', views.dashboard_gerente, name='dashboard_gerente'),
-    path('dashboard/vendedor/', views.dashboard_vendedor, name='dashboard_vendedor'),
-
     # Información general
     path('datos/', views.obtener_datos_ventas, name='obtener_datos_ventas'),
 
@@ -32,6 +27,7 @@ urlpatterns = [
     path('buscar/', buscar_productos, name='buscar_productos'),
     path('barcode/<str:codigo_barras>/', generar_codigo_barras, name='barcode_image'),
     path('barcode/talla/<int:producto_talla_id>/', generar_codigo_barras_talla, name='barcode_image_talla'),
+    path('imprimir-codigos/', views.imprimir_codigos_view, name='imprimir_codigos'),
     path('imprimir-codigos-barras/', imprimir_codigos_barras, name='imprimir_codigos_barras'),
     path('producto/eliminar-multiples/', eliminar_productos_seleccionados, name='eliminar_productos_seleccionados'),
 

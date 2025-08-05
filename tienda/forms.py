@@ -201,7 +201,6 @@ class TallaForm(forms.ModelForm):
         nombre = self.cleaned_data['nombre']
         return nombre.upper()
 
-
 class ColorForm(forms.ModelForm):
     class Meta:
         model = Color

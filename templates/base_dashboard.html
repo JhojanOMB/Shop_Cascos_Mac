@@ -1,374 +1,167 @@
 {% load static %}
+{% load custom_filters %}
 
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% block header_links %}
-    {% endblock %}
-    <title>{% block title %}Dashboard Mac Cascos{% endblock %}</title>
-    <link rel="shortcut icon" href="{% static 'img/logo2.png' %}" type="image/x-icon">
-    <link rel="stylesheet" href="{% static 'css/base_dash.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% block header_links %}{% endblock %}
+  <title>{% block title %}Dashboard Mac Cascos{% endblock %}</title>
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <!-- Favicon y CSS propios -->
+  <link rel="shortcut icon" href="{% static 'img/logo2.png' %}" type="image/x-icon">
+  <link rel="stylesheet" href="{% static 'css/base_dash.css' %}">
+  <script src="{% static 'js/formato.js' %}"></script>
 
-    <link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css" rel="stylesheet">
 
-    <!-- Enlace a Font Awesome -->
-    <script src="https://kit.fontawesome.com/a08c413a1a.js" crossorigin="anonymous"></script>
+  <!-- jQuery, Chart.js, html2pdf -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- Incluir jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Select2 -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
 
-    <!-- Incluir Charts.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Incluir iconos de bootstrap -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-    <!-- Incluir html2pdf -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
+  <!-- Alpine.js -->
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+<body class="flex flex-col min-h-screen">
 
-    <!-- Navbar para pantallas más grandes o ordenadores -->
-    <header class="navbar navbar-expand-lg navbar-expand-md py-2 px-5 d-none d-lg-flex d-md-flex sticky-top">
-        <a class="navbar-brand d-flex align-items-center" href="{% url 'index' %}">
-            <img src="{% static 'img/logo2.png' %}" alt="Logo de Mac Cascos" class="me-2">
-            <span class="fs-3 fw-semibold text-light">Cascos Mac</span>
-        </a>
-        <ul class="navbar-nav ms-auto">
-            {% if user.is_authenticated %}
-                <a href="{% url 'logout' %}" class="btn btn-dark">Cerrar Sesión</a>
-            {% else %}
-                <a href="{% url 'index' %}" class="btn btn-outline-dark">Volver al Inicio</a>
-            {% endif %}
-        </ul>
-    </header>
+  <!-- Navbar escritorio -->
+    <header class="hidden md:flex items-center justify-between {{ UI_COLORS.navbar_bg }} {{ UI_COLORS.navbar_text }} px-8 py-4">
+    <a href="{% url 'index' %}" class="flex items-center">
+      <img src="{% static 'img/logo2.png' %}" alt="Logo Mac Cascos" class="h-8 w-8 mr-2">
+      <span class="text-2xl font-semibold">Cascos Mac</span>
+    </a>
+    {% if user.is_authenticated %}
+      <a href="{% url 'logout' %}" class="px-4 py-2 {{ UI_COLORS.button_bg }} {{ UI_COLORS.button_hover }} rounded">Cerrar Sesión</a>
+    {% else %}
+      <a href="{% url 'index' %}" class="px-4 py-2 border border-white rounded {{ UI_COLORS.button_hover }} transition">Volver al Inicio</a>
+    {% endif %}
+  </header>
 
-    <!-- Navbar para dispositivos móviles -->
-    <nav class="navbar d-md-none border-bottom shadow-sm sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'index' %}">
-                <img src="{% static 'img/logo2.png' %}" alt="Logo Mac Cascos" width="30" class="me-2"> Mac Cascos
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    {% block sidebar_links %}
-                    <!-- Aquí van los enlaces del navbar -->
-                    {% if user.is_authenticated %}
-                        {% if user.rol == 'gerente' %}
-                            <li class="nav-item">
-                                <a href="{% url 'dashboard_gerente' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="General">
-                                    <i class="fa fa-motorcycle"></i> General
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'inventario' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Inventario">
-                                    <i class="fa fa-boxes"></i> Inventario
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'contenido_productos' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Productos">
-                                    <i class="fa fa-box"></i> Productos
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'contenido_categorias' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Categorías">
-                                    <i class="fa fa-tags"></i> Categorías
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'ventas:contenido_ventas' %}" class="nav-link ajax-link"
-                                    data-bs-toggle="tooltip" title="Ventas">
-                                    <i class="fa fa-shopping-cart"></i> Ventas
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'listar_usuarios' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Usuarios">
-                                    <i class="fa fa-users"></i> Usuarios
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'contenido_adicionales' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Adicionales">
-                                    <i class="fa fa-layer-group"></i> Adicionales
-                                </a>
-                            <li class="nav-item">
-                                <a href="{% url 'contenido_proveedores' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Proveedores">
-                                    <i class="fa fa-truck-field"></i> Proveedores
-                                </a>
-                            </li>
-                        {% elif user.rol == 'vendedor' %}
-                            <li class="nav-item">
-                                <a href="{% url 'dashboard_vendedor' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="General">
-                                    <i class="fa fa-motorcycle"></i> General
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'inventario' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Inventario">
-                                    <i class="fa fa-boxes"></i> Inventario
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'ventas:contenido_ventas' %}" class="nav-link ajax-link"
-                                    data-bs-toggle="tooltip" title="Ventas">
-                                    <i class="fa fa-shopping-cart"></i> Ventas
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'mi_perfil' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Usuarios">
-                                    <i class="fa fa-users"></i> Mi Perfil
-                                </a>
-                            </li>
-                        {% endif %}
-                    {% else %}
-                        <!-- Si el usuario no está autenticado, mostrar botón Volver -->
-                        <li class="nav-item">
-                            <a href="{% url 'index' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                title="Volver al índice">
-                                <i class="fa fa-home"></i> Volver
-                            </a>
-                        </li>
-                    {% endif %}
-                    {% endblock %}
-                </ul>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'logout' %}" class="btn btn btn-dark ms-auto">Cerrar Sesión</a>
-                {% endif %}
-            </div>
-        </div>
-    </nav>
-
-
-    <!-- Contenido -->
-    <div class="d-flex flex-grow-1 overflow-hidden">
-        {% if user.is_authenticated %}
-            <!-- Barra Lateral y navbar para pantallas más grandes o ordenadores -->
-            <aside class="sidebar bg-light overflow-hidden" id="sidebar">
-                <div class="sidebar-header">
-                    <div class="align-items-center align-content-center">
-                        <div class="align-items-center align-content-center mb-3">
-                            <!-- Botón para colapsar la barra lateral -->
-                            <button class="btn btn-outline-light ms-auto" id="sidebar-toggle">
-                                <i class="fas fa-chevron-left" id="boton-colapso"></i>
-                            </button>
-                        </div>
-                        <hr class="border border-2" id="division-bar">
-                        <div id="user-name-column">
-                            <!-- Columna con el nombre del usuario -->
-                            <h1 class="fs-6 mb-0" id="sidebar-user-name">
-                                {{ request.user.get_full_name }}
-                            </h1>
-                        </div>
-                    </div>
-                </div>
-                <nav class="sidebar-nav text-center">
-                    <ul class="nav flex-column mt-2">
-                        {% if user.rol == 'gerente' %}
-                            <li class="nav-item">
-                                <a href="{% url 'dashboard_gerente' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="General">
-                                    <i class="fa fa-house"></i> General
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'inventario' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Inventario">
-                                    <i class="fa fa-boxes"></i> Inventario
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'contenido_productos' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Productos">
-                                    <i class="fa fa-box"></i> Productos
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'contenido_categorias' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Categorías">
-                                    <i class="fa fa-tags"></i> Categorías
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'ventas:contenido_ventas' %}" class="nav-link ajax-link"
-                                    data-bs-toggle="tooltip" title="Ventas">
-                                    <i class="fa fa-shopping-cart"></i> Ventas
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'listar_usuarios' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Usuarios">
-                                    <i class="fa fa-users"></i> Usuarios
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'contenido_proveedores' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Proveedores">
-                                    <i class="fa fa-truck-field"></i> Proveedores
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'contenido_adicionales' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Adicionales">
-                                    <i class="fa fa-layer-group"></i> Adicionales
-                                </a>
-                            </li>                           
-                            <li class="nav-item">
-                                <a href="{% url 'mi_perfil' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Usuarios">
-                                    <i class="fa fa-user"></i> Mi Perfil
-                                </a>
-                            </li>
-                        {% elif user.rol == 'vendedor' %}
-                            <li class="nav-item">
-                                <a href="{% url 'dashboard_vendedor' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="General">
-                                    <i class="fa fa-house"></i> General
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'inventario' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Inventario">
-                                    <i class="fa fa-boxes"></i> Inventario
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'ventas:contenido_ventas' %}" class="nav-link ajax-link"
-                                    data-bs-toggle="tooltip" title="Ventas">
-                                    <i class="fa fa-shopping-cart"></i> Ventas
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'mi_perfil' %}" class="nav-link ajax-link" data-bs-toggle="tooltip"
-                                    title="Usuarios">
-                                    <i class="fa fa-user"></i> Mi Perfil
-                                </a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </aside>
-        {% endif %}
-    
-        <!-- Main Contenido -->
-        <main class="flex-grow-1 overflow-auto p-4 container-fluid">
-            {% block content %}
-            {% endblock %}
-        </main>
+  <!-- Navbar móvil -->
+  <nav class="md:hidden {{ UI_COLORS.navbar_bg }} {{ UI_COLORS.navbar_text }} sticky top-0 z-30">
+    <div class="flex items-center justify-between px-4 py-3">
+      <a href="{% url 'index' %}" class="flex items-center {{ UI_COLORS.navbar_text }}">
+        <img src="{% static 'img/logo2.png' %}" alt="Logo Mac Cascos" class="h-6 w-6 mr-2">
+        Mac Cascos
+      </a>
+      <button id="mobile-open" class="focus:outline-none {{ UI_COLORS.navbar_text }}">
+        <i class="fa fa-bars text-2xl"></i>
+      </button>
     </div>
+  </nav>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-white border-top shadow-sm mt-auto py-3">
-        <div class="container">
-            <div class="row flex-column">
-                <!-- Derechos reservados -->
-                <div class="col-mb-3">
-                    <p class="mb-0">&copy; 2025 Mac Cascos. Todos los derechos reservados.</p>
-                </div>
-                <!-- Link a JOMB -->
-                <div class="col">
-                    <p class="mb-0">
-                        <a href="https://jhojanomb.github.io/JOMB/" class="text-white text-decoration-none">
-                            Hecho por JOMB S.A.S
-                        </a>
-                    </p>
-                </div>
-            </div>
+  <!-- Overlay móvil -->
+  <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-20"></div>
+
+  <!-- Menú móvil off‑canvas -->
+  <aside id="mobile-menu"
+         class="fixed top-0 right-0 h-full w-64 bg-white shadow-lg transform translate-x-full transition-transform z-30 overflow-y-auto">
+    <div class="flex items-center justify-between px-4 py-3 border-b">
+      <span class="font-semibold">Menú</span>
+      <button id="mobile-close" class="focus:outline-none text-gray-600 hover:text-gray-900">
+        <i class="fa fa-times text-2xl"></i>
+      </button>
+    </div>
+    <ul class="mt-4">
+      {% for key, url_name in menu_items %}
+        {% url url_name as item_url %}
+        <li>
+          <a href="{{ item_url }}"
+             class="flex items-center px-4 py-2 {{ UI_COLORS.sidebar_text }} {{ UI_COLORS.sidebar_hover }}
+                    {% if request.resolver_match.url_name == url_name %} bg-gray-200 font-semibold text-gray-900{% endif %}">
+            <i class="fa {{ UI_ICON_MAP|get_item:key }} mr-3"></i>
+            {{ key|capfirst }}
+          </a>
+        </li>
+      {% endfor %}
+      {% if 'configuracion' in UI_PERMISSIONS|get_item:user.rol %}
+        <li class="mt-2 border-t pt-2">
+          {% url 'ui_settings' as cfg_url %}
+          <a href="{{ cfg_url }}"
+             class="flex items-center px-4 py-2 {{ UI_COLORS.sidebar_text }} {{ UI_COLORS.sidebar_hover }}">
+            <i class="fa {{ UI_ICON_MAP|get_item:'configuracion' }} mr-3"></i>
+            Configuración
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+    {% if user.is_authenticated %}
+      <a href="{% url 'logout' %}"
+         class="mt-4 block w-full text-center px-4 py-2 {{ UI_COLORS.button_bg }} {{ UI_COLORS.button_hover }} {{ UI_COLORS.navbar_text }} rounded">
+        Cerrar Sesión
+      </a>
+    {% endif %}
+  </aside>
+
+  <div class="flex flex-1">
+
+    {% if user.is_authenticated %}
+      <!-- Sidebar escritorio -->
+      <aside class="hidden md:flex flex-col w-64 {{ UI_COLORS.sidebar_bg }} border-r">
+        <div class="p-4 border-b">
+          <p class="font-medium text-gray-800">{{ user.get_full_name|default:user.username }}</p>
         </div>
-    </footer>
+        <nav class="mt-4 flex-1 overflow-y-auto">
+          <ul class="space-y-1">
+            {% for key, url_name in menu_items %}
+              {% url url_name as item_url %}
+              <li>
+                <a href="{{ item_url }}"
+                   class="flex items-center px-4 py-2 {{ UI_COLORS.sidebar_text }} {{ UI_COLORS.sidebar_hover }}
+                          {% if request.resolver_match.url_name == url_name %} bg-gray-200 font-semibold text-gray-900{% endif %}">
+                  <i class="fa {{ UI_ICON_MAP|get_item:key }} mr-3"></i>
+                  {{ key|capfirst }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </nav>
+      </aside>
+    {% endif %}
 
-    <!-- Bootstrap Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-        crossorigin="anonymous"></script>
+    <!-- Contenido principal -->
+    <main class="flex-1 overflow-y-auto ml-0 bg-white">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
-        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
-        crossorigin="anonymous"></script>
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    const openBtn   = document.getElementById('mobile-open'),
+          closeBtn  = document.getElementById('mobile-close'),
+          menu      = document.getElementById('mobile-menu'),
+          overlay   = document.getElementById('mobile-overlay');
 
-    <!-- Select2 -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-
-    {% block extra_js %}
-    {% endblock %}
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const sidebarToggleBtn = document.getElementById('sidebar-toggle');
-            const sidebarIconBtn = document.getElementById('boton-colapso');
-            const sidebar = document.getElementById('sidebar');
-            const userNameColumn = document.getElementById('user-name-column');
-
-            // Verificar el estado del colapso desde localStorage
-            if (localStorage.getItem('sidebar-collapsed') === 'true') {
-                sidebar.classList.add('collapsed');
-                sidebarIconBtn.classList.remove('fa-chevron-left');
-                sidebarIconBtn.classList.add('fa-chevron-right');
-                userNameColumn.style.visibility = 'hidden';
-            }
-
-            // Función para alternar el colapso de la barra lateral
-            sidebarToggleBtn.addEventListener('click', function () {
-                sidebar.classList.toggle('collapsed');
-
-                // Cambiar el icono para el botón de colapso
-                if (sidebar.classList.contains('collapsed')) {
-                    sidebarIconBtn.classList.remove('fa-chevron-left');
-                    sidebarIconBtn.classList.add('fa-chevron-right');
-                    userNameColumn.style.visibility = 'hidden'; // Ocultar el nombre
-                    // Guardar el estado en localStorage
-                    localStorage.setItem('sidebar-collapsed', 'true');
-                } else {
-                    sidebarIconBtn.classList.remove('fa-chevron-right');
-                    sidebarIconBtn.classList.add('fa-chevron-left');
-                    userNameColumn.style.visibility = 'visible'; // Mostrar el nombre
-                    // Guardar el estado en localStorage
-                    localStorage.setItem('sidebar-collapsed', 'false');
-                }
-
-                // Re-activar tooltips cuando la barra lateral se colapsa o expande
-                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-                    new bootstrap.Tooltip(tooltipTriggerEl);
-                });
-            });
-        });
-    </script>
-
-    <script>
-        $(document).ready(function() {
-          // Aplica Select2 a todos los selects con clase .select2
-          $('select.select2').select2({
-            placeholder: "Buscar variante…",
-            allowClear: true,
-            width: '100%'
-          });
-        });
-      </script>
-
+    openBtn?.addEventListener('click', () => {
+      menu.classList.remove('translate-x-full');
+      overlay.classList.remove('hidden');
+    });
+    closeBtn?.addEventListener('click', () => {
+      menu.classList.add('translate-x-full');
+      overlay.classList.add('hidden');
+    });
+    overlay?.addEventListener('click', () => {
+      menu.classList.add('translate-x-full');
+      overlay.classList.add('hidden');
+    });
+  </script>
+  {% block extra_js %}{% endblock %}
 </body>
-
 </html>

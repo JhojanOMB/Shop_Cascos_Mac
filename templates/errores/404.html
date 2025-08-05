@@ -1,1 +1,6 @@
-<h1>No se encuentra la página solicitada</h1>
+{% extends 'error_base.html' %}
+{% block content %}
+    {% with codigo_error="404" titulo_error="¡Página no encontrada!" mensaje_error="Lo sentimos, la página que buscas no existe o fue movida." %}
+        {{ block.super }}
+    {% endwith %}
+{% endblock %}
