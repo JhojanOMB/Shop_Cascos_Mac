@@ -3,248 +3,450 @@
 {% load humanize %}
 
 {% block header_links %}
-<div class="d-flex gap-2 justify-content-end align-items-center">
-    {% if user.is_authenticated %}
-        {% if user.rol == 'gerente' %}
-        <a href="{% url 'dashboard_gerente' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
-        {% elif user.rol == 'vendedor' %}
-        <a href="{% url 'dashboard_vendedor' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
-        {% endif %}
-        <a href="{% url 'logout' %}" class="btn btn-dark w-100 text-nowrap">Cerrar Sesión</a>
-    {% else %}
-        <a href="{% url 'login' %}" class="btn btn-dark w-100 text-nowrap">Iniciar Sesión</a>
-    {% endif %}
+<div class="flex gap-2 justify-end items-center">
+  {% if user.is_authenticated %}
+    <a href="{% if user.rol == 'gerente' %}{% url 'dashboard_gerente' %}{% else %}{% url 'dashboard_vendedor' %}{% endif %}" class="inline-flex items-center px-3 py-2 bg-slate-800 text-white rounded text-sm">
+      Mi Perfil
+    </a>
+    <a href="{% url 'logout' %}" class="inline-flex items-center px-3 py-2 bg-slate-800 text-white rounded text-sm ml-1">
+      Cerrar Sesión
+    </a>
+  {% else %}
+    <a href="{% url 'login' %}" class="inline-flex items-center px-3 py-2 bg-slate-800 text-white rounded text-sm">
+      Iniciar Sesión
+    </a>
+  {% endif %}
 </div>
 {% endblock %}
+
+{% block mobile_header_links %}
+  {% if user.is_authenticated %}
+    <li class="px-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Volver al inicio</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <a href="{% if user.rol == 'gerente' %}{% url 'dashboard_gerente' %}{% else %}{% url 'dashboard_vendedor' %}{% endif %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.6 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Mi perfil</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit"
+          class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-300 text-left">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          <span class="text-sm font-medium text-gray-800">Cerrar sesión</span>
+        </button>
+      </form>
+    </li>
+  {% else %}
+    <li class="px-4">
+      <a href="{% url 'login' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H3m12 0l-4 4m4-4l-4-4M21 12v6a2 2 0 01-2 2H7" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Iniciar sesión</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Volver al inicio</span>
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}
+
 
 {% block dashboard_css %}
 <link rel="stylesheet" href="{% static 'css/producto_detalles.css' %}">
+<style>
+  .swatch-selected { outline: 3px solid rgba(16,185,129,0.18); box-shadow: 0 6px 18px rgba(16,185,129,0.08); }
+  .thumb-active { box-shadow: 0 6px 18px rgba(2,6,23,0.08); border-color: rgba(16,185,129,0.9); }
+  .focus-ring { box-shadow: 0 0 0 3px rgba(34,197,94,0.12); border-radius: 0.5rem; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row g-4">
-        <div class="col-md-5 rounded-5">
+<div class="max-w-6xl mx-auto px-2 py-2">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- IZQUIERDA: CAROUSEL + THUMBS -->
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl shadow p-4">
+        <div class="relative">
+          <div class="overflow-hidden rounded-xl bg-gray-50 flex items-center justify-center">
             {% if producto.imagen1 or producto.imagen2 or producto.imagen3 or producto.imagen4 or producto.imagen5 %}
-                <div id="carousel-{{ producto.id }}" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
-                    <div class="carousel-inner">
-                        {% if producto.imagen1 %}
-                        <div class="carousel-item active">
-                            <img src="{{ producto.imagen1.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 1" style="object-fit: contain; max-height: 500px;">
-                        </div>
-                        {% endif %}
-                        {% if producto.imagen2 %}
-                        <div class="carousel-item {% if not producto.imagen1 %}active{% endif %}">
-                            <img src="{{ producto.imagen2.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 2" style="object-fit: contain; max-height: 500px;">
-                        </div>
-                        {% endif %}
-                        {% if producto.imagen3 %}
-                        <div class="carousel-item {% if not producto.imagen1 and not producto.imagen2 %}active{% endif %}">
-                            <img src="{{ producto.imagen3.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 3" style="object-fit: contain; max-height: 500px;">
-                        </div>
-                        {% endif %}
-                        {% if producto.imagen4 %}
-                        <div class="carousel-item {% if not producto.imagen1 and not producto.imagen2 and not producto.imagen3 %}active{% endif %}">
-                            <img src="{{ producto.imagen4.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 4" style="object-fit: contain; max-height: 500px;">
-                        </div>
-                        {% endif %}
-                        {% if producto.imagen5 %}
-                        <div class="carousel-item {% if not producto.imagen1 and not producto.imagen2 and not producto.imagen3 and not producto.imagen4 %}active{% endif %}">
-                            <img src="{{ producto.imagen5.url }}" class="d-block w-100 img-fluid" alt="{{ producto.nombre }} - Imagen 5" style="object-fit: contain; max-height: 500px;">
-                        </div>
-                        {% endif %}
-                    </div>
-                    <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ producto.id }}" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Anterior</span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ producto.id }}" data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Siguiente</span>
-                    </button>
-                </div>
+              {% if producto.imagen1 %}
+                <img id="carousel-main" src="{{ producto.imagen1.url }}" alt="{{ producto.nombre }}" class="w-full h-80 object-contain">
+              {% elif producto.imagen2 %}
+                <img id="carousel-main" src="{{ producto.imagen2.url }}" alt="{{ producto.nombre }}" class="w-full h-80 object-contain">
+              {% elif producto.imagen3 %}
+                <img id="carousel-main" src="{{ producto.imagen3.url }}" alt="{{ producto.nombre }}" class="w-full h-80 object-contain">
+              {% elif producto.imagen4 %}
+                <img id="carousel-main" src="{{ producto.imagen4.url }}" alt="{{ producto.nombre }}" class="w-full h-80 object-contain">
+              {% elif producto.imagen5 %}
+                <img id="carousel-main" src="{{ producto.imagen5.url }}" alt="{{ producto.nombre }}" class="w-full h-80 object-contain">
+              {% endif %}
             {% else %}
-                <img src="{% static 'img/No_hay_imagen.png' %}" class="d-block w-100 img-fluid" alt="No image available" style="object-fit: contain; max-height: 500px;">
+              <img id="carousel-main" src="{% static 'img/No_hay_imagen.png' %}" alt="Sin imagen" class="w-full h-80 object-contain">
             {% endif %}
+          </div>
 
-            <div class="imagenes-adicionales mt-3 d-flex justify-content-center flex-wrap gap-1">
-                {% if producto.imagen1 %}
-                <img src="{{ producto.imagen1.url }}" alt="Miniatura 1 de {{ producto.nombre }}" 
-                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
-                    onclick="cambiarImagen('{{ producto.id }}', 0);">
-                {% endif %}
-                {% if producto.imagen2 %}
-                <img src="{{ producto.imagen2.url }}" alt="Miniatura 2 de {{ producto.nombre }}" 
-                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
-                    onclick="cambiarImagen('{{ producto.id }}', 1);">
-                {% endif %}
-                {% if producto.imagen3 %}
-                <img src="{{ producto.imagen3.url }}" alt="Miniatura 3 de {{ producto.nombre }}" 
-                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
-                    onclick="cambiarImagen('{{ producto.id }}', 2);">
-                {% endif %}
-                {% if producto.imagen4 %}
-                <img src="{{ producto.imagen4.url }}" alt="Miniatura 4 de {{ producto.nombre }}" 
-                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
-                    onclick="cambiarImagen('{{ producto.id }}', 3);">
-                {% endif %}
-                {% if producto.imagen5 %}
-                <img src="{{ producto.imagen5.url }}" alt="Miniatura 5 de {{ producto.nombre }}" 
-                    class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" 
-                    onclick="cambiarImagen('{{ producto.id }}', 4);">
-                {% endif %}
-            </div>
+          <button id="prev-btn" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow hover:bg-white">
+            <i class="fa-solid fa-chevron-left text-gray-700"></i>
+          </button>
+          <button id="next-btn" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow hover:bg-white">
+            <i class="fa-solid fa-chevron-right text-gray-700"></i>
+          </button>
+
+          <div class="mt-4 flex gap-2 items-center overflow-x-auto">
+            {% if producto.imagen1 %}
+              <button type="button" class="thumb w-20 h-20 rounded-md overflow-hidden border border-slate-200 flex-shrink-0" data-src="{{ producto.imagen1.url }}">
+                <img src="{{ producto.imagen1.url }}" alt="mini1" class="w-full h-full object-cover">
+              </button>
+            {% endif %}
+            {% if producto.imagen2 %}
+              <button type="button" class="thumb w-20 h-20 rounded-md overflow-hidden border border-slate-200 flex-shrink-0" data-src="{{ producto.imagen2.url }}">
+                <img src="{{ producto.imagen2.url }}" alt="mini2" class="w-full h-full object-cover">
+              </button>
+            {% endif %}
+            {% if producto.imagen3 %}
+              <button type="button" class="thumb w-20 h-20 rounded-md overflow-hidden border border-slate-200 flex-shrink-0" data-src="{{ producto.imagen3.url }}">
+                <img src="{{ producto.imagen3.url }}" alt="mini3" class="w-full h-full object-cover">
+              </button>
+            {% endif %}
+            {% if producto.imagen4 %}
+              <button type="button" class="thumb w-20 h-20 rounded-md overflow-hidden border border-slate-200 flex-shrink-0" data-src="{{ producto.imagen4.url }}">
+                <img src="{{ producto.imagen4.url }}" alt="mini4" class="w-full h-full object-cover">
+              </button>
+            {% endif %}
+            {% if producto.imagen5 %}
+              <button type="button" class="thumb w-20 h-20 rounded-md overflow-hidden border border-slate-200 flex-shrink-0" data-src="{{ producto.imagen5.url }}">
+                <img src="{{ producto.imagen5.url }}" alt="mini5" class="w-full h-full object-cover">
+              </button>
+            {% endif %}
+          </div>
         </div>
+      </div>
 
-    <!-- Detalles del producto -->
-    <div class="col-md-7">
-        <div class="card shadow-lg border rounded-5 py-5 px-5">
-            <!-- Encabezado: Nombre -->
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="fw-bold texto-espaciado">{{ producto.nombre }}</h2>
-            </div>
-
-            <!-- Separador visual -->
-            <hr>
-
-            <!-- Precio destacado y estilizado -->
-            <div class="mb-4">
-                {% if producto.en_oferta %}
-                    <!-- Etiqueta de oferta -->
-                    <span class="badge bg-danger text-white rounded-pill fs-6 texto-espaciado shadow-sm d-inline-block">
-                        ¡Oferta Especial!
-                    </span>
-                    <!-- Precio de oferta -->
-                    <div class="mt-2 fs-3 texto-espaciado">
-                        <span class="text-success fw-bold">
-                            ${{ producto.precio_oferta|floatformat:0|intcomma }}
-                        </span>
-                        <span class="text-muted text-decoration-line-through">
-                            Antes: ${{ producto.precio_venta|floatformat:0|intcomma }}
-                        </span>
-                    </div>
-                {% else %}
-                    <!-- Precio regular -->
-                    <div>
-                        <span class="text-success texto-espaciado fs-3 fw-bold">
-                            ${{ producto.precio_venta|floatformat:0|intcomma }}
-                        </span>
-                    </div>
-                {% endif %}
-            </div>
-
-            <!-- Descripción -->
-            <div class="mb-2">
-                <h6 class="fw-bold text-muted">Descripción del Producto</h6>
-                <p class="text-secondary">{{ producto.descripcion }}</p>
-            </div>
-
-            <!-- Tallas -->
-            <div class="mb-4">
-                <h6 class="fw-bold text-muted">Tallas Disponibles</h6>
-                {% if tallas_disponibles %}
-                    <div class="d-flex flex-wrap gap-3">
-                        {% for talla in tallas_disponibles %}
-                            <div class="d-flex align-items-center gap-2 border rounded-pill px-3 py-1 shadow-sm bg-light">
-                                <span class="fw-semibold">{{ talla }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-muted">No hay tallas disponibles actualmente.</p>
-                {% endif %}
-            </div>
-
-            <!-- Colores Disponibles -->
-            <div class="mb-4">
-                <h6 class="fw-bold text-muted">Colores Disponibles</h6>
-                {% if colores_disponibles %}
-                    <div class="d-flex flex-wrap gap-2">
-                        {% for color in colores_disponibles %}
-                            {% if color.color__codigo_hex %}
-                                <div class="d-flex align-items-center gap-2">
-                                    <span 
-                                        class="rounded-circle border shadow-sm" 
-                                        style="display:inline-block; width:24px; height:24px; background-color:{{ color.color__codigo_hex }};"
-                                        title="{{ color.color__nombre }}">
-                                    </span>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-muted">No hay colores disponibles actualmente.</p>
-                {% endif %}
-            </div>
-
-            <!-- Género -->
-            <div class="mb-4">
-                <h6 class="fw-bold text-muted">Género</h6>
-                {% if generos_disponibles %}
-                    {% for genero in generos_disponibles %}
-                        <span class="badge 
-                            {% if genero == 'dama' %} bg-dama 
-                            {% elif genero == 'caballero' %} bg-caballero
-                            {% elif genero == 'unisex' %} bg-unisex 
-                            {% elif genero == 'no_necesita' %} bg-no-necesita 
-                            {% else %} bg-secondary text-light 
-                            {% endif %} py-2 px-3">
-                            {{ genero|title }}
-                        </span>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted">No especificado</p>
-                {% endif %}
-            </div>
-        </div>
+      <div class="bg-white rounded-2xl shadow p-4 flex items-center justify-between">
+        <div class="text-xs text-gray-600">Referencia: <span class="font-medium">{{ producto.referencia }}</span></div>
+      </div>
     </div>
 
-    </div>
-    
-    <div class="container mt-5 rounded-4 mb-3 shadow-lg p-4">
-        <h3 class="fw-semibold">Productos que te pueden Interesar</h3>
-        {% if productos_similares %}
-        <div class="row mt-5 similares-bg">
-            <div class="row">
-                {% for similar in productos_similares %}
-                <div class="col-md-3">
-                    <div class="card mb-4">
-                        <a href="{% url 'detalles_producto_tienda' similar.id %}">
-                            {% if similar.imagen1 %}
-                            <img src="{{ similar.imagen1.url }}" class="card-img-top" alt="{{ similar.nombre }}">
-                            {% else %}
-                            <img src="{% static 'img/No_hay_imagen.png' %}" class="card-img-top" alt="No image available">
-                            {% endif %}
-                        </a>
-                        <div class="card-body">
-                            <h5 class="card-title fw-bolder">{{ similar.nombre }}</h5>
-                            <p class="card-text text-success"><strong>${{ similar.precio_venta|floatformat:0|intcomma }}</strong></p>
-                            <a href="{% url 'detalles_producto_tienda' producto.slug %}" class="btn btn-outline-dark w-100">Ver más</a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>   
+    <!-- DERECHA: DETALLES + FORM -->
+    <div class="space-y-4">
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h1 class="text-xl md:text-2xl font-extrabold text-gray-800 mb-2">{{ producto.nombre }}</h1>
+
+        {% if producto.en_oferta %}
+          <div class="flex items-center gap-3 mb-3">
+            <span class="text-2xl font-bold text-emerald-600">${{ producto.precio_oferta|floatformat:0|intcomma }}</span>
+            <span class="text-sm text-gray-400 line-through">${{ producto.precio_venta|floatformat:0|intcomma }}</span>
+            <span class="ml-auto text-xs bg-red-600 text-white px-2 py-1 rounded-full">Oferta</span>
+          </div>
         {% else %}
-        <div class="row mt-5">
-            <p class="text-muted">No hay productos similares disponibles.</p>
-        </div>
+          <div class="mb-3">
+            <span class="text-2xl font-bold text-emerald-700">${{ producto.precio_venta|floatformat:0|intcomma }}</span>
+          </div>
         {% endif %}
+
+        <p class="text-sm text-gray-600 mb-4">{{ producto.descripcion|truncatechars:220 }}</p>
+
+        <!-- Tallas -->
+        <div class="mb-4">
+          <h6 class="text-xs text-gray-500 mb-2">Tallas</h6>
+          <div class="flex flex-wrap gap-2">
+            {% if tallas_disponibles %}
+              {% for t in tallas_disponibles %}
+                <button type="button" data-size="{{ t }}" class="size-btn px-3 py-1 rounded-full border border-slate-200 text-sm text-slate-700 hover:bg-slate-50">
+                  {{ t }}
+                </button>
+              {% endfor %}
+            {% else %}
+              {% for det in producto.producto_tallas.all|dictsort:"talla__nombre" %}
+                {% if det.talla and det.cantidad and det.cantidad > 0 %}
+                  {% ifchanged det.talla.id %}
+                    <button type="button" data-size="{{ det.talla.nombre }}" class="size-btn px-3 py-1 rounded-full border border-slate-200 text-sm text-slate-700 hover:bg-slate-50">
+                      {{ det.talla.nombre }}
+                    </button>
+                  {% endifchanged %}
+                {% endif %}
+              {% empty %}
+                <span class="text-xs text-gray-400">Sin tallas disponibles</span>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Colores -->
+        <div class="mb-4">
+          <h6 class="text-xs text-gray-500 mb-2">Colores</h6>
+          <div class="flex gap-2 items-center flex-wrap">
+            {% if colores_disponibles %}
+              {% for c in colores_disponibles %}
+                {% with nombre=c.color__nombre|default:"" hex=c.color__codigo_hex|default:"#E5E7EB" %}
+                  <button type="button"
+                          class="color-swatch w-8 h-8 rounded-full border border-slate-200 shadow-sm focus:outline-none"
+                          data-color-name="{{ nombre }}"
+                          data-color-hex="{{ hex }}"
+                          title="{{ nombre }}"
+                          aria-label="Color {{ nombre }}">
+                    <span class="block w-full h-full rounded-full" style="background-color: {{ hex|default:'#E5E7EB' }};"></span>
+                  </button>
+                {% endwith %}
+              {% endfor %}
+            {% else %}
+              {% for det in producto.producto_tallas.all|dictsort:"color__id" %}
+                {% if det.color and det.cantidad and det.cantidad > 0 %}
+                  {% ifchanged det.color.id %}
+                    {% with nombre=det.color.nombre|default:"" hex=det.color.codigo_hex|default:"#E5E7EB" %}
+                      <button type="button"
+                              class="color-swatch w-8 h-8 rounded-full border border-slate-200 shadow-sm focus:outline-none"
+                              data-color-name="{{ nombre }}"
+                              data-color-hex="{{ hex }}"
+                              title="{{ nombre }}"
+                              aria-label="Color {{ nombre }}">
+                        <span class="block w-full h-full rounded-full" style="background-color: {{ hex|default:'#E5E7EB' }};"></span>
+                      </button>
+                    {% endwith %}
+                  {% endifchanged %}
+                {% endif %}
+              {% empty %}
+                <span class="text-xs text-gray-400">Sin colores disponibles</span>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- FORM: variante + qty + botones (EN UNA FILA) -->
+        <form class="add-to-cart-form space-y-3" data-producto="{{ producto.id }}">
+          {% csrf_token %}
+          <input type="hidden" name="producto_id" value="{{ producto.id }}">
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Variante</label>
+            <select name="producto_talla_id" required class="w-full rounded-lg p-2 bg-white shadow-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-400 outline-none">
+              <option value="" disabled selected>Selecciona talla / color</option>
+              {% for det in producto.producto_tallas.all %}
+                <option
+                  value="{{ det.id }}"
+                  data-color-id="{% if det.color %}{{ det.color.id }}{% endif %}"
+                  data-color-name="{% if det.color %}{{ det.color.nombre }}{% endif %}"
+                  data-size="{{ det.talla.nombre }}"
+                  data-stock="{{ det.cantidad }}">
+                  Talla {{ det.talla.nombre }}{% if det.color %} | {{ det.color.nombre }}{% endif %}{% if det.genero %} | {{ det.get_genero_display }}{% endif %} (Stock: {{ det.cantidad }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+            <div class="flex items-center gap-2">
+              <input type="number" name="cantidad" min="1" value="1" class="w-28 rounded-lg p-2 bg-white shadow-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-emerald-400 outline-none">
+              <div class="text-sm text-gray-500">Máx: <span id="max-stock">—</span></div>
+            </div>
+          </div>
+
+          <div class="flex gap-3 mt-2">
+            <button type="button" class="btn-add-ajax w-full sm:w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition shadow inline-flex items-center justify-center gap-2" aria-label="Añadir al carrito">
+              <i class="fa-solid fa-cart-plus"></i>
+              <span>Añadir al carrito</span>
+            </button>
+          </div>
+
+          <div class="text-sm text-red-500 hidden error-msg"></div>
+          <div class="text-sm text-emerald-600 hidden success-msg"></div>
+        </form>
+      </div>
+
+      <!-- Productos relacionados: ahora más notorio -->
+      <div class="bg-white rounded-2xl shadow p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">Productos que te pueden interesar</h3>
+          <a href="{% url 'index' %}" class="text-sm text-emerald-600 hover:underline">Ver todos</a>
+        </div>
+
+        {% if productos_similares %}
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {% for sim in productos_similares %}
+              <div class="bg-gray-50 rounded-lg p-3 flex flex-col h-full hover:shadow-lg transition">
+                <a href="{% url 'detalles_producto_tienda' sim.slug %}" class="block">
+                  <div class="w-full h-40 flex items-center justify-center mb-3">
+                    {% if sim.imagen1 %}
+                      <img src="{{ sim.imagen1.url }}" alt="{{ sim.nombre }}" class="max-h-36 object-contain">
+                    {% else %}
+                      <img src="{% static 'img/No_hay_imagen.png' %}" alt="sin imagen" class="max-h-36 object-contain">
+                    {% endif %}
+                  </div>
+                  <div class="text-sm font-semibold text-gray-800 mb-1">{{ sim.nombre|truncatechars:40 }}</div>
+                </a>
+
+                <div class="mt-auto flex items-center justify-between gap-2">
+                  <div class="text-sm text-emerald-700 font-bold">${{ sim.precio_venta|floatformat:0|intcomma }}</div>
+                  <a href="{% url 'detalles_producto_tienda' sim.slug %}"
+                    class="inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm">
+                    Ver más
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-sm text-gray-400">No hay productos similares.</p>
+        {% endif %}
+      </div>
     </div>
+
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/carrito.js' %}" defer></script>
 
 <script>
-    function cambiarImagen(productoId, index) {
-        // Obtiene el carrusel correspondiente al producto
-        const carousel = document.querySelector(`#carousel-${productoId}`);
-        
-        // Elimina la clase 'active' de todas las imágenes
-        const items = carousel.querySelectorAll('.carousel-item');
-        items.forEach(item => item.classList.remove('active'));
-        
-        // Agrega la clase 'active' solo a la imagen correspondiente
-        items[index].classList.add('active');
+/* Carousel + thumbs */
+(function(){
+  const main = document.getElementById('carousel-main');
+  const thumbs = Array.from(document.querySelectorAll('.thumb'));
+  const prev = document.getElementById('prev-btn');
+  const next = document.getElementById('next-btn');
+  let index = 0;
+  const imgs = thumbs.map(t => t.dataset.src).filter(Boolean);
+
+  function show(i){
+    if(!imgs.length) return;
+    index = (i + imgs.length) % imgs.length;
+    main.src = imgs[index];
+    thumbs.forEach((t, idx) => {
+      t.classList.toggle('thumb-active', idx === index);
+    });
+  }
+
+  if (thumbs.length) {
+    thumbs.forEach((t, i) => t.addEventListener('click', ()=> show(i)));
+    prev?.addEventListener('click', ()=> show(index-1));
+    next?.addEventListener('click', ()=> show(index+1));
+    show(0);
+  }
+})();
+
+/* Swatches + variant sync (pinta y sincroniza) */
+(function(){
+  const DEFAULT_HEX = '#E5E7EB';
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    try {
+      const hex = (s.dataset.colorHex && s.dataset.colorHex.trim()) ? s.dataset.colorHex.trim() : null;
+      const inner = s.querySelector('span');
+      const finalHex = hex || DEFAULT_HEX;
+      if (inner) inner.style.backgroundColor = finalHex;
+      s.dataset.colorHex = finalHex;
+      if (!s.dataset.colorName) s.dataset.colorName = s.getAttribute('title') || '';
+    } catch(e){ console.warn(e); }
+  });
+
+  const swatches = Array.from(document.querySelectorAll('.color-swatch'));
+  const variantSelect = document.querySelector('form.add-to-cart-form select[name="producto_talla_id"]');
+  const qtyInput = document.querySelector('form.add-to-cart-form input[name="cantidad"]');
+  const maxSpan = document.getElementById('max-stock');
+
+  function updateMaxFromSelected(){
+    if (!variantSelect) return;
+    const opt = variantSelect.selectedOptions && variantSelect.selectedOptions[0];
+    if (!opt) { if (maxSpan) maxSpan.textContent = '—'; swatches.forEach(s=>s.classList.remove('swatch-selected')); return; }
+    const stock = parseInt(opt.dataset.stock || 0, 10);
+    if (maxSpan) maxSpan.textContent = stock;
+    if (qtyInput) {
+      qtyInput.max = stock > 0 ? stock : 1;
+      if (parseInt(qtyInput.value || 1, 10) > stock) qtyInput.value = stock || 1;
     }
-</script>   
+    const colorName = opt.dataset.colorName || null;
+    swatches.forEach(s => s.classList.toggle('swatch-selected', colorName && s.dataset.colorName === colorName));
+  }
+
+  swatches.forEach(s => {
+    s.addEventListener('click', () => {
+      const name = s.dataset.colorName;
+      if (!variantSelect) {
+        swatches.forEach(x => x.classList.toggle('swatch-selected', x === s));
+        return;
+      }
+      let found = false;
+      for (const opt of variantSelect.options) {
+        if (opt.dataset.colorName && opt.dataset.colorName === name && parseInt(opt.dataset.stock||0,10) > 0) {
+          variantSelect.value = opt.value; found = true; break;
+        }
+      }
+      if (!found) {
+        for (const opt of variantSelect.options) {
+          if (opt.dataset.colorName && opt.dataset.colorName === name) { variantSelect.value = opt.value; found = true; break; }
+        }
+      }
+      updateMaxFromSelected();
+      variantSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+
+  if (variantSelect) {
+    variantSelect.addEventListener('change', updateMaxFromSelected);
+    updateMaxFromSelected();
+  }
+})();
+
+/* Fallback para evitar que el botón quede "añadiendo..." permanentemente */
+(function(){
+  function addFallback(btn){
+    if (!btn) return;
+    let fallbackTimer = null;
+    btn.addEventListener('click', () => {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      fallbackTimer = setTimeout(() => {
+        try {
+          if (btn.disabled) {
+            btn.disabled = false;
+            if (btn.innerText && (btn.innerText.toLowerCase().includes('añadiendo') || btn.innerText.toLowerCase().includes('adding'))) {
+              btn.innerHTML = '<i class="fa-solid fa-cart-plus"></i> Añadir al carrito';
+            }
+            const form = btn.closest('form.add-to-cart-form');
+            const err = form ? form.querySelector('.error-msg') : null;
+            if (err) { err.textContent = 'La petición tardó demasiado. Intenta de nuevo.'; err.classList.remove('hidden'); setTimeout(()=> err.classList.add('hidden'), 3000); }
+          }
+        } catch(e){ console.warn(e); }
+      }, 8000);
+
+      const observer = new MutationObserver((mut) => {
+        if (mut && mut.length) {
+          clearTimeout(fallbackTimer); fallbackTimer = null; observer.disconnect();
+        }
+      });
+      const badge = document.getElementById('cart-count') || document.getElementById('cart-badge') || document.getElementById('mini-cart-count');
+      if (badge) observer.observe(badge, { childList: true, subtree: true });
+    });
+  }
+
+  document.querySelectorAll('.btn-add-ajax').forEach(addFallback);
+})();
+</script>
 {% endblock %}

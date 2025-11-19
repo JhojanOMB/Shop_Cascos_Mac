@@ -1,89 +1,99 @@
 {% extends 'base_dashboard.html' %}
 {% load static %}
 {% block content %}
-<div class="container mt-5">
-    <h4 class="fw-semibold mb-3">Realizar Venta</h4>
-    <form method="post" id="venta-form" action="{% url 'ventas:crear_venta' %}">
-        {% csrf_token %}
+<div class="max-w-6xl mx-auto mt-6 px-4">
+  <h4 class="text-lg font-semibold mb-4">Realizar Venta</h4>
 
-        <!-- Campo de Código de Barras -->
-        <div class="input-group mb-3">
-            <input type="text" id="codigo_barras" name="codigo_barras" class="form-control border-black shadow-sm"
-                placeholder="Escanear o ingresar código de barras" aria-label="Código de Barras">
-            <button type="button" class="btn btn-success border-black" id="btn-agregar-producto" onclick="buscarProducto()">Agregar Producto</button>
-        </div>
+  <form method="post" id="venta-form" action="{% url 'ventas:crear_venta' %}">
+    {% csrf_token %}
 
-        <div class="container border border-2 shadow p-3 rounded-4">
-            <!-- Listado de Productos en la Venta -->
-            <div class="table-responsive mt-3">
-                <table id="productos-table" class="table table-bordered table-striped table-hover">
-                    <thead class="thead-dark">
-                        <tr class="text-center align-middle">
-                            <th>Producto</th>
-                            <th>Color</th>
-                            <th>Género</th>
-                            <th>Talla</th>
-                            <th>Precio</th>
-                            <th>Cantidad</th>
-                            <th>Total</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productos-list">
-                        <!-- Los productos se agregarán aquí -->
-                    </tbody>
-                </table>
-            </div>
+    <!-- Campo de Código de Barras -->
+    <div class="flex gap-3 mb-4">
+      <input
+        type="text"
+        id="codigo_barras"
+        name="codigo_barras"
+        class="flex-1 border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+        placeholder="Escanear o ingresar código de barras"
+        aria-label="Código de Barras"
+      >
+      <button
+        type="button"
+        id="btn-agregar-producto"
+        onclick="buscarProducto()"
+        class="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-md shadow-sm"
+      >
+        Agregar Producto
+      </button>
+    </div>
 
-            <!-- Selector de Método de Pago -->
-            <div class="mb-3">
-                <label for="metodo_pago" class="form-label fw-semibold">Método de Pago</label>
-                <select id="metodo_pago" name="metodo_pago" class="form-select border-black shadow-sm" required>
-                    <option value="" disabled selected>Selecciona un método de pago</option>
-                    {% for valor, nombre in metodos_pago %}
-                        <option value="{{ valor }}">{{ nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+    <div class="border-2 border-gray-200 shadow-sm p-4 rounded-xl bg-white">
+      <!-- Tabla de productos -->
+      <div class="overflow-x-auto mt-3">
+        <table id="productos-table" class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr class="text-center text-sm font-medium text-gray-700">
+              <th class="py-2 px-2">Producto</th>
+              <th class="py-2 px-2">Color</th>
+              <th class="py-2 px-2">Género</th>
+              <th class="py-2 px-2">Talla</th>
+              <th class="py-2 px-2">Precio</th>
+              <th class="py-2 px-2">Cantidad</th>
+              <th class="py-2 px-2">Total</th>
+              <th class="py-2 px-2">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="productos-list" class="text-sm text-gray-600">
+            <!-- filas dinámicas -->
+          </tbody>
+        </table>
+      </div>
 
-            <!-- Total de la Venta -->
-            <h5 class="mt-4">Total de esta Venta: <span id="total-venta" class="badge bg-success">$0</span></h5>
+      <!-- Método de pago -->
+      <div class="mt-4">
+        <label for="metodo_pago" class="block font-semibold mb-2">Método de Pago</label>
+        <select id="metodo_pago" name="metodo_pago" class="block w-full rounded-md border-gray-300 p-2 focus:ring-2 focus:ring-green-500" required>
+          <option value="" disabled selected>Selecciona un método de pago</option>
+          {% for valor, nombre in metodos_pago %}
+            <option value="{{ valor }}">{{ nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-            <button type="submit" class="btn btn-primary border-black mt-4">Terminar Venta</button>
-        </div>
-    </form>
+      <!-- Total -->
+      <h5 class="mt-4 text-base font-medium">
+        Total de esta Venta:
+        <span id="total-venta" class="inline-flex items-center px-2 py-1 rounded-md bg-green-600 text-white ml-2">$0</span>
+      </h5>
+
+      <div class="mt-4">
+        <button id="submit-btn" type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+          Terminar Venta
+        </button>
+      </div>
+    </div>
+  </form>
 </div>
 
 {% if messages %}
-<!-- Modal de Mensajes -->
-<div class="modal fade" id="mensajeModal" tabindex="-1" aria-labelledby="mensajeModalLabel" aria-hidden="true">
-<div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border border-2 border-danger shadow">
-    <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title" id="mensajeModalLabel">Error</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+<!-- Modal de Mensajes (Tailwind) -->
+<div id="mensajeModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+  <div class="absolute inset-0 bg-black opacity-40"></div>
+  <div class="bg-white rounded-lg shadow-lg z-10 max-w-md w-full mx-4">
+    <div class="px-4 py-3 bg-red-600 text-white rounded-t-lg flex justify-between items-center">
+      <h5 class="font-semibold">Error</h5>
+      <button id="closeModal" aria-label="Cerrar" class="text-white text-2xl leading-none">&times;</button>
     </div>
-    <div class="modal-body">
-        {% for message in messages %}
-        <p class="mb-0">{{ message }}</p>
-        {% endfor %}
+    <div class="p-4">
+      {% for message in messages %}
+        <p class="mb-2 text-sm text-gray-700">{{ message }}</p>
+      {% endfor %}
     </div>
-    </div>
+  </div>
 </div>
-</div>
-
-<script>
-    const modal = new bootstrap.Modal(document.getElementById('mensajeModal'));
-    modal.show();
-
-    // Cerrar automáticamente después de 4 segundos
-    setTimeout(() => {
-        modal.hide();
-    }, 4000);
-</script>
 {% endif %}
 
-
+<!-- JavaScript: lógica COP + búsqueda + gestión de filas -->
 <script>
   // Formateador COP sin decimales
   const formatter = new Intl.NumberFormat('es-CO', {
@@ -92,18 +102,25 @@
     maximumFractionDigits: 0
   });
 
+  // Helper para parsear números desde cadenas formateadas (ej: "$1.234.000")
+  function parseNumberFromFormatted(str) {
+    if (!str) return 0;
+    // Quitamos todo lo que no sea dígito
+    const digits = String(str).replace(/\D/g, '');
+    return digits ? parseInt(digits, 10) : 0;
+  }
+
   let totalVenta = 0;
 
-  // Al presionar Enter en el input de código de barras
-  document.getElementById('codigo_barras')
-          .addEventListener('keypress', function(e) {
+  // Enviar Enter en input de código de barras -> buscar producto
+  document.getElementById('codigo_barras').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       buscarProducto();
     }
   });
 
-  // Llama a tu vista que devuelve JSON con datos de producto
+  // Función que llama a la vista y agrega el producto
   function buscarProducto() {
     const input = document.getElementById('codigo_barras');
     const codigo = input.value.trim();
@@ -111,29 +128,38 @@
       alert('Ingresa un código de barras válido');
       return;
     }
-    fetch(`{% url 'ventas:obtener_producto_por_codigo' %}?codigo_barras=${codigo}`)
-      .then(r => r.json())
+
+    // Usa la URL de Django (asegúrate de que la vista exista)
+    fetch(`{% url 'ventas:obtener_producto_por_codigo' %}?codigo_barras=${encodeURIComponent(codigo)}`)
+      .then(r => {
+        if (!r.ok) throw new Error('Respuesta no OK');
+        return r.json();
+      })
       .then(data => {
         if (data.success) {
           agregarProducto(data.producto);
         } else {
-          alert(data.message);
+          alert(data.message || 'Producto no encontrado');
         }
       })
-      .catch(() => alert('Error al buscar el producto'))
+      .catch(err => {
+        console.error(err);
+        alert('Error al buscar el producto');
+      })
       .finally(() => input.value = '');
   }
 
   // Añade una fila nueva o incrementa cantidad
   function agregarProducto(prod) {
     const tbody = document.getElementById('productos-list');
-    // Busca si ya existe
-    let fila = Array.from(tbody.children)
-      .find(r => r.dataset.id == prod.id);
+
+    // Buscar fila existente por data-id
+    let fila = Array.from(tbody.children).find(r => r.dataset.id == prod.id);
 
     if (fila) {
+      // Incrementar cantidad (sin pasar el stock)
       const cantInput = fila.querySelector('input[name="cantidades"]');
-      let nueva = Math.min(prod.stock, parseInt(cantInput.value) + 1);
+      let nueva = Math.min(prod.stock, parseInt(cantInput.value || '0', 10) + 1);
       cantInput.value = nueva;
       actualizarFila(fila);
       return;
@@ -144,58 +170,71 @@
       return;
     }
 
-    // Crea fila
+    // Crear fila nueva
     fila = document.createElement('tr');
-    fila.dataset.id    = prod.id;
+    fila.dataset.id = prod.id;
     fila.dataset.stock = prod.stock;
 
     fila.innerHTML = `
-      <td class="align-middle text-wrap">
-        ${prod.nombre}
+      <td class="align-middle text-left py-2 px-2">
+        <div class="text-sm font-medium">${escapeHtml(prod.nombre)}</div>
         <input type="hidden" name="productos_ids" value="${prod.id}">
       </td>
-      <td class="text-center align-middle">${prod.color}</td>
-      <td class="text-center align-middle">${prod.genero}</td>
-      <td class="text-center align-middle">${prod.talla}</td>
-      <td class="text-center align-middle">
+      <td class="text-center align-middle py-2 px-2">${escapeHtml(prod.color || '')}</td>
+      <td class="text-center align-middle py-2 px-2">${escapeHtml(prod.genero || '')}</td>
+      <td class="text-center align-middle py-2 px-2">${escapeHtml(prod.talla || '')}</td>
+      <td class="text-center align-middle py-2 px-2">
         <input type="number"
                name="precios"
-               class="form-control precio-input text-end"
+               class="precio-input w-28 border rounded px-2 py-1 text-right"
                step="1"
                min="0"
                value="${prod.precio}"
                onchange="onPrecioChange(this)">
       </td>
-      <td class="text-center align-middle">
+      <td class="text-center align-middle py-2 px-2">
         <input type="number"
                name="cantidades"
-               class="form-control cantidad-input text-center"
+               class="cantidad-input w-20 border rounded px-2 py-1 text-center"
                value="1"
                min="1"
                max="${prod.stock}"
                onchange="onCantidadChange(this)">
       </td>
-      <td class="text-center align-middle total-cell">
+      <td class="text-center align-middle py-2 px-2 total-cell">
         ${formatter.format(prod.precio)}
       </td>
-      <td class="text-center align-middle">
-        <button type="button" class="btn btn-sm btn-danger"
-                onclick="eliminarProducto(this)">
+      <td class="text-center align-middle py-2 px-2">
+        <button type="button" class="inline-block px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded" onclick="eliminarProducto(this)">
           Eliminar
         </button>
       </td>
     `;
+
     tbody.appendChild(fila);
-    totalVenta += prod.precio;
+
+    // Sumar al total general
+    totalVenta += Number(prod.precio) || 0;
     document.getElementById('total-venta').textContent = formatter.format(totalVenta);
+  }
+
+  // Escapa texto para prevenir inyección en la tabla (caso básico)
+  function escapeHtml(text) {
+    if (text == null) return '';
+    return String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   // Cuando cambia la cantidad
   function onCantidadChange(input) {
-    const fila  = input.closest('tr');
-    const max   = parseInt(fila.dataset.stock);
-    let val     = parseInt(input.value) || 1;
-    if (val < 1) val = 1;
+    const fila = input.closest('tr');
+    const max = parseInt(fila.dataset.stock || '0', 10);
+    let val = parseInt(input.value || '0', 10);
+    if (isNaN(val) || val < 1) val = 1;
     if (val > max) {
       alert(`Máximo disponible: ${max}`);
       val = max;
@@ -206,42 +245,68 @@
 
   // Cuando cambia el precio
   function onPrecioChange(input) {
-    const val = parseFloat(input.value) || 0;
-    if (val < 0) input.value = 0;
+    let val = parseFloat(input.value);
+    if (isNaN(val) || val < 0) {
+      input.value = 0;
+      val = 0;
+    }
     actualizarFila(input.closest('tr'));
   }
 
   // Elimina la fila
   function eliminarProducto(btn) {
     const fila = btn.closest('tr');
+    if (!fila) return;
     const totalCell = fila.querySelector('.total-cell');
-    const valor      = parseFloat(totalCell.textContent.replace(/[^0-9]/g, '')) || 0;
-    totalVenta     -= valor;
+    const valor = parseNumberFromFormatted(totalCell ? totalCell.textContent : '0') || 0;
+    totalVenta = Math.max(0, totalVenta - valor);
     document.getElementById('total-venta').textContent = formatter.format(totalVenta);
     fila.remove();
   }
 
   // Recalcula subtotal de la fila y totalVenta
   function actualizarFila(fila) {
-    const cantidad = parseInt(fila.querySelector('.cantidad-input').value) || 0;
-    const precio   = parseFloat(fila.querySelector('.precio-input').value) || 0;
+    const cantidad = parseInt(fila.querySelector('.cantidad-input').value || '0', 10) || 0;
+    const precio = parseFloat(fila.querySelector('.precio-input').value || '0') || 0;
     const subtotal = cantidad * precio;
-    // Ajusta totalVenta: sumamos el cambio (nuevo - viejo)
-    const viejaCelda = parseFloat(fila.querySelector('.total-cell')
-                          .textContent.replace(/[^0-9]/g, '')) || 0;
-    totalVenta += subtotal - viejaCelda;
+    const vieja = parseNumberFromFormatted(fila.querySelector('.total-cell').textContent) || 0;
+    // Ajusta totalVenta con la diferencia (nuevo - viejo)
+    totalVenta += subtotal - vieja;
+    // Evitar negativos por redondeos / errores
+    if (totalVenta < 0) totalVenta = 0;
     // Actualiza celdas
     fila.querySelector('.total-cell').textContent = formatter.format(subtotal);
     document.getElementById('total-venta').textContent = formatter.format(totalVenta);
   }
+
+  // Deshabilitar botón de submit al enviar formulario (evitar doble envío)
+  document.getElementById('venta-form').addEventListener('submit', function(e) {
+    const btn = this.querySelector('#submit-btn');
+    if (btn) btn.disabled = true;
+  });
+
+  // Modal de mensajes (si existen)
+  document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('mensajeModal')) {
+      const modalEl = document.getElementById('mensajeModal');
+      const closeBtn = document.getElementById('closeModal');
+
+      // Mostrar modal
+      modalEl.classList.remove('hidden');
+      modalEl.classList.add('flex');
+
+      // Cerrar al hacer click en la X
+      closeBtn?.addEventListener('click', () => {
+        modalEl.classList.add('hidden');
+        modalEl.classList.remove('flex');
+      });
+
+      // Cerrar automáticamente después de 4 segundos
+      setTimeout(() => {
+        modalEl.classList.add('hidden');
+        modalEl.classList.remove('flex');
+      }, 4000);
+    }
+  });
 </script>
-
-<script>
-    document.getElementById('venta-form').addEventListener('submit', function() {
-        // Deshabilita el botón de submit
-        this.querySelector('button[type="submit"]').disabled = true;
-    });
-    </script>
-    
-
 {% endblock %}

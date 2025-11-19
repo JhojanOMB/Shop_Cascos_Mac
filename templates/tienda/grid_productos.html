@@ -1,7 +1,7 @@
 {# tienda/grid_productos.html #}
 <div id="productos-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
   {% for producto in productos %}
-    {# aquí va la tarjeta que ya tienes diseñada con Alpine.js para el carrusel #}
+    {# aquí va la tarjeta diseñada con Alpine.js para el carrusel #}
   {% empty %}
     <p class="col-span-full text-center text-gray-500">No hay productos.</p>
   {% endfor %}

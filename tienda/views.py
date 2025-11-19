@@ -6,7 +6,7 @@ from .models import *
 from inventario.models import Inventario
 from ventas.models import *
 from .forms import *
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpRequest, HttpResponse
 from django.urls import reverse_lazy, reverse
 from django.template.loader import render_to_string
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -121,66 +121,153 @@ def actualizar_todos_codigos_barras(request):
 
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-def index(request):
+def _get_reverse_accessor_name(from_model, target_model_name):
+    """
+    Devuelve el accessor inverso en `from_model` que apunta a `target_model_name`.
+    Ej: en Producto buscar el related object que apunta a ProductoTalla y devolver su accessor.
+    Retorna None si no lo encuentra.
+    """
+    try:
+        for rel in from_model._meta.related_objects:
+            try:
+                if rel.related_model.__name__.lower() == target_model_name.lower():
+                    return rel.get_accessor_name()
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return None
+
+
+def index(request: HttpRequest) -> HttpResponse:
     categorias = Categoria.objects.all()
 
-    # Prefetch para tallas activas
-    productos = Producto.objects.filter(catalogo='catalogo').prefetch_related(
-        Prefetch(
-            'producto_tallas',
-            queryset=ProductoTalla.objects.filter(activa=True),
-            to_attr='tallas_activas'
-        )
-    )
+    # Base: solo productos en catálogo (ajusta si tu campo/catalogo difiere)
+    productos_qs = Producto.objects.filter(catalogo='catalogo').distinct()
 
-    # Precio máximo para filtro
-    precio_maximo_producto = productos.aggregate(Max('precio_venta'))['precio_venta__max']
+    # Detectar accessors inversos de forma robusta
+    producto_to_talla_accessor = _get_reverse_accessor_name(Producto, 'ProductoTalla') or 'producto_tallas'
+    talla_to_talla_accessor = _get_reverse_accessor_name(Talla, 'ProductoTalla') or 'productotalla_set'
 
-    # Filtros desde GET
-    categoria_id = request.GET.get('category')
-    price_min = float(request.GET.get('price_min', 0))
-    price_max = float(request.GET.get('price_max', precio_maximo_producto))
+    # Comprobar si Producto tiene campo 'activa' (evitar FieldError)
+    producto_tiene_activa = True
+    try:
+        Producto._meta.get_field('activa')
+    except Exception:
+        producto_tiene_activa = False
+
+    # Comprobar si ProductoTalla tiene campo 'activa' (para lookups relacionados)
+    productotalla_tiene_activa = True
+    try:
+        ProductoTalla._meta.get_field('activa')
+    except Exception:
+        productotalla_tiene_activa = False
+
+    # Query base de productos (si existe campo 'activa' lo aplicamos, sino no)
+    if producto_tiene_activa:
+        productos = Producto.objects.filter(activa=True)
+    else:
+        productos = Producto.objects.all()
+
+    # Intentamos prefetch de variantes activas y color usando el accessor detectado.
+    try:
+        # Si ProductoTalla tiene 'activa', prefetch solo activas, sino prefetch todo
+        if productotalla_tiene_activa:
+            prefetch_variantes = Prefetch(producto_to_talla_accessor, queryset=ProductoTalla.objects.filter(activa=True).select_related('color'))
+        else:
+            prefetch_variantes = Prefetch(producto_to_talla_accessor, queryset=ProductoTalla.objects.select_related('color'))
+        productos = productos.prefetch_related(prefetch_variantes)
+        productos_qs = productos_qs.prefetch_related(prefetch_variantes)
+    except Exception:
+        # fallback a nombre conocido
+        try:
+            productos = productos.prefetch_related('producto_tallas__color')
+            productos_qs = productos_qs.prefetch_related('producto_tallas__color')
+        except Exception:
+            pass
+
+    # precio máximo (proteger None)
+    precio_maximo_producto = productos_qs.aggregate(Max('precio_venta'))['precio_venta__max'] or 0
+
+    # parámetros de filtrado
+    categoria_id = request.GET.get('category') or None
+    price_min = request.GET.get('price_min') or None
+    price_max = request.GET.get('price_max') or None
     en_oferta = request.GET.get('en_oferta')
     genero = request.GET.get('genero')
     talla = request.GET.get('talla')
     color = request.GET.get('color')
-    order_by = request.GET.get('order_by', 'nombre')
+    order_by = request.GET.get('orden') or 'nombre'
 
-    # Aplicar filtros
+    # empezamos con la queryset filtrable
+    qs = productos_qs
+
+    # filtros simples
     if categoria_id:
-        categoria = get_object_or_404(Categoria, id=categoria_id)
-        productos = productos.filter(categoria=categoria)
+        qs = qs.filter(categoria_id=categoria_id)
 
-    productos = productos.filter(precio_venta__gte=price_min, precio_venta__lte=price_max)
+    if price_min:
+        try:
+            qs = qs.filter(precio_venta__gte=float(price_min))
+        except (ValueError, TypeError):
+            pass
+
+    if price_max:
+        try:
+            qs = qs.filter(precio_venta__lte=float(price_max))
+        except (ValueError, TypeError):
+            pass
 
     if en_oferta:
-        productos = productos.filter(en_oferta=True)
+        qs = qs.filter(en_oferta=True)
 
+    # Filtros sobre la relación ProductoTalla usando el accessor detectado
+    # Añadimos __activa solo si ProductoTalla realmente tiene ese campo
     if genero in ['dama', 'caballero', 'unisex']:
-        productos = productos.filter(producto_tallas__genero=genero, producto_tallas__activa=True)
+        lookup = {
+            f"{producto_to_talla_accessor}__genero": genero,
+        }
+        if productotalla_tiene_activa:
+            lookup[f"{producto_to_talla_accessor}__activa"] = True
+        try:
+            qs = qs.filter(**lookup)
+        except Exception:
+            pass
 
     if talla:
-        productos = productos.filter(producto_tallas__talla__nombre=talla, producto_tallas__activa=True)
+        lookup = {f"{producto_to_talla_accessor}__talla__nombre": talla}
+        if productotalla_tiene_activa:
+            lookup[f"{producto_to_talla_accessor}__activa"] = True
+        try:
+            qs = qs.filter(**lookup)
+        except Exception:
+            pass
 
     if color:
-        productos = productos.filter(
-            producto_tallas__color__nombre__iexact=color,
-            producto_tallas__activa=True
-        )
+        try:
+            lookup = {f"{producto_to_talla_accessor}__color__nombre__iexact": color}
+            if productotalla_tiene_activa:
+                lookup[f"{producto_to_talla_accessor}__activa"] = True
+            qs = qs.filter(**lookup)
+        except Exception:
+            # fallback si color fuera campo texto
+            try:
+                lookup = {f"{producto_to_talla_accessor}__color__iexact": color}
+                if productotalla_tiene_activa:
+                    lookup[f"{producto_to_talla_accessor}__activa"] = True
+                qs = qs.filter(**lookup)
+            except Exception:
+                pass
 
-    productos = productos.order_by(order_by)
+    # ordenar (proteger de un order_by inválido)
+    try:
+        qs = qs.order_by(order_by)
+    except Exception:
+        qs = qs.order_by('nombre')
 
-    # Agregar géneros únicos y manejar imágenes
-    for producto in productos:
-        generos = set()
-        for variante in getattr(producto, "tallas_activas", []):
-            if variante.genero:
-                generos.add(variante.genero.lower())
-        producto.generos_disponibles = generos
-
-    # Paginación
-    paginator = Paginator(productos, 20)
-    page = request.GET.get('page')
+    # paginación
+    paginator = Paginator(qs.distinct(), 20)
+    page = request.GET.get('page', 1)
     try:
         productos_paginados = paginator.page(page)
     except PageNotAnInteger:
@@ -188,25 +275,69 @@ def index(request):
     except EmptyPage:
         productos_paginados = paginator.page(paginator.num_pages)
 
-    # Tallas y colores únicos
-    tallas_disponibles = Talla.objects.filter(
-        producto_tallas__producto__in=productos,
-        producto_tallas__activa=True
-    ).distinct()
+    # Construir colores_por_producto sólo para los productos en la página actual (más eficiente)
+    colores_por_producto = {}
+    try:
+        current_products = list(productos_paginados.object_list)
+        for p in current_products:
+            # Filtrar variantes del producto con stock > 0 (cualquier talla)
+            variantes_qs = ProductoTalla.objects.filter(producto=p)
 
-    colores_disponibles = Color.objects.filter(
-        productotalla__producto__in=productos,
-        productotalla__activa=True
-    ).distinct()
+            # Si tu modelo ProductoTalla tiene 'activa' aplicarla
+            try:
+                ProductoTalla._meta.get_field('activa')
+                variantes_qs = variantes_qs.filter(activa=True)
+            except Exception:
+                pass
 
-    return render(request, 'index.html', {
+            # Asegurarnos de solo las que tienen cantidad > 0 (si el campo existe)
+            try:
+                ProductoTalla._meta.get_field('cantidad')
+                variantes_qs = variantes_qs.filter(cantidad__gt=0)
+            except Exception:
+                pass
+
+            # Obtener colores únicos (id, nombre, hex) — distinct por color
+            colores_qs = variantes_qs.order_by('color__id').values(
+                'color__id', 'color__nombre', 'color__codigo_hex'
+            ).distinct()
+
+            # Guardar lista (vacía si no hay)
+            colores_por_producto[p.id] = list(colores_qs)
+    except Exception:
+        colores_por_producto = {}
+
+    # tallas disponibles (usar el accessor inverso desde Talla hacia ProductoTalla)
+    try:
+        lookup = {
+            f"{talla_to_talla_accessor}__producto__in": qs,
+        }
+        if productotalla_tiene_activa:
+            lookup[f"{talla_to_talla_accessor}__activa"] = True
+        tallas_disponibles = Talla.objects.filter(**lookup).distinct()
+    except Exception:
+        tallas_disponibles = Talla.objects.all()
+
+    # colores disponibles generales (desde todas las variantes activas dentro del resultado qs)
+    try:
+        q_col_ids = ProductoTalla.objects.filter(producto__in=qs)
+        if productotalla_tiene_activa:
+            q_col_ids = q_col_ids.filter(activa=True)
+        color_ids = q_col_ids.values_list('color_id', flat=True).distinct()
+        colores_disponibles = Color.objects.filter(id__in=[c for c in color_ids if c is not None])
+    except Exception:
+        colores_disponibles = Color.objects.none()
+
+    context = {
         'categorias': categorias,
         'productos': productos_paginados,
         'precio_maximo_producto': precio_maximo_producto,
         'tallas_disponibles': tallas_disponibles,
         'colores_disponibles': colores_disponibles,
-        'order_by': order_by,
-    })
+        'colores_por_producto': colores_por_producto,
+        'en_oferta': bool(en_oferta),
+    }
+    return render(request, 'index.html', context)
 
 # Vista para la página de "Ubícanos"
 def ubicanos(request):
@@ -322,6 +453,71 @@ ProductoTallaCreateFormSet = inlineformset_factory(
     can_delete=False  # opcional en crear
 )
 
+
+
+class ProductoCreateView(LoginRequiredMixin, CreateView):
+    model = Producto
+    form_class = ProductoForm
+    template_name = 'dashboard/productos/crear_producto.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # instance aún no existe en create
+        instance = None
+
+        # Si es POST, queremos reconstruir el formset con los datos enviados (incluyendo files)
+        if self.request.method == 'POST':
+            context['formset'] = ProductoTallaCreateFormSet(self.request.POST, self.request.FILES, instance=instance)
+        else:
+            context['formset'] = ProductoTallaCreateFormSet(instance=instance)
+
+        context['tallas'] = Talla.objects.all()
+        # Mapa de tallas a cantidades (vacío en create)
+        context['tallas_con_cantidad'] = {t.id: 0 for t in context['tallas']}
+
+        context['form_errors'] = getattr(self, 'form_errors', None)
+        context['show_success_modal'] = getattr(self, 'show_success_modal', False)
+        context['show_error_modal'] = getattr(self, 'show_error_modal', False)
+
+        return context
+
+    def form_valid(self, form):
+        # Guardamos el objeto padre primero
+        try:
+            self.object = form.save()
+        except ValidationError as e:
+            # Añadir errores al form y volver a mostrar
+            for field, error_list in e.message_dict.items():
+                for error in error_list:
+                    form.add_error(field, error)
+            self.form_errors = form.errors
+            self.show_error_modal = True
+            return self.form_invalid(form)
+
+        # ahora instanciamos el formset con la instancia ya creada
+        formset = ProductoTallaCreateFormSet(self.request.POST, self.request.FILES, instance=self.object)
+        if formset.is_valid():
+            formset.save()
+            messages.success(self.request, "Producto creado exitosamente.")
+            self.show_success_modal = True
+            return redirect(self.get_success_url())
+        else:
+            # formset inválido: mostrar errores y dejar el producto guardado (si prefieres deshacer, habría que borrar)
+            self.form_errors = formset.errors
+            self.show_error_modal = True
+            # renderizamos con el form (ya guardado) y el formset inválido para que el usuario corrija
+            return self.render_to_response(self.get_context_data(form=form, formset=formset))
+
+    def form_invalid(self, form):
+        # Si el form padre es inválido, reconstruimos el formset con los datos enviados para no perderlos
+        formset = ProductoTallaCreateFormSet(self.request.POST, self.request.FILES)
+        self.form_errors = form.errors
+        self.show_error_modal = True
+        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+
+    def get_success_url(self):
+        return reverse_lazy('contenido_productos')
+
 # Formset para editar
 ProductoTallaEditFormSet = inlineformset_factory(
     Producto,
@@ -330,78 +526,6 @@ ProductoTallaEditFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
-class ProductoCreateView(LoginRequiredMixin, CreateView):
-    model = Producto
-    form_class = ProductoForm
-    template_name = 'dashboard/productos/crear_producto.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Usamos self.object si ya existe; de lo contrario pasamos None
-        instance = self.object if hasattr(self, 'object') and self.object is not None else None
-        
-        if self.request.POST:
-            context['formset'] = ProductoTallaCreateFormSet(self.request.POST, instance=instance)
-        else:
-            context['formset'] = ProductoTallaCreateFormSet(instance=instance)
-            
-        # Obtener todas las tallas para ser usadas en el formset o en filtros en el template
-        context['tallas'] = Talla.objects.all()
-        
-        # Armar diccionario con cantidad existente para cada talla si se está editando un producto.
-        if instance:
-            context['tallas_con_cantidad'] = {
-                talla.id: ProductoTalla.objects.filter(producto=instance, talla=talla).first().cantidad
-                if ProductoTalla.objects.filter(producto=instance, talla=talla).exists()
-                else 0
-                for talla in Talla.objects.all()
-            }
-        else:
-            context['tallas_con_cantidad'] = {talla.id: 0 for talla in Talla.objects.all()}
-        
-        # Pasar errores, si existen, al contexto para mostrarlos (por ejemplo, en un modal o alerta)
-        if hasattr(self, 'form_errors'):
-            context['form_errors'] = self.form_errors
-        
-        # Variables para mostrar modales de éxito o error en la plantilla
-        context['show_success_modal'] = getattr(self, 'show_success_modal', False)
-        context['show_error_modal'] = getattr(self, 'show_error_modal', False)
-        
-        return context
-
-    def form_valid(self, form):
-        # Intentamos guardar el producto y capturamos errores de validación (por ejemplo, nombre duplicado)
-        try:
-            self.object = form.save()
-        except ValidationError as e:
-            for field, error_list in e.message_dict.items():
-                for error in error_list:
-                    form.add_error(field, error)
-            # Además, se pueden registrar los errores en self.form_errors si deseas procesarlos en el template
-            self.form_errors = form.errors
-            self.show_error_modal = True
-            return self.form_invalid(form)
-            
-        # Una vez guardado el producto principal, trabajamos con el formset
-        formset = ProductoTallaEditFormSet(self.request.POST, instance=self.object)
-        if formset.is_valid():
-            formset.save()
-            messages.success(self.request, "Producto creado exitosamente.")
-            return redirect(self.get_success_url())
-        else:
-            self.form_errors = formset.errors
-            self.show_error_modal = True
-            return self.render_to_response(self.get_context_data(form=form, formset=formset))
-
-    def form_invalid(self, form):
-        # En caso de error en el formulario principal, se carga el formset con la data ingresada
-        formset = ProductoTallaEditFormSet(self.request.POST, instance=self.object)
-        self.form_errors = form.errors
-        self.show_error_modal = True
-        return self.render_to_response(self.get_context_data(form=form, formset=formset))
-
-    def get_success_url(self):
-        return reverse_lazy('contenido_productos')
 
 class ProductoUpdateView(LoginRequiredMixin, UpdateView):
     model = Producto
@@ -410,49 +534,150 @@ class ProductoUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.POST:
+        # formset: si es POST reconstruimos con los datos enviados (incluye archivos)
+        if self.request.method == 'POST':
             context['formset'] = ProductoTallaEditFormSet(self.request.POST, self.request.FILES, instance=self.object)
         else:
             context['formset'] = ProductoTallaEditFormSet(instance=self.object)
-
         context['tallas'] = Talla.objects.all()
-        producto_tallas = ProductoTalla.objects.filter(producto=self.object).select_related('talla')
-        tallas_con_cantidad = {talla.id: 0 for talla in Talla.objects.all()}
-        for pt in producto_tallas:
-            tallas_con_cantidad[pt.talla.id] = pt.cantidad
-        context['tallas_con_cantidad'] = tallas_con_cantidad
-
-        context['form_errors'] = getattr(self, 'form_errors', None)
-
-        image_fields = ['imagen1', 'imagen2', 'imagen3', 'imagen4', 'imagen5']
-        image_data = {field: getattr(self.object, field, None) for field in image_fields}
-        context['image_fields'] = image_fields
-        context['image_data'] = image_data
-
-        context['show_success_modal'] = getattr(self, 'show_success_modal', False)
-        context['show_error_modal'] = getattr(self, 'show_error_modal', False)
-
         return context
 
     def form_valid(self, form):
+        """
+        Guardado principal + manejo manual del formset para evitar unique constraint
+        y *reemplazar* valores cuando exista un duplicado.
+        """
+        # Guardamos cambios básicos del producto primero
         self.object = form.save()
+
+        # Construimos el formset con los datos (incluye can_delete)
         formset = ProductoTallaEditFormSet(self.request.POST, self.request.FILES, instance=self.object)
 
-        if formset.is_valid():
-            formset.save()
-            messages.success(self.request, "Producto actualizado exitosamente.")
-            self.show_success_modal = True
-            return redirect(self.get_success_url())
-        else:
-            print("Errores del formset:", formset.errors)
+        # Validamos el formset primero para tener cleaned_data
+        if not formset.is_valid():
             self.form_errors = formset.errors
-            self.show_error_modal = True
+            messages.error(self.request, "Corrige los errores en las variantes.")
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
+        # Operación atómica para evitar condiciones de carrera
+        with transaction.atomic():
+            # 1) Procesar eliminaciones primero (DELETE checked)
+            # Usamos cleaned_data para detectar deletions
+            for f in formset:
+                cd = f.cleaned_data
+                if not cd:
+                    continue
+                if cd.get('DELETE'):
+                    inst = f.instance
+                    if inst and inst.pk:
+                        inst.delete()
+
+            # 2) Ahora procesamos los forms (actualizar/crear) y resolver duplicados
+            for f in formset:
+                cd = f.cleaned_data
+                if not cd:
+                    continue
+                if cd.get('DELETE'):
+                    # ya eliminado arriba
+                    continue
+
+                # campos clave (ajusta si tus nombres son distintos)
+                talla = cd.get('talla')
+                color = cd.get('color')
+                genero = cd.get('genero')
+                cantidad = cd.get('cantidad') or 0
+                # ejemplo: precio si lo tienes en el formset
+                precio = cd.get('precio') if 'precio' in cd else None
+                activa = cd.get('activa') if 'activa' in cd else None
+
+                if f.instance and f.instance.pk:
+                    # Form correspondiente a instancia existente (edición)
+                    # Bloqueamos la fila actual
+                    current = ProductoTalla.objects.select_for_update().filter(pk=f.instance.pk).first()
+
+                    # Buscamos un posible duplicado distinto (mismo producto+talla+color+genero)
+                    dup = ProductoTalla.objects.select_for_update().filter(
+                        producto=self.object,
+                        talla=talla,
+                        color=color,
+                        genero=genero
+                    ).exclude(pk=f.instance.pk).first()
+
+                    if dup:
+                        # REEMPLAZAR: asignamos los valores del formulario al duplicado
+                        # (usuario quiere que el valor general se reemplace por lo nuevo)
+                        dup.cantidad = cantidad
+                        if precio is not None and hasattr(dup, 'precio'):
+                            dup.precio = precio
+                        if activa is not None and hasattr(dup, 'activa'):
+                            dup.activa = activa
+                        # actualizar otros campos necesarios...
+                        dup.save()
+                        # borrar la fila actual (porque duplicó a 'dup' y ya actualizamos allí)
+                        if current:
+                            current.delete()
+                    else:
+                        # No hay duplicado: actualizamos la instancia actual
+                        if current:
+                            current.talla = talla
+                            current.color = color
+                            current.genero = genero
+                            current.cantidad = cantidad
+                            if precio is not None and hasattr(current, 'precio'):
+                                current.precio = precio
+                            if activa is not None and hasattr(current, 'activa'):
+                                current.activa = activa
+                            current.save()
+                        else:
+                            # Por seguridad, crearla si no existe
+                            ProductoTalla.objects.create(
+                                producto=self.object,
+                                talla=talla,
+                                color=color,
+                                genero=genero,
+                                cantidad=cantidad,
+                                precio=precio if precio is not None else 0,
+                                activa=(activa if activa is not None else True)
+                            )
+
+                else:
+                    # Form NUEVO (sin pk). Buscamos si ya existe una variante igual
+                    existing = ProductoTalla.objects.select_for_update().filter(
+                        producto=self.object,
+                        talla=talla,
+                        color=color,
+                        genero=genero
+                    ).first()
+
+                    if existing:
+                        # REEMPLAZAR valor general por lo nuevo (no crear duplicado)
+                        existing.cantidad = cantidad
+                        if precio is not None and hasattr(existing, 'precio'):
+                            existing.precio = precio
+                        if activa is not None and hasattr(existing, 'activa'):
+                            existing.activa = activa
+                        existing.save()
+                    else:
+                        # crear nuevo
+                        ProductoTalla.objects.create(
+                            producto=self.object,
+                            talla=talla,
+                            color=color,
+                            genero=genero,
+                            cantidad=cantidad,
+                            precio=precio if precio is not None else 0,
+                            activa=(activa if activa is not None else True)
+                        )
+
+        # Mensaje y redirect final
+        messages.success(self.request, "Producto actualizado correctamente.")
+        return redirect(self.get_success_url())
+
     def form_invalid(self, form):
+        # Reconstruimos formset para mostrar errores en template
         formset = ProductoTallaEditFormSet(self.request.POST, self.request.FILES, instance=self.object)
         self.form_errors = form.errors
-        self.show_error_modal = True
+        messages.error(self.request, "Corrige los errores del formulario.")
         return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
     def get_success_url(self):
@@ -473,7 +698,7 @@ class ProductoDeleteView(LoginRequiredMixin, DeleteView):
 
 class ProductDetailView(LoginRequiredMixin, DetailView):
     """
-    Vista de detalle de un producto.
+    Vista de detalle de un producto para el dash.
     Muestra la información completa del producto especificado por su pk.
     """
     model = Producto
@@ -566,17 +791,28 @@ class ProductDetailShopView(DetailView):
         return context
 
 def buscar_productos(request):
-    query = request.GET.get('q')
-    # Partimos de todos los productos en catálogo
-    productos = Producto.objects.filter(catalogo='catalogo')
+    q = request.GET.get('q', '').strip()
+    productos_qs = Producto.objects.filter(catalogo='catalogo')  # o tu filtro
+    if q:
+        productos_qs = productos_qs.filter(nombre__icontains=q)
 
-    if query:
-        # Además filtramos por nombre si hay término de búsqueda
-        productos = productos.filter(nombre__icontains=query)
+    paginator = Paginator(productos_qs.order_by('-id'), 12)  # 12 por página por ejemplo
+    page_num = request.GET.get('page', 1)
+    page = paginator.get_page(page_num)
+
+    # construir lista de páginas para mostrar (1, ..., current-2..current+2, ..., last)
+    pages = []
+    last = paginator.num_pages
+    for n in paginator.page_range:
+        if n == 1 or n == last or (n >= page.number - 2 and n <= page.number + 2):
+            pages.append(n)
+        elif pages and pages[-1] != '...':
+            pages.append('...')
 
     context = {
-        'productos': productos,
-        'query': query,
+        'productos': page,
+        'query': q,
+        'page_numbers': pages,
     }
     return render(request, 'tienda/buscar_productos.html', context)
 
@@ -676,6 +912,7 @@ class ProveedorDeleteView(LoginRequiredMixin, DeleteView):
             return JsonResponse({'success': True, 'message': 'Proveedor eliminado exitosamente.'})
         return response
 
+
 def productos_vendidos_hoy(request):
     hoy = timezone.now().date()
     
@@ -774,6 +1011,8 @@ class AdicionalesListView(TemplateView):
         context['tallas'] = Talla.objects.all()
         context['colores'] = Color.objects.all()
         return context
+    
+    
 
 def imprimir_codigos_view(request):
     q         = request.GET.get('q', '').strip()

@@ -5,102 +5,221 @@
 {% block title %}Resultados de búsqueda{% endblock %}
 
 {% block header_links %}
-
 <style>
-    .h-pantalla {
+  /* pequeños ajustes que Tailwind no cubre directamente */
+  .product-img { object-fit: cover; }
+  .truncate-2line {
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .h-pantalla {
     height: 54.5vh !important;
-}
+  }
 </style>
 
-<div class="d-flex gap-2 justify-content-end align-items-center">
-    {% if user.is_authenticated %}
-        {% if user.rol == 'gerente' %}
-        <a href="{% url 'dashboard_gerente' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
-        {% elif user.rol == 'vendedor' %}
-        <a href="{% url 'dashboard_vendedor' %}" class="btn btn-dark w-100 text-nowrap">Mi Perfil</a>
-        {% endif %}
-        <a href="{% url 'logout' %}" class="btn btn-dark w-100 text-nowrap">Cerrar Sesión</a>
-    {% else %}
-        <a href="{% url 'login' %}" class="btn btn-dark w-100 text-nowrap">Iniciar Sesión</a>
+<div class="flex gap-2 justify-end items-center">
+  {% if user.is_authenticated %}
+    {% if user.rol == 'gerente' %}
+      <a href="{% url 'dashboard_gerente' %}" class="inline-flex items-center px-3 py-2 bg-slate-800 text-white text-sm rounded-md shadow hover:bg-slate-900">Mi Perfil</a>
+    {% elif user.rol == 'vendedor' %}
+      <a href="{% url 'dashboard_vendedor' %}" class="inline-flex items-center px-3 py-2 bg-slate-800 text-white text-sm rounded-md shadow hover:bg-slate-900">Mi Perfil</a>
     {% endif %}
+    <a href="{% url 'logout' %}" class="inline-flex items-center px-3 py-2 bg-slate-800 text-white rounded text-sm ml-1">Cerrar Sesión</a>
+  {% else %}
+    <a href="{% url 'login' %}" class="inline-flex items-center px-3 py-2 bg-slate-800 text-white text-sm rounded-md shadow hover:bg-slate-900">Iniciar Sesión</a>
+  {% endif %}
 </div>
 {% endblock %}
 
+{% block mobile_header_links %}
+  {% if user.is_authenticated %}
+    <li class="px-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Volver al inicio</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <a href="{% if user.rol == 'gerente' %}{% url 'dashboard_gerente' %}{% else %}{% url 'dashboard_vendedor' %}{% endif %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.6 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Mi perfil</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit"
+          class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-300 text-left">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          <span class="text-sm font-medium text-gray-800">Cerrar sesión</span>
+        </button>
+      </form>
+    </li>
+  {% else %}
+    <li class="px-4">
+      <a href="{% url 'login' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H3m12 0l-4 4m4-4l-4-4M21 12v6a2 2 0 01-2 2H7" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Iniciar sesión</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Volver al inicio</span>
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}
+
+
+
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/productos.css' %}">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<div class="container my-5">
-    <h2>Resultados de búsqueda para "{{ query }}"</h2>
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Resultados de búsqueda</h1>
+      <p class="text-sm text-slate-500 mt-1">Resultados para: <span class="font-medium text-slate-800">"{{ query }}"</span></p>
+    </div>
 
-    {% if productos %}
-    <div class="row g-4">
-        {% for producto in productos %}
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
-            <div class="card h-100 shadow-sm p-2">
-                <!-- Imagen del producto -->
-                {% if producto.imagen1 %}
-                <img src="{{ producto.imagen1.url }}" class="card-img-top w-100" alt="{{ producto.nombre }}">
-                {% else %}
-                <img src="{% static 'img/No_hay_imagen.png' %}" class="d-block w-100 rounded-4" alt="No image available">
-                {% endif %}
+    <div class="flex items-center gap-2">
+      <a href="{% url 'index' %}" class="inline-flex items-center px-3 py-2 border rounded-md text-sm text-slate-700 hover:bg-slate-50">Ver todos</a>
+      <button onclick="history.back()" class="inline-flex items-center px-3 py-2 bg-white border rounded-md text-sm text-slate-700 hover:bg-slate-50">Volver</button>
+    </div>
+  </div>
 
-                <!-- Etiqueta de oferta -->
-                {% if producto.en_oferta %}
-                <div class="offer-label position-absolute top-0 start-0 bg-danger text-white p-1 rounded-end">Oferta</div>
-                {% endif %}
+  {% if productos %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {% for producto in productos %}
+    <article class="bg-white rounded-xl shadow-sm overflow-hidden transform hover:-translate-y-1 transition">
+      <div class="relative">
+        {% if producto.imagen1 %}
+          <img src="{{ producto.imagen1.url }}" alt="{{ producto.nombre }}" class="product-img w-full h-56 sm:h-48 md:h-44 lg:h-48">
+        {% else %}
+          <img src="{% static 'img/No_hay_imagen.png' %}" alt="No image available" class="product-img w-full h-56 sm:h-48 md:h-44 lg:h-48 object-cover">
+        {% endif %}
 
-                <div class="card-body">
-                    <!-- Nombre del producto -->
-                    <h5 class="card-title fw-semibold">{{ producto.nombre }}</h5>
-                    <p class="card-text">${{ producto.precio|floatformat:0 }}</p>
+        {% if producto.en_oferta %}
+          <span class="absolute left-3 top-3 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-md shadow">Oferta</span>
+        {% endif %}
+      </div>
 
-                    <!-- Género del producto -->
-                    <p>
-                        {% if producto.genero == 'dama' %}
-                        <span class="badge bg-dama">Para Mujer</span>
-                        {% elif producto.genero == 'caballero' %}
-                            <span class="badge bg-hombre">Para Hombre</span>
-                        {% elif producto.genero == 'unisex' %}
-                            <span class="badge bg-unisex">Unisex</span>
-                        {% endif %}
-                    </p>
+      <div class="p-4 flex flex-col gap-3 h-[220px]">
+        <header>
+          <h2 class="text-sm font-semibold text-slate-900 leading-5 truncate-2line">{{ producto.nombre }}</h2>
+          <p class="text-xs text-slate-500 mt-1 hidden sm:block">{{ producto.referencia }}</p>
+        </header>
 
-                    <!-- Precios: Original y con descuento -->
-                    {% if producto.en_oferta %}
-                    <div class="price-wrapper">
-                        <p class="price text-success h3">
-                            <strong>${{ producto.precio_oferta|floatformat:0|intcomma }}</strong>
-                        </p>
-                        <p class="text-muted text-danger text-decoration-line-through">
-                            <strong style="text-decoration: none;">Antes: </strong>${{ producto.precio|floatformat:0|intcomma }}
-                        </p>
-                    </div>
-                    {% else %}
-                    <p class="price text-success h4">
-                        <strong>${{ producto.precio|floatformat:0|intcomma }}</strong>
-                    </p>
-                    {% endif %}
-                </div>
+        <div class="flex items-center justify-between mt-2">
+          <div class="flex items-baseline gap-2">
+            {% if producto.en_oferta %}
+              <div class="text-lg font-bold text-emerald-600">${{ producto.precio_oferta|floatformat:0|intcomma }}</div>
+              <div class="text-xs line-through text-gray-400">${{ producto.precio_venta|floatformat:0|intcomma }}</div>
+            {% else %}
+              <div class="text-lg font-bold text-emerald-700">${{ producto.precio_venta|floatformat:0|intcomma }}</div>
+            {% endif %}
+          </div>
 
-                <!-- Footer de la Tarjeta -->
-                <div class="card-footer text-center bg-light">
-                    <a href="{% url 'detalles_producto_tienda' producto.id %}" class="btn btn-outline-dark w-100">
-                        <i class="fa-regular fa-eye me-2"></i>Ver Más
-                    </a>
-                </div>
-            </div>
+          <div>
+            {% if producto.genero == 'dama' %}
+              <span class="inline-block text-xs font-semibold px-2 py-1 rounded-full bg-gradient-to-r from-pink-400 to-pink-600 text-white">Para Mujer</span>
+            {% elif producto.genero == 'caballero' %}
+              <span class="inline-block text-xs font-semibold px-2 py-1 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 text-white">Para Hombre</span>
+            {% elif producto.genero == 'unisex' %}
+              <span class="inline-block text-xs font-semibold px-2 py-1 rounded-full bg-gradient-to-r from-slate-200 to-slate-400 text-slate-900">Unisex</span>
+            {% endif %}
+          </div>
         </div>
+
+        <p class="text-sm text-slate-600 grow hidden md:block">{{ producto.descripcion|default:"" |truncatechars:110 }}</p>
+
+        <div class="mt-2">
+          <a href="{% url 'detalles_producto_tienda' producto.slug %}" class="w-full block text-center px-3 py-2 bg-white border border-slate-200 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50">Ver más</a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination simple (si usas Paginator) -->
+  {% if productos.paginator %}
+  <div class="mt-8 flex items-center justify-between">
+    <div class="text-sm text-slate-600">
+      Mostrando <strong>{{ productos.start_index }} - {{ productos.end_index }}</strong> de <strong>{{ productos.paginator.count }}</strong>
+    </div>
+
+    <nav class="flex items-center gap-2" aria-label="Paginación">
+      {% if productos.has_previous %}
+        <a href="?q={{ query }}&page={{ productos.previous_page_number }}" class="px-3 py-1 border rounded-md text-sm text-slate-700 hover:bg-slate-50">«</a>
+      {% else %}
+        <span class="px-3 py-1 border rounded-md text-sm text-slate-400">«</span>
+      {% endif %}
+
+        {% for n in productos.paginator.page_range %}
+        {% if n == 1 or n == productos.paginator.num_pages %}
+            {% if n == productos.number %}
+            <span class="px-3 py-1 bg-slate-800 text-white rounded-md text-sm">{{ n }}</span>
+            {% else %}
+            <a href="?q={{ query }}&page={{ n }}" class="px-3 py-1 border rounded-md text-sm text-slate-700 hover:bg-slate-50">{{ n }}</a>
+            {% endif %}
+        {% else %}
+            {% if n >= productos.number|add:"-2" and n <= productos.number|add:"2" %}
+            {% if n == productos.number %}
+                <span class="px-3 py-1 bg-slate-800 text-white rounded-md text-sm">{{ n }}</span>
+            {% else %}
+                <a href="?q={{ query }}&page={{ n }}" class="px-3 py-1 border rounded-md text-sm text-slate-700 hover:bg-slate-50">{{ n }}</a>
+            {% endif %}
+            {% elif n == productos.number|add:"-3" or n == productos.number|add:"3" %}
+            <span class="px-2 text-slate-500">…</span>
+            {% endif %}
+        {% endif %}
         {% endfor %}
+
+
+      {% if productos.has_next %}
+        <a href="?q={{ query }}&page={{ productos.next_page_number }}" class="px-3 py-1 border rounded-md text-sm text-slate-700 hover:bg-slate-50">»</a>
+      {% else %}
+        <span class="px-3 py-1 border rounded-md text-sm text-slate-400">»</span>
+      {% endif %}
+    </nav>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- Empty state -->
+  <div class="flex flex-col items-center justify-center text-center gap-6 py-12 h-pantalla">
+    <img src="{% static 'img/No_hay_imagen.png' %}" alt="No results" class="w-48 h-48 object-contain opacity-90">
+    <div>
+      <h3 class="text-xl font-semibold text-slate-900">No se encontraron productos</h3>
+      <p class="text-sm text-slate-500 mt-2">No hay resultados que coincidan con <span class="font-medium">"{{ query }}"</span></p>
     </div>
-    {% else %}
-    <div class="container h-pantalla text-center my-4">
-        <p class="text-muted">No se encontraron productos que coincidan con tu búsqueda.</p>
-        <p>
-            <a href="{% url 'index' %}" class="btn btn-dark">
-                Ver todos los productos
-            </a>
-        </p>
+    <div class="flex gap-3">
+      <a href="{% url 'index' %}" class="px-4 py-2 bg-slate-800 text-white rounded-md shadow">Ver todos los productos</a>
+      <button onclick="history.back()" class="px-4 py-2 border rounded-md text-slate-700">Volver</button>
     </div>
-    {% endif %}
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

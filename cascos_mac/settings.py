@@ -75,6 +75,7 @@ TEMPLATES = [
 
                 
                 'carrito.context_processors.carrito_total_items',
+                'carrito.context_processors.cart_context',
                 'configuracion.context_processors.ui_configuracion',
                 'configuracion.context_processors.ui_colors',
                 'configuracion.menu.menu_items',  # Context processor para el menú
@@ -170,6 +171,7 @@ UI_ICON_MAP = {
     'perfil': 'fa-user',
     'facturacion': 'fa-paper-plane',
     'configuracion': 'fa-cog',  # icono para configuración
+    'ayuda': 'fa-circle-question',
 }
 
 # Configuración de colores (clases Tailwind)
@@ -190,12 +192,12 @@ UI_COLORS = {
 UI_PERMISSIONS = {
     'gerente': [
         'dashboard','inventario','bodega','productos','categorias',
-        'ventas','usuarios','proveedores','adicionales','perfil','facturacion','configuracion'
+        'ventas','usuarios','proveedores','adicionales','perfil','facturacion','configuracion', 'ayuda'
     ],
     'vendedor': [
-        'dashboard','inventario','bodega','productos','adicionales','perfil','configuracion'
+        'dashboard','inventario','bodega','productos','adicionales','perfil','configuracion', 'ayuda'
     ],
 }
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True    

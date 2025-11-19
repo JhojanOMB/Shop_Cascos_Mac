@@ -87,6 +87,64 @@
 {% endif %}
 {% endblock %}
 
+{% block mobile_header_links %}
+  {% if user.is_authenticated %}
+    <li class="px-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Volver al inicio</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <a href="{% if user.rol == 'gerente' %}{% url 'dashboard_gerente' %}{% else %}{% url 'dashboard_vendedor' %}{% endif %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.6 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Mi perfil</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit"
+          class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-300 text-left">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          <span class="text-sm font-medium text-gray-800">Cerrar sesión</span>
+        </button>
+      </form>
+    </li>
+  {% else %}
+    <li class="px-4">
+      <a href="{% url 'login' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H3m12 0l-4 4m4-4l-4-4M21 12v6a2 2 0 01-2 2H7" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Iniciar sesión</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Volver al inicio</span>
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}
+
+
 {% block content %}
 <div class="fondo-error container-fluid py-5">
   <div class="row justify-content-center align-items-center g-5">

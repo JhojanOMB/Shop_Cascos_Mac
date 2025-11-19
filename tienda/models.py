@@ -1,5 +1,3 @@
-# app tienda
-
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -29,6 +27,15 @@ class Proveedor(models.Model):
     direccion = models.TextField(blank=True, null=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     correo_electronico = models.EmailField(blank=True, null=True)
+
+    def __str__(self):
+        return self.nombre
+    
+
+class Marca(models.Model):
+    nombre = models.CharField(max_length=50, unique=True)
+    class Meta:
+        ordering = ['nombre']
 
     def __str__(self):
         return self.nombre
@@ -79,7 +86,6 @@ class Producto(models.Model):
     imagen4 = models.ImageField(upload_to='productos/', blank=True, null=True)
     imagen5 = models.ImageField(upload_to='productos/', blank=True, null=True)
 
-
     CATALOG_CHOICES = [
         ('', 'Seleccione una opción'),
         ('catalogo', 'En Catálogo'),
@@ -99,6 +105,7 @@ class Producto(models.Model):
     # Costo y proveedor
     precio_compra = models.DecimalField(max_digits=10, decimal_places=0, blank=True, null=True)
     proveedor = models.ForeignKey('Proveedor', on_delete=models.SET_NULL, null=True, blank=True, related_name='productos')
+    marca = models.ForeignKey('Marca', on_delete=models.SET_NULL, null=True, blank=True, related_name='productos')
 
     # Fecha de creación
     created_date = models.DateField(auto_now_add=True)
@@ -215,19 +222,6 @@ class Producto(models.Model):
         Retorna la cantidad total de productos sumando todas las tallas.
         """
         return sum(detalle.cantidad for detalle in self.producto_tallas.all())
-    
-    @property
-    def imagen_miniatura(self):
-        if self.imagen1:
-            return self.imagen1.url
-        return '/static/img/No_hay_imagen.png'
-    
-    @property
-    def tallas_disponibles(self):
-        """
-        Devuelve los objetos ProductoTalla activos y con stock > 0.
-        """
-        return self.producto_tallas.filter(activa=True, cantidad__gt=0).select_related('talla', 'color')
 
 class ProductoTalla(models.Model):
     producto = models.ForeignKey('Producto', related_name='producto_tallas', on_delete=models.CASCADE)

@@ -1,502 +1,668 @@
 {% extends 'base_dashboard.html' %}
 {% load custom_filters %}
+{% load heroicons %}
 {% load static %}
 
+{% with icon_color='text-emerald-600' %}
 {% block content %}
-<div class="container form-container mt-4">
-    <form id="productoForm" method="post">
-        {% csrf_token %}
-        <h2 class="text-center fw-bolder">Crear Producto</h2>
-        <hr class="border border-2 mb-2">
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <form id="productoForm" method="post" enctype="multipart/form-data" class="space-y-6">
+    {% csrf_token %}
 
-        {# Errores generales del formulario #}
-        {% if form.errors %}
-        <div class="alert alert-danger" role="alert">
-            <strong>¡Ups! Hay algunos errores en el formulario:</strong>
-            <ul class="mb-0">
-                {% for field, errors in form.errors.items %}
-                    <li>
-                        <strong>{{ field }}:</strong>
-                        {% for error in errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
+    <header class="flex items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-extrabold text-gray-900">Crear Producto</h1>
+        <p class="text-sm text-gray-500 mt-1">Completa la información para añadir o actualizar el producto.</p>
+      </div>
 
-        {# Formulario principal #}
-        <div class="row">
-            <!-- Columna Izquierda -->
-            <div class="col-md-6">
-                <!-- Campo Nombre -->
-                <div class="mb-3">
-                    <label class="form-label">{{ form.nombre.label }}</label>
-                    <div class="input-group shadow-sm">
-                        <span class="input-group-text bg-secondary text-light">
-                            <i class="fa-solid fa-tag"></i>
-                        </span>
-                        {{ form.nombre|add_class:"form-control" }}
-                    </div>
-                    {% if form.nombre.errors %}
-                    <div class="invalid-feedback d-block">
-                        <strong>Errores en "{{ form.nombre.label }}":</strong>
-                        {% for error in form.nombre.errors %}
-                        <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'contenido_productos' %}" class="px-3 py-2 rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50">Volver</a>
+        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md shadow">
+          Guardar
+        </button>
+      </div>
+    </header>
 
-                <!-- Campo Descripción -->
-                <div class="mb-3">
-                    <label class="form-label">{{ form.descripcion.label }}</label>
-                    <div class="input-group shadow-sm">
-                        <span class="input-group-text bg-secondary text-light">
-                            <i class="fa-solid fa-pencil"></i>
-                        </span>
-                        {{ form.descripcion|add_class:"form-control" }}
-                    </div>
-                    {% if form.descripcion.errors %}
-                    <div class="invalid-feedback d-block">
-                        <strong>Errores en "{{ form.descripcion.label }}":</strong>
-                        {% for error in form.descripcion.errors %}
-                        <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
+    {# errores generales #}
+    {% if form.non_field_errors %}
+      <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        {% for e in form.non_field_errors %}{{ e }} {% endfor %}
+      </div>
+    {% endif %}
 
-                <div class="row g-2">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">{{ form.precio_compra.label }}</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-secondary text-white">
-                                    <i class="fa-solid fa-dollar-sign"></i>
-                                </span>
-                                {{ form.precio_compra|add_class:"form-control precio-input" }}
-                            </div>
-                            {% if form.precio_compra.errors %}
-                            <div class="invalid-feedback d-block">
-                                <strong>Errores en "{{ form.precio_compra.label }}":</strong>
-                                {% for error in form.precio_compra.errors %}
-                                    <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">{{ form.precio_venta.label }}</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-secondary text-white">
-                                    <i class="fa-solid fa-dollar-sign"></i>
-                                </span>
-                                {{ form.precio_venta|add_class:"form-control precio-input" }}
-                            </div>
-                            {% if form.precio_venta.errors %}
-                            <div class="invalid-feedback d-block">
-                                <strong>Errores en "{{ form.precio_venta.label }}":</strong>
-                                {% for error in form.precio_venta.errors %}
-                                    <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Form principal (2/3) -->
+      <div class="lg:col-span-2 space-y-6">
 
-                <div class="mb-3">
-                    <label class="form-label">{{ form.categoria.label }}</label>
-                    <div class="input-group shadow">
-                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-list"></i></span>
-                        {{ form.categoria }}
-                    </div>
-                    {% if form.categoria.errors %}
-                        <div class="invalid-feedback d-block">
-                            <strong>Errores en el campo "{{ form.categoria.label }}":</strong>
-                            {% for error in form.categoria.errors %}
-                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">{{ form.proveedor.label }}</label>
-                    <div class="input-group shadow">
-                        <span class="input-group-text bg-gradient bg-secondary text-light" id="basic-addon1"><i class="fa-solid fa-truck-front"></i></span>
-                        {{ form.proveedor }}
-                    </div>
-                    {% if form.proveedor.errors %}
-                        <div class="invalid-feedback d-block">
-                            <strong>Errores en el campo "{{ form.proveedor.label }}":</strong>
-                            {% for error in form.proveedor.errors %}
-                                <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Sección de Oferta en una tarjeta -->
-                <div class="card mb-3 shadow-sm">
-                    <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <label class="form-label mb-0">
-                        <i class="fas fa-check me-2"></i>{{ form.en_oferta.label }}
-                        </label>
-                        <!-- Switch moderno -->
-                        <div class="form-check form-switch">
-                        {{ form.en_oferta|add_class:"form-check-input" }}
-                        </div>
-                    </div>
-                    {% if form.en_oferta.errors %}
-                        <div class="invalid-feedback d-block">
-                        {% for error in form.en_oferta.errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                        </div>
-                    {% endif %}
-                    <!-- Campo Precio Oferta en un collapse -->
-                    <div class="collapse mt-3" id="collapsePrecioOferta">
-                        <label class="form-label">{{ form.precio_oferta.label }}</label>
-                        <div class="input-group shadow">
-                        <span class="input-group-text bg-gradient bg-secondary text-light">
-                            <i class="fa-solid fa-tags"></i>
-                        </span>
-                        {{ form.precio_oferta|add_class:"form-control precio-input" }}
-                        </div>
-                        {% if form.precio_oferta.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.precio_oferta.errors %}
-                            <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    </div>
-                </div>
-
-                <!-- Sección de Catálogo con botón toggle -->
-                <div class="card mb-3 shadow-sm">
-                    <div class="card-body">
-                    <label class="form-label d-block">
-                        <i class="fas fa-shop me-2"></i>¿Es un producto del catálogo?
-                    </label>
-                    <div class="btn-group rounded-pill" role="group">
-                        <input type="radio" class="btn-check" name="catalogo" id="catalogo" value="catalogo" autocomplete="off" {% if form.catalogo.value == 'catalogo' %}checked{% endif %}>
-                        <label class="btn btn-outline-primary" for="catalogo">Catálogo</label>
-                        <input type="radio" class="btn-check" name="catalogo" id="no_catalogo" value="no_catalogo" autocomplete="off" {% if form.catalogo.value == 'no_catalogo' %}checked{% endif %}>
-                        <label class="btn btn-outline-primary" for="no_catalogo">No Catálogo</label>
-                    </div>
-                    </div>
-                </div>              
-            </div>      
-
-            <!-- Columna Derecha -->
-            <div class="col-md-6">
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen1.label }}</label>
-                    {% if object.imagen1 %}
-                        <div class="container border rounded align-content-center p-3">
-                            <img src="{{ object.imagen1.url }}" alt="Imagen 1" width="100" class="mb-2">
-                            <p><small>Imagen actual</small></p>
-                        </div>
-                    {% endif %}
-                    {{ form.imagen1 }}
-                    {% if form.imagen1.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.imagen1.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen2.label }}</label>
-                    {{ form.imagen2 }}
-                    {% if form.imagen2.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.imagen2.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen3.label }}</label>
-                    {{ form.imagen3 }}
-                    {% if form.imagen3.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.imagen3.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen4.label }}</label>
-                    {{ form.imagen4 }}
-                    {% if form.imagen4.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.imagen4.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="container border p-3 mb-3 rounded">
-                    <label class="form-label"><i class="fas fa-image me-2"></i>{{ form.imagen5.label }}</label>
-                    {{ form.imagen5 }}
-                    {% if form.imagen5.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.imagen5.errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Formset: Tallas, colores, género y cantidad -->
-                <h5 class="fw-bold mb-3">
-                    <i class="fas fa-ruler-combined me-2"></i>Variantes del Producto
-                </h5>
-                <div class="table-responsive border rounded shadow-sm">
-                    <table class="table table-bordered table-striped align-middle text-center mb-0">
-                        <thead class="table-secondary">
-                            <tr>
-                                <th scope="col">Talla</th>
-                                <th scope="col">Color</th>
-                                <th scope="col">Género</th>
-                                <th scope="col">Cantidad</th>
-                                <th scope="col">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="formset-body">
-                            {{ formset.management_form }}
-                            {% for subform in formset %}
-                            <tr class="formset-form">
-                                <td>
-                                    <div class="form-floating">
-                                        {{ subform.talla }}
-                                        <label for="{{ subform.talla.id_for_label }}">Talla</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-floating">
-                                        {{ subform.color }}
-                                        <label for="{{ subform.color.id_for_label }}">Color</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-floating">
-                                        {{ subform.genero }}
-                                        <label for="{{ subform.genero.id_for_label }}">Género</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-floating">
-                                        {{ subform.cantidad }}
-                                        <label for="{{ subform.cantidad.id_for_label }}">Cantidad</label>
-                                    </div>
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-outline-danger btn-sm remove-form" title="Eliminar Variante">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <button type="button" id="add-formset" class="btn btn-outline-primary mt-3">
-                    <i class="fas fa-plus"></i> Añadir Variante
-                </button>
-                
-                {% if formset.non_form_errors %}
-                <div class="invalid-feedback d-block mt-2">
-                    {% for error in formset.non_form_errors %}
-                    <p><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {# NOMBRE #}
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-2">{{ form.nombre.label }}</label>
+            <div class="flex items-center bg-white border rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-emerald-300">
+              <span class="px-3 text-gray-400">
+                <i class="{{ form.nombre.field.widget.attrs.icon|default:'bi bi-question-circle' }} {{ icon_color }} text-lg"></i>
+              </span>
+              {{ form.nombre|add_class:"w-full p-3 rounded-r-lg bg-transparent focus:outline-none" }}
             </div>
+            {% if form.nombre.errors %}
+              <p class="mt-1 text-xs text-red-600">{% for e in form.nombre.errors %}{{ e }} {% endfor %}</p>
+            {% endif %}
+          </div>
         </div>
 
-        <!-- Botones -->
-        <div class="text-end mt-3">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save me-2"></i>Guardar Producto
+        {# DESCRIPCION #}
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-2">{{ form.descripcion.label }}</label>
+          <div class="bg-white border rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-emerald-300">
+            <div class="flex items-start px-3 py-2 text-gray-400">
+              <i class="{{ form.descripcion.field.widget.attrs.icon|default:'bi bi-journal-text' }} {{ icon_color }} text-lg"></i>
+            </div>
+            {{ form.descripcion|add_class:"w-full p-3 bg-transparent focus:outline-none rounded-b-lg" }}
+          </div>
+          {% if form.descripcion.errors %}<p class="mt-1 text-xs text-red-600">{% for e in form.descripcion.errors %}{{ e }} {% endfor %}</p>{% endif %}
+        </div>
+
+        {# PRECIOS + CATEGORIA #}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-2">{{ form.precio_compra.label }}</label>
+            <div class="flex items-center bg-white border rounded-lg shadow-sm">
+              <span class="px-3 text-gray-400"><i class="{{ form.precio_compra.field.widget.attrs.icon|default:'bi bi-cash-stack' }} {{ icon_color }} text-lg"></i></span>
+              {{ form.precio_compra|add_class:"w-full p-3 rounded-r-lg bg-transparent precio-input" }}
+            </div>
+            {% if form.precio_compra.errors %}<p class="mt-1 text-xs text-red-600">{% for e in form.precio_compra.errors %}{{ e }} {% endfor %}</p>{% endif %}
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-2">{{ form.precio_venta.label }}</label>
+            <div class="flex items-center bg-white border rounded-lg shadow-sm">
+              <span class="px-3 text-gray-400"><i class="{{ form.precio_venta.field.widget.attrs.icon|default:'bi bi-currency-dollar' }} {{ icon_color }} text-lg"></i></span>
+              {{ form.precio_venta|add_class:"w-full p-3 rounded-r-lg bg-transparent precio-input" }}
+            </div>
+            {% if form.precio_venta.errors %}<p class="mt-1 text-xs text-red-600">{% for e in form.precio_venta.errors %}{{ e }} {% endfor %}</p>{% endif %}
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-2">{{ form.categoria.label }}</label>
+            <div class="bg-white border rounded-lg shadow-sm">
+              <div class="flex items-center px-3">
+                <i class="{{ form.categoria.field.widget.attrs.icon|default:'bi bi-list' }} {{ icon_color }} text-lg"></i>
+                {{ form.categoria|add_class:"w-full p-3 bg-transparent ml-3" }}
+              </div>
+            </div>
+            {% if form.categoria.errors %}<p class="mt-1 text-xs text-red-600">{% for e in form.categoria.errors %}{{ e }} {% endfor %}</p>{% endif %}
+          </div>
+        </div>
+
+        {# PROVEEDOR + MARCA #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-2">{{ form.proveedor.label }}</label>
+            <div class="bg-white border rounded-lg shadow-sm px-3 py-2 flex items-center">
+              <i class="{{ form.proveedor.field.widget.attrs.icon|default:'bi bi-people' }} {{ icon_color }} text-lg"></i>
+              {{ form.proveedor|add_class:"w-full p-0 bg-transparent ml-3" }}
+            </div>
+            {% if form.proveedor.errors %}<p class="mt-1 text-xs text-red-600">{% for e in form.proveedor.errors %}{{ e }} {% endfor %}</p>{% endif %}
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-2">{{ form.marca.label }}</label>
+            <div class="bg-white border rounded-lg shadow-sm px-3 py-2 flex items-center">
+              <i class="{{ form.marca.field.widget.attrs.icon|default:'bi bi-award' }} {{ icon_color }} text-lg"></i>
+              {{ form.marca|add_class:"w-full p-0 bg-transparent ml-3" }}
+            </div>
+            {% if form.marca.errors %}<p class="mt-1 text-xs text-red-600">{% for e in form.marca.errors %}{{ e }} {% endfor %}</p>{% endif %}
+          </div>
+        </div>
+
+        {# EN OFERTA + PRECIO OFERTA #}
+        <div class="bg-white border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:gap-6">
+          <div class="flex items-center gap-3">
+            <label class="inline-flex items-center cursor-pointer">
+              {{ form.en_oferta|add_class:"h-5 w-5" }}
+              <span class="ml-2 text-sm text-gray-700">{{ form.en_oferta.label }}</span>
+            </label>
+          </div>
+
+          <div id="precioOfertaWrap" class="w-full md:w-1/3 transition-opacity duration-200 ease-in-out">
+            <label class="block text-xs font-medium text-gray-600 mb-2">{{ form.precio_oferta.label }}</label>
+            <div class="bg-white border rounded-lg shadow-sm">
+              <div class="flex items-center px-3 py-2">
+                <i class="{{ form.precio_oferta.field.widget.attrs.icon|default:'bi bi-tags' }} {{ icon_color }} text-lg"></i>
+                {{ form.precio_oferta|add_class:"w-full p-2 bg-transparent ml-3 precio-input" }}
+              </div>
+            </div>
+            {% if form.precio_oferta.errors %}<p class="mt-1 text-xs text-red-600">{% for e in form.precio_oferta.errors %}{{ e }} {% endfor %}</p>{% endif %}
+          </div>
+        </div>
+
+        {# CATALOGO (pills) #}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">¿Es del catálogo?</label>
+          <div class="inline-flex rounded-full bg-gray-100 p-1 gap-1">
+            <label class="cursor-pointer">
+              <input type="radio" name="catalogo" id="catalogo" value="catalogo" class="sr-only peer" {% if form.catalogo.value == 'catalogo' %}checked{% endif %}>
+              <span class="px-4 py-2 text-sm rounded-full border border-transparent peer-checked:bg-emerald-600 peer-checked:text-white">Catálogo</span>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="catalogo" id="no_catalogo" value="no_catalogo" class="sr-only peer" {% if form.catalogo.value == 'no_catalogo' %}checked{% endif %}>
+              <span class="px-4 py-2 text-sm rounded-full border border-transparent peer-checked:bg-emerald-600 peer-checked:text-white">No catálogo</span>
+            </label>
+          </div>
+        </div>
+
+        {# VARIANTES (formset) #}
+        <section class="mt-4">
+          <h2 class="text-lg font-semibold text-gray-800 mb-3">Variantes</h2>
+
+          <div id="variants-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {{ formset.management_form }}
+            {% for subform in formset %}
+              <div class="bg-white border rounded-lg p-3 shadow-sm formset-form">
+                <div class="flex items-center justify-between mb-2">
+                  <strong class="text-sm text-gray-700">Variante {{ forloop.counter }}</strong>
+                  <button type="button" class="remove-form text-sm text-red-600">Eliminar</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-xs text-gray-600">Talla</label>
+                    <div class="flex items-center">
+                      <i class="{{ subform.talla.field.widget.attrs.icon|default:'bi bi-rulers' }} {{ icon_color }} mr-2"></i>
+                      {{ subform.talla|add_class:"w-full p-2 bg-gray-50 rounded border" }}
+                    </div>
+                  </div>
+                  <div>
+                    <label class="text-xs text-gray-600">Color</label>
+                    <div class="flex items-center">
+                      <i class="{{ subform.color.field.widget.attrs.icon|default:'bi bi-droplet' }} {{ icon_color }} mr-2"></i>
+                      {{ subform.color|add_class:"w-full p-2 bg-gray-50 rounded border" }}
+                    </div>
+                  </div>
+                  <div>
+                    <label class="text-xs text-gray-600">Género</label>
+                    <div class="flex items-center">
+                      <i class="{{ subform.genero.field.widget.attrs.icon|default:'bi bi-gender-ambiguous' }} {{ icon_color }} mr-2"></i>
+                      {{ subform.genero|add_class:"w-full p-2 bg-gray-50 rounded border" }}
+                    </div>
+                  </div>
+                  <div>
+                    <label class="text-xs text-gray-600">Cantidad</label>
+                    <div class="flex items-center">
+                      <i class="{{ subform.cantidad.field.widget.attrs.icon|default:'bi bi-box-seam' }} {{ icon_color }} mr-2"></i>
+                      {{ subform.cantidad|add_class:"w-full p-2 bg-gray-50 rounded border" }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="mt-3">
+            <button type="button" id="add-formset" class="inline-flex items-center gap-2 px-4 py-2 bg-white border rounded-md shadow-sm hover:shadow">
+              Añadir variante
             </button>
-            <a href="{% url 'contenido_productos' %}" class="btn btn-secondary">Cancelar</a>
-        </div>
-    </form>
-</div>
+          </div>
 
-<!-- Modal de éxito -->
-<div class="modal fade" id="modalSuccess" tabindex="-1" aria-labelledby="modalSuccessLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 310px;">
-        <div class="modal-content">
-            <!-- Cabecera con diseño corregido -->
-            <div class="modal-header border-0 d-flex flex-column align-items-center" style="
-                background-color: #bef0c8;
-                border-bottom-left-radius: 150px;
-                border-bottom-right-radius: 150px;
-            ">
-                <!-- Botón de cerrar -->
-                <div class="w-100 d-flex justify-content-end">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeModal"></button>
+          {# TEMPLATE OCULTO (empty_form) - usa __prefix__ que JS reemplazará #}
+          <template id="empty-form-template">
+            <div class="bg-white border rounded-lg p-3 shadow-sm formset-form">
+              <div class="flex items-center justify-between mb-2">
+                <strong class="text-sm text-gray-700">Variante __num__</strong>
+                <button type="button" class="remove-form text-sm text-red-600">Eliminar</button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-gray-600">Talla</label>
+                  <div class="flex items-center">
+                    <i class="{{ formset.empty_form.talla.field.widget.attrs.icon|default:'bi bi-rulers' }} {{ icon_color }} mr-2"></i>
+                    {{ formset.empty_form.talla }}
+                  </div>
                 </div>
-                <!-- Ícono de éxito -->
-                <div class="d-flex justify-content-center align-items-center rounded-circle mx-auto mb-3" style="
-                    width: 80px; 
-                    height: 80px; 
-                    background-color: #4ec45e; 
-                    box-shadow: 0 0 0 10px #74d181, 0 0 0 20px #9bdea4;
-                ">
-                    <i class="fa-solid fa-check text-light fs-3"></i>
+                <div>
+                  <label class="text-xs text-gray-600">Color</label>
+                  <div class="flex items-center">
+                    <i class="{{ formset.empty_form.color.field.widget.attrs.icon|default:'bi bi-droplet' }} {{ icon_color }} mr-2"></i>
+                    {{ formset.empty_form.color }}
+                  </div>
                 </div>
+                <div>
+                  <label class="text-xs text-gray-600">Género</label>
+                  <div class="flex items-center">
+                    <i class="{{ formset.empty_form.genero.field.widget.attrs.icon|default:'bi bi-gender-ambiguous' }} {{ icon_color }} mr-2"></i>
+                    {{ formset.empty_form.genero }}
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-600">Cantidad</label>
+                  <div class="flex items-center">
+                    <i class="{{ formset.empty_form.cantidad.field.widget.attrs.icon|default:'bi bi-box-seam' }} {{ icon_color }} mr-2"></i>
+                    {{ formset.empty_form.cantidad }}
+                  </div>
+                </div>
+              </div>
             </div>
-            <!-- Cuerpo del modal -->
-            <div class="modal-body text-center">
-                <!-- Mensaje de éxito -->
-                <h1 class="fw-bold text-success" id="modalSuccessLabel">¡Éxito!</h1>
-                <p class="fs-5 text-muted mt-3">El producto ha sido creado con éxito.</p>
+          </template>
+
+        </section>
+
+      </div>
+
+      <!-- Panel lateral (1/3) -->
+      <aside class="space-y-4">
+        <!-- Imagen 1 con preview y eliminar -->
+        <div class="bg-white border rounded-lg p-4 shadow-sm">
+          <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.imagen1.label }}</label>
+
+          <div class="flex flex-col items-center gap-3">
+            <div id="preview1" class="w-40 h-40 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+              {% if object and object.imagen1 %}
+                <img src="{{ object.imagen1.url }}" alt="Imagen 1" id="preview1img" class="object-cover w-full h-full">
+              {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h2l3 9h8l3-9h2"/></svg>
+              {% endif %}
             </div>
-            <!-- Footer -->
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-outline-success px-4" id="verDetalles">Ver detalles</button>
+
+            {# ocultamos el input real y usamos label personalizado para subir #}
+            {{ form.imagen1|add_class:"hidden" }}
+
+            <div class="w-full flex items-center gap-2">
+              <!-- botón subir -->
+              <label for="id_imagen1" class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 bg-white cursor-pointer hover:shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v8M8 8l4-4 4 4"/></svg>
+                <span class="text-sm">Subir imagen</span>
+              </label>
+
+              <!-- botón eliminar (claro, con icono) -->
+              <button type="button" id="removeImagen1Btn" class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-red-200 text-red-600 bg-white hover:bg-red-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1l1 10a2 2 0 002 2h6a2 2 0 002-2l1-10h1a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zm3 5a1 1 0 012 0v6a1 1 0 11-2 0V7z" clip-rule="evenodd"/></svg>
+                <span class="text-sm">Eliminar</span>
+              </button>
             </div>
+
+            <!-- input hidden que Django espera: cuando eliminamos, ponemos 'on' -->
+            <input type="hidden" name="imagen1-clear" id="id_imagen1_clear" value="">
+
+            {% if form.imagen1.errors %}<p class="text-xs text-red-600">{% for e in form.imagen1.errors %}{{ e }}{% endfor %}</p>{% endif %}
+          </div>
         </div>
+
+        <!-- Otras imágenes -->
+        <div class="bg-white border rounded-lg p-4 shadow-sm">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Imágenes secundarias</label>
+        <div class="grid grid-cols-2 gap-2">
+
+            <!-- imagen 2 -->
+            <div class="flex flex-col items-start gap-2">
+            <div class="w-full bg-gray-50 rounded border p-2 flex items-center gap-2">
+                <div id="preview2" class="w-20 h-20 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                {% if object and object.imagen2 %} 
+                    <img src="{{ object.imagen2.url }}" id="preview2img" class="object-cover w-full h-full">
+                {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h2l3 9h8l3-9h2"/></svg>
+                {% endif %}
+                </div>
+
+                {{ form.imagen2|add_class:"hidden" }}
+
+                <div class="flex flex-col">
+                <label for="id_imagen2" class="inline-flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white cursor-pointer hover:shadow-sm text-xs">
+                    <!-- icon upload -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v8M8 8l4-4 4 4"/></svg>
+                    Subir
+                </label>
+
+                <div class="mt-1 flex gap-2">
+                    <button type="button" id="removeImagen2Btn" class="inline-flex items-center gap-2 px-2 py-1 rounded-md border border-red-200 text-red-600 bg-white hover:bg-red-50 text-xs">
+                    <!-- icon delete -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1l1 10a2 2 0 002 2h6a2 2 0 002-2l1-10h1a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zm3 5a1 1 0 012 0v6a1 1 0 11-2 0V7z" clip-rule="evenodd"/></svg>
+                    Eliminar
+                    </button>
+                    <input type="hidden" name="imagen2-clear" id="id_imagen2_clear" value="">
+                </div>
+                </div>
+            </div>
+            {% if form.imagen2.errors %}<p class="text-xs text-red-600">{% for e in form.imagen2.errors %}{{ e }}{% endfor %}</p>{% endif %}
+            </div>
+
+            <!-- imagen 3 -->
+            <div class="flex flex-col items-start gap-2">
+            <div class="w-full bg-gray-50 rounded border p-2 flex items-center gap-2">
+                <div id="preview3" class="w-20 h-20 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                {% if object and object.imagen3 %}
+                    <img src="{{ object.imagen3.url }}" id="preview3img" class="object-cover w-full h-full">
+                {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h2l3 9h8l3-9h2"/></svg>
+                {% endif %}
+                </div>
+
+                {{ form.imagen3|add_class:"hidden" }}
+
+                <div class="flex flex-col">
+                <label for="id_imagen3" class="inline-flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white cursor-pointer hover:shadow-sm text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v8M8 8l4-4 4 4"/></svg>
+                    Subir
+                </label>
+
+                <div class="mt-1 flex gap-2">
+                    <button type="button" id="removeImagen3Btn" class="inline-flex items-center gap-2 px-2 py-1 rounded-md border border-red-200 text-red-600 bg-white hover:bg-red-50 text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1l1 10a2 2 0 002 2h6a2 2 0 002-2l1-10h1a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zm3 5a1 1 0 012 0v6a1 1 0 11-2 0V7z" clip-rule="evenodd"/></svg>
+                    Eliminar
+                    </button>
+                    <input type="hidden" name="imagen3-clear" id="id_imagen3_clear" value="">
+                </div>
+                </div>
+            </div>
+            {% if form.imagen3.errors %}<p class="text-xs text-red-600">{% for e in form.imagen3.errors %}{{ e }}{% endfor %}</p>{% endif %}
+            </div>
+
+            <!-- imagen 4 -->
+            <div class="flex flex-col items-start gap-2">
+            <div class="w-full bg-gray-50 rounded border p-2 flex items-center gap-2">
+                <div id="preview4" class="w-20 h-20 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                {% if object and object.imagen4 %}
+                    <img src="{{ object.imagen4.url }}" id="preview4img" class="object-cover w-full h-full">
+                {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h2l3 9h8l3-9h2"/></svg>
+                {% endif %}
+                </div>
+
+                {{ form.imagen4|add_class:"hidden" }}
+
+                <div class="flex flex-col">
+                <label for="id_imagen4" class="inline-flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white cursor-pointer hover:shadow-sm text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v8M8 8l4-4 4 4"/></svg>
+                    Subir
+                </label>
+
+                <div class="mt-1 flex gap-2">
+                    <button type="button" id="removeImagen4Btn" class="inline-flex items-center gap-2 px-2 py-1 rounded-md border border-red-200 text-red-600 bg-white hover:bg-red-50 text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1l1 10a2 2 0 002 2h6a2 2 0 002-2l1-10h1a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zm3 5a1 1 0 012 0v6a1 1 0 11-2 0V7z" clip-rule="evenodd"/></svg>
+                    Eliminar
+                    </button>
+                    <input type="hidden" name="imagen4-clear" id="id_imagen4_clear" value="">
+                </div>
+                </div>
+            </div>
+            {% if form.imagen4.errors %}<p class="text-xs text-red-600">{% for e in form.imagen4.errors %}{{ e }}{% endfor %}</p>{% endif %}
+            </div>
+
+            <!-- imagen 5 -->
+            <div class="flex flex-col items-start gap-2">
+            <div class="w-full bg-gray-50 rounded border p-2 flex items-center gap-2">
+                <div id="preview5" class="w-20 h-20 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                {% if object and object.imagen5 %}
+                    <img src="{{ object.imagen5.url }}" id="preview5img" class="object-cover w-full h-full">
+                {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h2l3 9h8l3-9h2"/></svg>
+                {% endif %}
+                </div>
+
+                {{ form.imagen5|add_class:"hidden" }}
+
+                <div class="flex flex-col">
+                <label for="id_imagen5" class="inline-flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white cursor-pointer hover:shadow-sm text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12v8M8 8l4-4 4 4"/></svg>
+                    Subir
+                </label>
+
+                <div class="mt-1 flex gap-2">
+                    <button type="button" id="removeImagen5Btn" class="inline-flex items-center gap-2 px-2 py-1 rounded-md border border-red-200 text-red-600 bg-white hover:bg-red-50 text-xs">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-.894.553L4 4H2a1 1 0 100 2h1l1 10a2 2 0 002 2h6a2 2 0 002-2l1-10h1a1 1 0 100-2h-2l-1.106-1.447A1 1 0 0014 2H6zm3 5a1 1 0 012 0v6a1 1 0 11-2 0V7z" clip-rule="evenodd"/></svg>
+                    Eliminar
+                    </button>
+                    <input type="hidden" name="imagen5-clear" id="id_imagen5_clear" value="">
+                </div>
+                </div>
+            </div>
+            {% if form.imagen5.errors %}<p class="text-xs text-red-600">{% for e in form.imagen5.errors %}{{ e }}{% endfor %}</p>{% endif %}
+            </div>
+
+        </div>
+        </div>
+
+        <div class="bg-white border rounded-lg p-4 text-xs text-gray-600">
+          <strong class="text-sm text-gray-800">Consejos</strong>
+          <ul class="mt-2 space-y-1">
+            <li>- Usa imágenes cuadradas para mejor resultado.</li>
+            <li>- Los precios pueden contener comas o puntos (se normalizan).</li>
+            <li>- Añade variantes para tallas y colores.</li>
+          </ul>
+        </div>
+      </aside>
     </div>
-</div>
 
-<!-- Modal de error -->
-<div class="modal fade" id="modalError" tabindex="-1" aria-labelledby="modalErrorLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 310px;">
-        <div class="modal-content">
-            <!-- Cabecera con diseño corregido -->
-            <div class="modal-header border-0 d-flex flex-column align-items-center" style="
-                background-color: #f8d7da;
-                border-bottom-left-radius: 150px;
-                border-bottom-right-radius: 150px;
-            ">
-                <!-- Botón de cerrar -->
-                <div class="w-100 d-flex justify-content-end">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="closeErrorModal"></button>
-                </div>
-                <!-- Ícono de error -->
-                <div class="d-flex justify-content-center align-items-center rounded-circle mx-auto mb-3" style="
-                    width: 80px; 
-                    height: 80px; 
-                    background-color: #f44336; 
-                    box-shadow: 0 0 0 10px #e57373, 0 0 0 20px #ef9a9a;
-                ">
-                    <i class="fa-solid fa-times text-light fs-3"></i>
-                </div>
-            </div>
-            <!-- Cuerpo del modal -->
-            <div class="modal-body text-center">
-                <!-- Mensaje de error -->
-                <h1 class="fw-bold text-danger" id="modalErrorLabel">¡Error!</h1>
-                <p class="fs-5 text-muted mt-3" id="errorMessage">Ha ocurrido un error inesperado. Vuelve a intentarlo.</p>
-            </div>
-            <!-- Footer -->
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-outline-danger px-4" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
+    <!-- Botón fijo para móviles -->
+    <div class="fixed bottom-4 right-4 sm:hidden z-40">
+      <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-lg">Guardar</button>
     </div>
+
+  </form>
 </div>
 
-<!-- Script formset -->
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const tbody = document.getElementById("formset-body");
-        const addBtn = document.getElementById("add-formset");
-        const totalForms = document.getElementById("id_producto_tallas-TOTAL_FORMS");
-    
-        let formIdx = parseInt(totalForms.value);
-    
-        // Guarda una plantilla clonada del primer form
-        const templateRow = tbody.querySelector(".formset-form");
-        const emptyRowHTML = templateRow ? templateRow.outerHTML : '';
-    
-        function reindexForms() {
-            const forms = tbody.querySelectorAll(".formset-form");
-            forms.forEach((form, index) => {
-                form.querySelectorAll("input, select, label").forEach(el => {
-                    if (el.name) {
-                        el.name = el.name.replace(/producto_tallas-\d+-/, `producto_tallas-${index}-`);
-                    }
-                    if (el.id) {
-                        el.id = el.id.replace(/producto_tallas-\d+-/, `producto_tallas-${index}-`);
-                    }
-                });
-            });
-            totalForms.value = forms.length;
-        }
-    
-        addBtn.addEventListener("click", () => {
-            if (!emptyRowHTML) return;
-    
-            const newRowHTML = emptyRowHTML.replace(/producto_tallas-\d+-/g, `producto_tallas-${formIdx}-`);
-            const temp = document.createElement("tbody");
-            temp.innerHTML = newRowHTML;
-    
-            const newRow = temp.querySelector("tr");
-            // Limpia los campos
-            newRow.querySelectorAll("input, select").forEach(input => {
-                if (input.type !== 'hidden') input.value = "";
-            });
-    
-            tbody.appendChild(newRow);
-            formIdx++;
-            reindexForms();
-        });
-    
-        tbody.addEventListener("click", (e) => {
-            if (e.target.closest(".remove-form")) {
-                const row = e.target.closest("tr");
-                row.remove();
-                reindexForms();
-            }
-        });
-    
-        reindexForms(); // Por si hay datos iniciales
-    });
-</script>
+{# Snackbar styles (Deshacer) #}
+<style>
+/* snackbar/deshacer */
+#image-snackbar {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 60;
+  display: none;
+  min-width: 220px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.08);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+#image-snackbar .text { color: #374151; margin-right: .5rem; }
+#image-snackbar .action { color: #059669; cursor: pointer; font-weight: 600; }
+</style>
 
+<!-- snackbar -->
+<div id="image-snackbar" role="status" aria-live="polite"><span class="text">Imagen eliminada</span><span class="action" id="snackbar-undo">Deshacer</span></div>
+
+{# Scripts: Formset, prev image, eliminar imagen y toggle precio oferta #}
 <script src="{% static 'js/formato.js' %}"></script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-    const enOfertaInput = document.getElementById("id_en_oferta");
-    const collapsePrecio = new bootstrap.Collapse(document.getElementById("collapsePrecioOferta"), {
-        toggle: false
-    });
-    
-    // Función para actualizar el collapse según el estado del switch
-    function togglePrecioOferta() {
-        if(enOfertaInput.checked) {
-        collapsePrecio.show();
+document.addEventListener("DOMContentLoaded", function () {
+  // Toggle precio oferta (mostrar/ocultar o desactivar visualmente)
+  const enOferta = document.getElementById('id_en_oferta');
+  const precioOfertaWrap = document.getElementById('precioOfertaWrap');
+  function toggleOferta() {
+    if (!enOferta || !precioOfertaWrap) return;
+    if (enOferta.checked) precioOfertaWrap.classList.remove('opacity-50','pointer-events-none');
+    else precioOfertaWrap.classList.add('opacity-50','pointer-events-none');
+  }
+  if (enOferta) {
+    toggleOferta();
+    enOferta.addEventListener('change', toggleOferta);
+  }
+
+  // SNACKBAR para deshacer eliminación
+  const snackbar = document.getElementById('image-snackbar');
+  const snackbarUndo = document.getElementById('snackbar-undo');
+  let snackbarTimer = null;
+  let lastAction = null; // {n, prevSrc, hadServerImage, hiddenClear}
+
+  function showSnackbar(msg, actionLabel = 'Deshacer') {
+    if (!snackbar) return;
+    snackbar.querySelector('.text').textContent = msg;
+    snackbar.style.display = 'flex';
+    snackbarTimer && clearTimeout(snackbarTimer);
+    snackbarTimer = setTimeout(() => { snackbar.style.display = 'none'; lastAction = null; }, 6000);
+  }
+  if (snackbarUndo) {
+    snackbarUndo.addEventListener('click', function(){
+      if (!lastAction) return;
+      // restaurar preview y limpiar marca 'on'
+      const {n, prevSrc, hiddenClear} = lastAction;
+      const preview = document.getElementById('preview' + n);
+      const input = document.getElementById('id_imagen' + n);
+      if (preview) {
+        preview.innerHTML = '';
+        if (prevSrc) {
+          const img = document.createElement('img');
+          img.classList.add('object-cover','w-full','h-full');
+          img.src = prevSrc;
+          preview.appendChild(img);
         } else {
-        collapsePrecio.hide();
+          // placeholder
+          preview.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h2l3 9h8l3-9h2"/></svg>';
         }
-    }
-    
-    // Inicializar el estado
-    togglePrecioOferta();
-    
-    // Escuchamos cambios en el switch "En Oferta"
-    enOfertaInput.addEventListener("change", togglePrecioOferta);
+      }
+      if (hiddenClear) hiddenClear.value = '';
+      // cannot restore actual file input content for security; leave empty
+      if (input) try { } catch(e){}
+      snackbar.style.display = 'none';
+      clearTimeout(snackbarTimer);
+      snackbarTimer = null;
+      lastAction = null;
     });
+  }
+
+  // función genérica para controlar imágenes
+  function setupImageControls(n) {
+    const input = document.getElementById('id_imagen' + n);
+    const preview = document.getElementById('preview' + n);
+    const removeBtn = document.getElementById('removeImagen' + n + 'Btn');
+    const hiddenClear = document.getElementById('id_imagen' + n + '_clear');
+
+    // detecta si hay imagen en servidor leyendo si preview contiene <img> con src distinto del placeholder
+    function previewHasImage() {
+      if (!preview) return false;
+      const img = preview.querySelector('img');
+      return !!(img && img.src && !img.src.endsWith('/undefined') && img.src.trim() !== '');
+    }
+
+    // placeholder
+    function setPlaceholder() {
+      if (!preview) return;
+      preview.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h2l3 9h8l3-9h2"/></svg>';
+    }
+
+    // habilitar/inhabilitar botón eliminar según estado
+    function refreshRemoveButton() {
+      if (!removeBtn) return;
+      const hasFile = input && input.files && input.files.length > 0;
+      const hasServerImage = previewHasImage();
+      if (hasFile || hasServerImage) {
+        removeBtn.disabled = false;
+        removeBtn.classList.remove('opacity-50','pointer-events-none');
+      } else {
+        removeBtn.disabled = true;
+        removeBtn.classList.add('opacity-50','pointer-events-none');
+      }
+    }
+
+    // cuando se selecciona archivo: mostrar preview y limpiar marca clear
+    if (input) {
+      input.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) {
+          refreshRemoveButton();
+          return;
+        }
+        const img = document.createElement('img');
+        img.classList.add('object-cover','w-full','h-full');
+        const reader = new FileReader();
+        reader.onload = function(ev){
+          img.src = ev.target.result;
+          if (preview) { preview.innerHTML = ''; preview.appendChild(img); }
+          if (hiddenClear) hiddenClear.value = '';
+          refreshRemoveButton();
+        }
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // eliminar: confirm + marcar hidden + limpiar input + placeholder + snackbar con deshacer
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function () {
+        // si está deshabilitado, no hacer nada
+        if (removeBtn.disabled) return;
+
+        // confirmación simple
+        const ok = confirm('¿Eliminar esta imagen? Esta acción marcará la imagen para eliminación al guardar.');
+        if (!ok) return;
+
+        // guardar estado previo para poder deshacer
+        const prevImgEl = preview ? preview.querySelector('img') : null;
+        const prevSrc = prevImgEl ? prevImgEl.src : null;
+
+        // marcar hidden para que Django elimine la imagen al guardar
+        if (hiddenClear) hiddenClear.value = 'on';
+        // limpiar input file (no podemos restaurar el fichero por seguridad)
+        if (input) try { input.value = ''; } catch(e){}
+        // placeholder en preview
+        setPlaceholder();
+        refreshRemoveButton();
+
+        // preparar acción de deshacer
+        lastAction = { n: n, prevSrc: prevSrc, hiddenClear: hiddenClear };
+        showSnackbar('Imagen eliminada', 'Deshacer');
+      });
+    }
+
+    // inicial: actualizar estado del botón
+    refreshRemoveButton();
+  }
+
+  // inicializa para 1..5
+  ['1','2','3','4','5'].forEach(setupImageControls);
+
+  // FORMSET: clonamos template con __prefix__ y luego reindexamos
+  const addBtn = document.getElementById('add-formset');
+  const grid = document.getElementById('variants-grid');
+  const emptyTemplate = document.getElementById('empty-form-template');
+  const totalFormsInput = document.querySelector("[id$='-TOTAL_FORMS']");
+  let formIdx = totalFormsInput ? parseInt(totalFormsInput.value) : 0;
+
+  function reindex() {
+    const cards = document.querySelectorAll('.formset-form');
+    cards.forEach((card, idx) => {
+      card.querySelectorAll('input, select, textarea, label').forEach(el=>{
+        if (el.name) el.name = el.name.replace(/__prefix__|-\d+-/, `-${idx}-`);
+        if (el.id) el.id = el.id.replace(/__prefix__|-\d+-/, `-${idx}-`);
+        if (el.getAttribute('for')) el.setAttribute('for', el.getAttribute('for').replace(/__prefix__|-\d+-/, `-${idx}-`));
+      });
+    });
+    if (totalFormsInput) totalFormsInput.value = document.querySelectorAll('.formset-form').length;
+  }
+
+  if (addBtn && emptyTemplate) {
+    addBtn.addEventListener('click', function(){
+      const cloneHtml = emptyTemplate.innerHTML.replace(/__prefix__/g, formIdx).replace(/__num__/g, formIdx+1);
+      const tmp = document.createElement('div');
+      tmp.innerHTML = cloneHtml;
+      const newCard = tmp.firstElementChild;
+      // limpiar valores inputs del nuevo form
+      newCard.querySelectorAll('input, select, textarea').forEach(i=>{
+        if(i.type === 'checkbox' || i.type === 'radio') i.checked = false;
+        else if(i.type !== 'hidden') i.value = '';
+      });
+      grid.appendChild(newCard);
+      formIdx++;
+      reindex();
+    });
+  }
+
+  // eliminar variante (delegación)
+  document.addEventListener('click', function(e){
+    if (e.target.closest('.remove-form')) {
+      const card = e.target.closest('.formset-form');
+      if (card) { card.remove(); reindex(); }
+    }
+  });
+
+  // inicializa indices (por si hay filas ya)
+  reindex();
+});
 </script>
 
 {% endblock %}
+{% endwith %}

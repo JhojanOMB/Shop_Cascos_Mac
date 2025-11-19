@@ -18,6 +18,7 @@ def menu_items(request):
             ('perfil',       'mi_perfil'),
             ('facturacion',  'facturacion:configurar_facturacion'),
             ('configuracion', 'configuracion:ui_settings'),
+            ('ayuda',     'ayuda'),
         ]
         for key, url_name in all_items:
             if key in settings.UI_PERMISSIONS.get(request.user.rol, []):

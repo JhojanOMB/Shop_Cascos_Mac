@@ -14,6 +14,8 @@ from django.db.models import Sum, F
 from django.utils import timezone
 from datetime import timedelta
 
+
+
 @login_required
 def dashboard_gerente(request):
     # — Fecha local en Bogotá —
@@ -213,3 +215,9 @@ def dashboard_vendedor(request):
     }
 
     return render(request, 'dashboard_vendedor.html', context)
+
+@login_required
+def ayuda(request):
+    return render(request, 'dashboard/ayuda/ayuda.html', {
+        'show_sidebar': True,
+    })

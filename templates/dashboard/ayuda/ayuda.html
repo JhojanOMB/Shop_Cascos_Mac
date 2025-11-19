@@ -1,0 +1,194 @@
+{% extends "base_dashboard.html" %}
+{% load static %}
+{% block title %}Ayuda / Manual{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold">Centro de Ayuda</h1>
+      <p class="text-gray-600 mt-1">Aquí encontrarás guías rápidas, preguntas frecuentes y recursos para usar el sistema.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Descargar manual (coloca static/docs/manual.pdf si quieres que funcione) -->
+      <a href="{% static 'docs/manual.pdf' %}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700">
+        <i class="fa fa-file-pdf"></i>
+        Descargar manual (PDF)
+      </a>
+    </div>
+  </div>
+
+  <!-- Buscador rápido -->
+  <div class="mb-6">
+    <input id="help-search" type="search" placeholder="Buscar en la ayuda (ej: ventas, facturación, productos...)"
+           class="w-full p-3 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Índice -->
+    <aside class="lg:col-span-1">
+      <nav class="sticky top-28 space-y-2">
+        <h3 class="text-sm font-semibold mb-2">Índice</h3>
+        <ul class="text-sm space-y-1">
+          <li><a href="#inicio-rapido" class="block px-2 py-1 rounded hover:bg-gray-100">Inicio rápido</a></li>
+          <li><a href="#productos" class="block px-2 py-1 rounded hover:bg-gray-100">Productos</a></li>
+          <li><a href="#variantes-y-stock" class="block px-2 py-1 rounded hover:bg-gray-100">Variantes y stock</a></li>
+          <li><a href="#ventas" class="block px-2 py-1 rounded hover:bg-gray-100">Ventas y caja</a></li>
+          <li><a href="#facturacion" class="block px-2 py-1 rounded hover:bg-gray-100">Facturación</a></li>
+          <li><a href="#faq" class="block px-2 py-1 rounded hover:bg-gray-100">Preguntas frecuentes</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Contenido -->
+    <div class="lg:col-span-3 space-y-6">
+
+      <!-- Inicio rápido -->
+      <section id="inicio-rapido" class="bg-white border rounded p-4 shadow-sm">
+        <h2 class="text-lg font-semibold mb-2">Inicio rápido</h2>
+        <p class="text-sm text-gray-600 mb-3">En 3 pasos pones en marcha el sistema:</p>
+        <ol class="list-decimal list-inside space-y-2 text-sm">
+          <li>Crear categorías y tallas desde <strong>Productos → Categorías / Tallas</strong>.</li>
+          <li>Agregar producto con imágenes y variantes (talla/color/género) y su stock por variante.</li>
+          <li>Registrar ventas desde <strong>Ventas</strong> — el total se calcula automáticamente y puedes buscar productos por código de barras.</li>
+        </ol>
+      </section>
+
+      <!-- Productos -->
+      <section id="productos" class="bg-white border rounded p-4 shadow-sm">
+        <h2 class="text-lg font-semibold mb-2">Productos</h2>
+        <p class="text-sm text-gray-600">Cómo crear / editar productos:</p>
+
+        <div class="mt-3 space-y-3">
+          <div>
+            <h3 class="font-medium">Formulario de producto</h3>
+            <p class="text-sm text-gray-600">Rellena nombre, referencia, precios, proveedor y marca. Usa el selector de categoría para organizar.</p>
+          </div>
+
+          <div>
+            <h3 class="font-medium">Imágenes</h3>
+            <p class="text-sm text-gray-600">Puedes subir hasta 5 imágenes. Si el nombre del archivo es largo, se mostrará truncado; pasa el cursor para ver completo. Para eliminar una imagen en edición, pulsa <em>Eliminar</em> y guarda.</p>
+          </div>
+
+          <div>
+            <h3 class="font-medium">Catálogo</h3>
+            <p class="text-sm text-gray-600">Marca si el producto pertenece al catálogo o no. Esto afecta presentación en tienda pública.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Variantes y stock -->
+      <section id="variantes-y-stock" class="bg-white border rounded p-4 shadow-sm">
+        <h2 class="text-lg font-semibold mb-2">Variantes (talla, color, género) y stock</h2>
+        <p class="text-sm text-gray-600">Cada combinación (producto + talla + color + género) se gestiona como una fila de `ProductoTalla` con su cantidad y visibilidad (`activa`).</p>
+
+        <div class="mt-3">
+          <p class="text-sm"><strong>Al editar variantes:</strong> el sistema evita duplicados: si creas una variante que ya existe, se actualizará la existente en vez de crear duplicado.</p>
+          <pre class="mt-2 p-2 bg-gray-50 text-xs rounded overflow-auto">Ej: Producto A - Talla M - Color Azul - Caballero → cantidad</pre>
+        </div>
+      </section>
+
+      <!-- Ventas -->
+      <section id="ventas" class="bg-white border rounded p-4 shadow-sm">
+        <h2 class="text-lg font-semibold mb-2">Ventas y caja</h2>
+        <p class="text-sm text-gray-600">La vista de ventas permite agregar múltiples detalles (formset). El total de la venta se calcula sumando los totales de los detalles. Además:</p>
+
+        <ul class="list-disc list-inside text-sm mt-2">
+          <li>Soporte para agregar productos por código de barras.</li>
+          <li>Al guardar una venta, el stock del producto se descuenta automáticamente (si está configurado).</li>
+          <li>Hay un módulo de <strong>CajaDiaria</strong> para controlar apertura, gastos y neto del día.</li>
+        </ul>
+      </section>
+
+      <!-- Facturación -->
+      <section id="facturacion" class="bg-white border rounded p-4 shadow-sm">
+        <h2 class="text-lg font-semibold mb-2">Facturación (DIAN / electrónica)</h2>
+        <p class="text-sm text-gray-600">Si tienes integrada la facturación electrónica (DIAN), revisa la sección de configuración y pruebas. Las facturas se pueden generar en PDF y contienen QR y datos fiscales.</p>
+      </section>
+
+      <!-- FAQs (mejoradas) -->
+      <section id="faq" class="bg-white border rounded p-4 shadow-sm">
+        <h2 class="text-lg font-semibold mb-3">Preguntas frecuentes</h2>
+
+        <div class="space-y-3">
+
+          <!-- FAQ 1 -->
+          <details class="group p-4 border rounded">
+            <summary class="cursor-pointer font-medium flex items-center justify-between">
+              <span>¿Por qué no veo la imagen cuando estoy editando un producto?</span>
+              <i class="fa fa-chevron-down text-gray-500 group-open:rotate-180 transition duration-200"></i>
+            </summary>
+
+            <div class="mt-3 text-gray-600 leading-relaxed">
+              Generalmente pasa por una de estas razones:
+              <ul class="mt-2 list-disc list-inside space-y-1">
+                <li>El producto aún no tiene una imagen guardada.</li>
+                <li>La imagen fue eliminada o movida del servidor.</li>
+                <li>El servidor está configurado para no servir archivos media (común en producción sin configurar Nginx/serving).</li>
+                <li>El nombre del archivo contiene caracteres raros que impiden la carga correcta.</li>
+              </ul>
+              <p class="mt-2 text-sm">Prueba subiendo la imagen otra vez y guarda. Si persiste, revisa las rutas de MEDIA_URL / MEDIA_ROOT o los permisos del archivo.</p>
+            </div>
+          </details>
+
+          <!-- FAQ 2 -->
+          <details class="group p-4 border rounded">
+            <summary class="cursor-pointer font-medium flex items-center justify-between">
+              <span>¿Cómo evito que se creen variantes duplicadas?</span>
+              <i class="fa fa-chevron-down text-gray-500 group-open:rotate-180 transition duration-200"></i>
+            </summary>
+
+            <div class="mt-3 text-gray-600 leading-relaxed">
+              El sistema incluye una comprobación automática: si intentas crear una variante con la misma combinación
+              <strong>talla + color + género</strong>, se actualizará la variante existente en lugar de crear otra.
+              <p class="mt-2 text-sm">Asegúrate de guardar los cambios desde el formulario principal para que la lógica se aplique correctamente.</p>
+            </div>
+          </details>
+
+          <!-- FAQ 3 -->
+          <details class="group p-4 border rounded">
+            <summary class="cursor-pointer font-medium flex items-center justify-between">
+              <span>¿Puedo cambiarle el nombre al archivo de una imagen y que se guarde así en el servidor?</span>
+              <i class="fa fa-chevron-down text-gray-500 group-open:rotate-180 transition duration-200"></i>
+            </summary>
+
+            <div class="mt-3 text-gray-600 leading-relaxed">
+              Sí, es posible. Requiere un pequeño ajuste en el guardado del archivo para:
+              <ul class="mt-2 list-disc list-inside text-sm space-y-1">
+                <li>renombrar el archivo según lo que escribas,</li>
+                <li>reemplazar el archivo antiguo en el disco,</li>
+                <li>y mantener la estructura de carpetas ordenada.</li>
+              </ul>
+              <p class="mt-2 text-sm text-gray-500">Si quieres que lo implemente, dime y te entrego el código listo (modelo/form y view) para que el nombre editado reemplace el archivo real en el servidor.</p>
+            </div>
+          </details>
+
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Pequeño script para búsqueda local (filtra títulos y detalles) -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const search = document.getElementById('help-search');
+  if(!search) return;
+  const sections = Array.from(document.querySelectorAll('section'));
+  search.addEventListener('input', function(){
+    const q = this.value.trim().toLowerCase();
+    if(!q){
+      sections.forEach(s => s.style.display = '');
+      return;
+    }
+    sections.forEach(s => {
+      const text = (s.innerText || s.textContent).toLowerCase();
+      s.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}

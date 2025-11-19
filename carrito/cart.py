@@ -13,19 +13,25 @@ class Cart:
         self.cart = cart
 
     def add(self, talla_id, cantidad=1, override=False):
-        """
-        Añade o actualiza la cantidad de un ítem en el carrito.
-        Si override=True reemplaza la cantidad, sino suma.
-        """
         key = str(talla_id)
+        producto_talla = ProductoTalla.objects.select_related('producto').get(id=talla_id)
+        precio = producto_talla.producto.precio_venta  # toma precio actual
         if key in self.cart:
             if override:
                 self.cart[key]['cantidad'] = cantidad
             else:
                 self.cart[key]['cantidad'] += cantidad
         else:
-            self.cart[key] = {'cantidad': cantidad}
+            self.cart[key] = {
+                'cantidad': cantidad,
+                'precio': str(precio),  # guarda como string para JSON
+                'producto_nombre': producto_talla.producto.nombre,
+                'imagen_url': producto_talla.producto.imagen1.url if producto_talla.producto.imagen1 else '',
+                'talla': producto_talla.talla.nombre if producto_talla.talla else '',
+                'color': producto_talla.color.nombre if producto_talla.color else '',
+            }
         self.session.modified = True
+
 
     def remove(self, talla_id):
         """Elimina un ítem del carrito."""

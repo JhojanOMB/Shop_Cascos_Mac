@@ -1,60 +1,106 @@
 {% extends "base_dashboard.html" %}
-{% block content %}
-<div class="container py-4">
-  <h3>Imprimir Códigos de Barra</h3>
+{% load static %}
+{% load humanize %}
 
-  <!-- Buscador + filtros -->
-  <form method="get" class="row g-2 mb-3">
-    <div class="col-md-4">
-      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por nombre o referencia…">
-    </div>
-    <div class="col-md-3">
-      <select name="categoria" class="form-select">
-        <option value="">— Todas las categorías —</option>
-        {% for cat in categories %}
-          <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == selected_cat %}selected{% endif %}>
-            {{ cat.nombre }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <input type="text" name="barcode" value="{{ barcode_q }}" class="form-control" placeholder="Buscar por código de barras…">
-    </div>
-    <div class="col-md-2">
-      <button class="btn btn-primary w-100">Filtrar</button>
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+  <h3 class="text-2xl font-semibold mb-4">Imprimir Códigos de Barra</h3>
+
+  <!-- Buscador + filtros (Tailwind) -->
+  <form method="get" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <!-- Left: inputs -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+        <div class="relative w-full sm:w-80">
+          <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
+            <i class="fa-solid fa-magnifying-glass text-sm"></i>
+          </span>
+          <input
+            type="text"
+            name="q"
+            value="{{ q }}"
+            placeholder="Buscar por nombre o referencia…"
+            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-300 focus:outline-none text-sm"
+          />
+        </div>
+
+        <div class="w-full sm:w-56">
+          <select name="categoria" class="block w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-300 text-sm">
+            <option value="">— Todas las categorías —</option>
+            {% for cat in categories %}
+              <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == selected_cat %}selected{% endif %}>
+                {{ cat.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="w-full sm:w-64">
+          <input
+            type="text"
+            name="barcode"
+            value="{{ barcode_q }}"
+            placeholder="Buscar por código de barras…"
+            class="block w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-300 text-sm"
+          />
+        </div>
+      </div>
+
+      <!-- Right: botones -->
+      <div class="flex items-center gap-2">
+        <button type="submit" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm shadow-sm transition">
+          <i class="fa-solid fa-filter"></i> Filtrar
+        </button>
+        <a href="{% url 'contenido_productos' %}" class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm shadow-sm transition">
+          <i class="fa-solid fa-rotate-right"></i> Limpiar
+        </a>
+      </div>
     </div>
   </form>
 
-  <!-- Botón Generar Impresion -->
-  <div class="text-end mt-3">
-    <button id="btn-generar" class="btn btn-success" disabled>
+  <!-- Botón Generar Impresión -->
+  <div class="text-right mb-4">
+    <button id="btn-generar" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg shadow-sm disabled:opacity-50" disabled>
       <i class="fa-solid fa-print"></i> Generar Tickets
     </button>
   </div>
 
   <!-- Tabla de productos -->
-  <div class="table-responsive">
-    <table class="table table-bordered table-hover">
-      <thead class="table-secondary text-center">
-        <tr>
-          <th>Producto</th>
-          <th>Referencia</th>
-          <th>Stock</th>
-          <th>Variantes</th>
+<div class="bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full border-separate border-spacing-0">
+      <thead>
+        <tr class="bg-gray-100 text-gray-700 text-sm">
+          <th class="py-3 px-4 font-medium text-left border-b border-gray-200">Producto</th>
+          <th class="py-3 px-4 font-medium text-left border-b border-gray-200">Referencia</th>
+          <th class="py-3 px-4 font-medium text-center border-b border-gray-200">Stock</th>
+          <th class="py-3 px-4 font-medium text-center border-b border-gray-200">Variantes</th>
         </tr>
       </thead>
-      <tbody>
+
+      <tbody class="text-sm">
         {% for producto in productos %}
-        <tr class="align-middle">
-          <td>{{ producto.nombre }}</td>
-          <td>{{ producto.referencia }}</td>
-          <td class="text-center">{{ producto.total_cantidad }}</td>
-          <td class="text-center">
-            <button class="btn btn-sm btn-outline-dark"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalVar-{{ producto.id }}">
-              <i class="fa-solid fa-list"></i> Variantes
+        <tr class="hover:bg-indigo-50 transition-colors border-b border-gray-100">
+          <td class="py-3 px-4">
+            <div class="font-semibold text-gray-800">{{ producto.nombre }}</div>
+            <div class="text-xs text-gray-500">ID: {{ producto.id }}</div>
+          </td>
+
+          <td class="py-3 px-4 text-gray-700">
+            {{ producto.referencia }}
+          </td>
+
+          <td class="py-3 px-4 text-center font-semibold text-indigo-600">
+            {{ producto.total_cantidad }}
+          </td>
+
+          <td class="py-3 px-4 text-center">
+            <button
+              data-open-modal="modalVar-{{ producto.id }}"
+              class="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 hover:border-indigo-400 hover:text-indigo-600 rounded-lg shadow-sm hover:shadow transition text-sm"
+              type="button">
+              <i class="fa-solid fa-list text-sm"></i> Ver Variantes
             </button>
           </td>
         </tr>
@@ -62,117 +108,69 @@
       </tbody>
     </table>
   </div>
+</div>
 
-<!-- Paginación inferior -->
-<div class="align-items-center mt-2">
-  <div class="pagination">
-    <ul class="pagination pagination-sm">
+
+  <!-- Paginación -->
+  <div class="mt-4 flex items-center justify-center">
+    <nav class="inline-flex -space-x-px" aria-label="Pagination">
       {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link"
-             href="?{% if query_params %}{{ query_params }}&{% endif %}page=1"
-             aria-label="First">
-            &laquo; Primero
-          </a>
-        </li>
-        <li class="page-item">
-          <a class="page-link"
-             href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.previous_page_number }}"
-             aria-label="Previous">
-            Anterior
-          </a>
-        </li>
+        <a href="?{% if query_params %}{{ query_params }}&{% endif %}page=1" class="px-3 py-1 border bg-white rounded-l text-sm">&laquo; Primero</a>
+        <a href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.previous_page_number }}" class="px-3 py-1 border bg-white text-sm">Anterior</a>
       {% endif %}
-
-      <li class="page-item disabled">
-        <span class="page-link">
-          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-        </span>
-      </li>
-
+      <span class="px-3 py-1 border bg-gray-100 text-sm">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
       {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link"
-             href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.next_page_number }}"
-             aria-label="Next">
-            Siguiente
-          </a>
-        </li>
-        <li class="page-item">
-          <a class="page-link"
-             href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
-             aria-label="Last">
-            Último &raquo;
-          </a>
-        </li>
+        <a href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.next_page_number }}" class="px-3 py-1 border bg-white text-sm">Siguiente</a>
+        <a href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 border bg-white rounded-r text-sm">Último &raquo;</a>
       {% endif %}
-    </ul>
+    </nav>
   </div>
 </div>
 
-
-</div>
-
-<!-- Panel flotante de resumen -->
-<div id="resumen-flotante" class="card border-info shadow-sm">
-  <div class="card-header bg-info text-white py-2">
-    <strong>Seleccionados</strong>
-  </div>
-  <div class="card-body py-2">
-    <ul class="list-unstyled mb-0"></ul>
-  </div>
-</div>
-
-<!-- Modales de variantes -->
+{# Modales de variantes (uno por producto) #}
 {% for producto in productos %}
-<div class="modal fade" id="modalVar-{{ producto.id }}" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title">{{ producto.nombre }}</h5>
-        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-sm">
-          <thead class="table-light">
+<div id="modalVar-{{ producto.id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+  <div class="bg-white w-full max-w-4xl rounded-lg shadow-xl overflow-hidden">
+    <div class="flex items-center justify-between bg-gray-800 text-white p-4">
+      <h5 class="text-lg font-semibold">{{ producto.nombre }}</h5>
+      <button type="button" data-close-modal="modalVar-{{ producto.id }}" class="text-white text-2xl leading-none">&times;</button>
+    </div>
+    <div class="p-4">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-100">
             <tr class="text-center">
-              <th>✔</th>
-              <th>Talla</th>
-              <th>Color</th>
-              <th>Código</th>
-              <th>Imagen</th>
-              <th>Cantidad</th>
+              <th class="px-2 py-2 font-medium">✔</th>
+              <th class="px-2 py-2 font-medium">Talla</th>
+              <th class="px-2 py-2 font-medium">Color</th>
+              <th class="px-2 py-2 font-medium">Código</th>
+              <th class="px-2 py-2 font-medium">Imagen</th>
+              <th class="px-2 py-2 font-medium">Cantidad</th>
             </tr>
           </thead>
           <tbody>
             {% for var in producto.producto_tallas.all %}
-            <tr class="align-middle text-center">
-              <td>
+            <tr class="text-center align-middle">
+              <td class="px-2 py-2">
                 <input type="checkbox"
-                       class="var-checkbox form-check-input"
+                       class="var-checkbox h-4 w-4"
                        data-prod-id="{{ producto.id }}"
                        data-prod-nombre="{{ producto.nombre }}"
                        data-var-id="{{ var.id }}"
                        data-varlabel="{{ var.talla.nombre }} / {{ var.color }}"
                        data-img-url="{% url 'barcode_image_talla' var.id %}">
               </td>
-              <td>{{ var.talla.nombre }}</td>
-              <td>{{ var.color }}</td>
-              <td>
-                <input type="text"
-                       class="form-control form-control-sm"
-                       value="{{ var.codigo_barras }}"
-                       readonly>
+              <td class="px-2 py-2">{{ var.talla.nombre }}</td>
+              <td class="px-2 py-2">{{ var.color }}</td>
+              <td class="px-2 py-2">
+                <input type="text" class="border border-gray-300 rounded px-2 py-1 w-full text-center text-xs" value="{{ var.codigo_barras }}" readonly>
               </td>
-              <td>
-                <img src="{% url 'barcode_image_talla' var.id %}"
-                     alt="Código {{ var.codigo_barras }}"
-                     class="img-fluid" style="max-height:50px;">
+              <td class="px-2 py-2">
+                <img src="{% url 'barcode_image_talla' var.id %}" alt="Código {{ var.codigo_barras }}" class="mx-auto" style="max-height:50px;">
               </td>
-              <td>
-                <input type="number"
-                       class="form-control form-control-sm var-cantidad"
-                       min="1" value="1"
+              <td class="px-2 py-2">
+                <input type="number" min="1" value="1"
+                       class="var-cantidad border border-gray-300 rounded px-2 py-1 w-20 text-center"
                        data-prod-id="{{ producto.id }}"
                        data-var-id="{{ var.id }}">
               </td>
@@ -181,66 +179,41 @@
           </tbody>
         </table>
       </div>
+      <div class="mt-4 text-right">
+        <button type="button" data-close-modal="modalVar-{{ producto.id }}" class="inline-flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">Cerrar</button>
+      </div>
     </div>
   </div>
 </div>
 {% endfor %}
 
-<!-- Panel flotante de resumen -->
-<div id="resumen-flotante" class="card border-info shadow-sm">
-  <div class="card-header bg-info text-white py-2">
-    <strong>Seleccionados</strong>
-  </div>
-  <div class="card-body py-2">
-    <ul class="list-unstyled mb-0"></ul>
+<!-- Panel flotante de resumen (tailwind) -->
+<div id="resumen-flotante" class="fixed bottom-6 right-6 w-80 max-h-96 overflow-y-auto z-50 hidden">
+  <div class="bg-white border border-emerald-300 rounded-lg shadow-lg overflow-hidden">
+    <div class="bg-emerald-600 text-white px-4 py-2">
+      <strong>Seleccionados</strong>
+    </div>
+    <div class="p-3">
+      <ul class="space-y-2 list-none mb-0"></ul>
+    </div>
   </div>
 </div>
-
-<style>
-  #resumen-flotante {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 300px;
-    max-height: 350px;
-    overflow-y: auto;
-    z-index: 1055;
-    display: none;
-  }
-  #resumen-flotante ul li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.9rem;
-    margin-bottom: 0.4rem;
-  }
-  #resumen-flotante ul li input {
-    width: 50px;
-    margin: 0 0.5rem;
-  }
-  #resumen-flotante ul li button {
-    border: none;
-    background: transparent;
-    color: #dc3545;
-    font-weight: bold;
-    cursor: pointer;
-  }
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const LS_KEY = 'impr_cod_barras';
-  // Map< key, item >
-  const seleccion = new Map(JSON.parse(localStorage.getItem(LS_KEY) || '[]'));
+  // preservamos estructura: Map serialized as array of [key, item]
+  const stored = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+  const seleccion = new Map(stored);
 
   const panel = document.getElementById('resumen-flotante');
-  const ul    = panel.querySelector('ul');
-  const btn   = document.getElementById('btn-generar');
+  const ul = panel.querySelector('ul');
+  const btn = document.getElementById('btn-generar');
 
   function actualizarUI() {
     ul.innerHTML = '';
     if (seleccion.size === 0) {
-      panel.style.display = 'none';
+      panel.classList.add('hidden');
       btn.disabled = true;
       localStorage.removeItem(LS_KEY);
       return;
@@ -248,32 +221,36 @@ document.addEventListener('DOMContentLoaded', () => {
     seleccion.forEach(item => {
       const li = document.createElement('li');
       li.dataset.key = `${item.prodId}-${item.varId}`;
+      li.className = 'flex items-center justify-between border border-gray-100 p-2 rounded';
       li.innerHTML = `
-        <span title="${item.prodNombre} → ${item.varLabel}">
-          ${item.prodNombre} → ${item.varLabel}
-        </span>
-        <div class="d-flex align-items-center">
-          <input type="number" min="1" value="${item.qty}" 
-                 class="form-control form-control-sm res-qty" />
-          <button type="button" title="Eliminar">&times;</button>
+        <div class="text-xs truncate" title="${item.prodNombre} → ${item.varLabel}">
+          <strong class="block text-sm">${item.prodNombre}</strong>
+          <span class="text-gray-600">${item.varLabel}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="number" min="1" value="${item.qty}" class="res-qty w-16 text-center border border-gray-300 rounded px-2 py-1 text-sm" />
+          <button type="button" title="Eliminar" class="text-red-500 font-bold text-lg">×</button>
         </div>
       `;
       ul.appendChild(li);
     });
-    panel.style.display = 'block';
+    panel.classList.remove('hidden');
     btn.disabled = false;
+    // guardar en localStorage (array entries)
     localStorage.setItem(LS_KEY, JSON.stringify(Array.from(seleccion.entries())));
   }
 
-  // Delegación de eventos en el panel:
+  // Delegación en panel: cambio cantidad o eliminar
   panel.addEventListener('input', e => {
     if (e.target.classList.contains('res-qty')) {
       const li = e.target.closest('li');
       const key = li.dataset.key;
-      const item = seleccion.get(key);
-      item.qty = e.target.value;
-      seleccion.set(key, item);
-      actualizarUI();
+      const entry = seleccion.get(key);
+      if (entry) {
+        entry.qty = e.target.value;
+        seleccion.set(key, entry);
+        actualizarUI();
+      }
     }
   });
 
@@ -282,28 +259,61 @@ document.addEventListener('DOMContentLoaded', () => {
       const li = e.target.closest('li');
       const key = li.dataset.key;
       seleccion.delete(key);
-      // además desmarcamos en el modal si existe
-      const cb = document.querySelector(`.var-checkbox[data-prod-id="${key.split('-')[0]}"][data-var-id="${key.split('-')[1]}"]`);
+      // desmarcar checkbox en modal si existe
+      const parts = key.split('-');
+      const prodId = parts[0], varId = parts[1];
+      const cb = document.querySelector(`.var-checkbox[data-prod-id="${prodId}"][data-var-id="${varId}"]`);
       if (cb) cb.checked = false;
       actualizarUI();
     }
   });
 
-  // Manejadores originales para checkboxes y cantidades en modales
+  // abrir/cerrar modales (delegación)
+  document.addEventListener('click', (e) => {
+    const open = e.target.closest('[data-open-modal]');
+    if (open) {
+      const id = open.getAttribute('data-open-modal');
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+    const close = e.target.closest('[data-close-modal]');
+    if (close) {
+      const id = close.getAttribute('data-close-modal');
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+      } else {
+        // sometimes the close button is inside modal and has data-close-modal equal to modal id
+        const parent = e.target.closest('.fixed.inset-0');
+        if (parent) {
+          parent.classList.add('hidden');
+          parent.classList.remove('flex');
+          document.body.style.overflow = '';
+        }
+      }
+    }
+  });
+
+  // Manejadores para checkboxes y cantidades dentro de los modales
   document.querySelectorAll('.var-checkbox').forEach(cb => {
     cb.addEventListener('change', () => {
       const key = `${cb.dataset.prodId}-${cb.dataset.varId}`;
       if (cb.checked) {
-        // reconstruir objeto completo
-        const row    = cb.closest('tr');
+        const row = cb.closest('tr');
         const item = {
-          prodId:      cb.dataset.prodId,
-          varId:       cb.dataset.varId,
-          prodNombre:  cb.dataset.prodNombre,
-          varLabel:    cb.dataset.varlabel,
-          imgUrl:      window.location.origin + cb.dataset.imgUrl,
-          codigo:      row.querySelector('input[readonly]').value,
-          qty:         row.querySelector('.var-cantidad').value
+          prodId: cb.dataset.prodId,
+          varId: cb.dataset.varId,
+          prodNombre: cb.dataset.prodNombre,
+          varLabel: cb.dataset.varlabel,
+          imgUrl: (cb.dataset.imgUrl ? (window.location.origin + cb.dataset.imgUrl) : ''),
+          codigo: row.querySelector('input[readonly]') ? row.querySelector('input[readonly]').value : '',
+          qty: row.querySelector('.var-cantidad') ? row.querySelector('.var-cantidad').value : 1
         };
         seleccion.set(key, item);
       } else {
@@ -325,34 +335,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Enviar formulario
+  // Generar formulario y enviar (abre en nueva pestaña)
   btn.addEventListener('click', () => {
-    if (!seleccion.size) {
-      return alert('Selecciona al menos una variante para imprimir.');
-    }
+    if (!seleccion.size) return alert('Selecciona al menos una variante para imprimir.');
+
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = "{% url 'imprimir_codigos_barras' %}";
+    form.action = '{% url "imprimir_codigos_barras" %}';
     form.target = '_blank';
+
+    // csrf token del template
     form.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">`;
 
     seleccion.forEach(item => {
-      form.innerHTML += `
-        <input type="hidden" name="codigos[]"      value="${item.codigo}">
-        <input type="hidden" name="product_ids[]"  value="${item.prodId}">
-        <input type="hidden" name="variante_ids[]" value="${item.varId}">
-        <input type="hidden" name="cantidades[]"   value="${item.qty}">
-        <input type="hidden" name="img_urls[]"     value="${item.imgUrl}">
-      `;
+      // crear inputs seguros
+      form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'codigos[]', value: item.codigo }));
+      form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'product_ids[]', value: item.prodId }));
+      form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'variante_ids[]', value: item.varId }));
+      form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'cantidades[]', value: item.qty }));
+      form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'img_urls[]', value: item.imgUrl }));
     });
 
     document.body.appendChild(form);
     form.submit();
     form.remove();
     localStorage.removeItem(LS_KEY);
+    seleccion.clear();
+    actualizarUI();
   });
 
-  // Inicialización
+  // Inicial
   actualizarUI();
 });
 </script>

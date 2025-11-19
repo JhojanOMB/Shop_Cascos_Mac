@@ -17,6 +17,63 @@
 </div>
 {% endblock %}
 
+{% block mobile_header_links %}
+  {% if user.is_authenticated %}
+    <li class="px-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Volver al inicio</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <a href="{% if user.rol == 'gerente' %}{% url 'dashboard_gerente' %}{% else %}{% url 'dashboard_vendedor' %}{% endif %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.6 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Mi perfil</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit"
+          class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-300 text-left">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          <span class="text-sm font-medium text-gray-800">Cerrar sesión</span>
+        </button>
+      </form>
+    </li>
+  {% else %}
+    <li class="px-4">
+      <a href="{% url 'login' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H3m12 0l-4 4m4-4l-4-4M21 12v6a2 2 0 01-2 2H7" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Iniciar sesión</span>
+      </a>
+    </li>
+
+    <li class="px-4">
+      <a href="{% url 'index' %}"
+         class="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M13 5v6h6" />
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Volver al inicio</span>
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}
+
 {% block dashboard_css %}
 <!-- Estilos específicos para la página de ubicación -->
 <link rel="stylesheet" href="{% static 'css/ubica.css' %}">
@@ -43,11 +100,7 @@
         <div class="row d-flex align-items-stretch">
             <!-- Mapa de Google -->
             <div class="col-md-6 mb-4">
-                <iframe class="rounded-4 border border-2 shadow w-100 h-100" loading="lazy"
-                    src="https://www.google.com/maps/embed/v1/place?key=AIzaSyAxatKNBLRCWMPb-y_6t9xEwlSsZ4BPrnQ&q=Cl.+7+%2314-99,+La+Pincha,+Madrid,+Cundinamarca,+Colombia"
-                    title="Cl. 7 #14-99, La Pincha, Madrid, Cundinamarca"
-                    aria-label="Cl. 7 #14-99, La Pincha, Madrid, Cundinamarca">
-                </iframe>
+                <iframe class="rounded-4 border border-2 shadow w-100 h-100" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d248.51244024216157!2d-74.27019010116643!3d4.7354548972381005!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e3f7900409baa51%3A0x5dee311a45c0007a!2sCascos%20Mac!5e0!3m2!1ses-419!2sco!4v1756008153324!5m2!1ses-419!2sco" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
 
             <!-- Dirección de la tienda -->
@@ -86,8 +139,8 @@
                     Lunes a Viernes: 9:00 AM - 6:00 PM<br>
                     Sábados: 9:00 AM - 1:00 PM
                 </p>
-                <a href="https://www.google.com/maps/place/Cl.+7+%2314-99,+La+Pincha,+Madrid,+Cundinamarca/@4.7351288,-74.2715545,17z/data=!3m1!4b1!4m6!3m5!1s0x8e3f79b46bf19c01:0x1b5afc79476acab7!8m2!3d4.7351235!4d-74.2689742!16s%2Fg%2F11fpbkg2fz?entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D"
-                    class="btn btn-outline-dark mt-3" target="_blank"><svg class="me-2" width="20" height="20"
+                <a href="https://www.google.com/maps/place/Cascos+Mac/@4.7354549,-74.2701901,21z/data=!4m6!3m5!1s0x8e3f7900409baa51:0x5dee311a45c0007a!8m2!3d4.7353263!4d-74.2701435!16s%2Fg%2F11xcrxt55j?entry=ttu&g_ep=EgoyMDI1MDgxOS4wIKXMDSoASAFQAw%3D%3D"
+                    class="btn btn-outline-dark mt-3 d-inline-flex align-items-center flex-nowrap" target="_blank"><svg class="me-2" width="20" height="20"
                         xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" xml:space="preserve">
                         <circle style="fill:#40a459" cx="256" cy="256" r="247.916" />
                         <path style="fill:#378b4e"
@@ -116,20 +169,11 @@
                             d="M385.347 145.516c28.231 0 51.2-22.969 51.2-51.2s-22.969-51.2-51.2-51.2-51.2 22.969-51.2 51.2 22.969 51.2 51.2 51.2m0-86.232c19.316 0 35.032 15.716 35.032 35.032s-15.716 35.032-35.032 35.032-35.032-15.716-35.032-35.032 15.716-35.032 35.032-35.032" />
                         <path
                             d="M482.827 137.256c4.751-11.462 7.615-22.413 7.615-32.161C490.442 47.145 443.297 0 385.347 0 367.32 0 350.341 4.564 335.5 12.594 309.911 4.242 283.169 0 256 0 187.62 0 123.333 26.628 74.981 74.981S0 187.62 0 256s26.628 132.667 74.981 181.019S187.62 512 256 512s132.667-26.628 181.019-74.981S512 324.379 512 256c0-41.35-10.096-82.359-29.173-118.744m-97.48-121.088c49.035 0 88.926 39.892 88.926 88.926 0 38.466-59.61 108.698-88.927 139.329-29.318-30.62-88.925-100.836-88.925-139.329 0-49.034 39.892-88.926 88.926-88.926M16.168 256C16.168 123.756 123.756 16.168 256 16.168c21.143 0 42.004 2.74 62.197 8.147-23.169 19.294-37.944 48.342-37.944 80.78 0 9.332 2.633 19.77 7.026 30.7L24.276 317.872A239.3 239.3 0 0 1 16.168 256M256 495.832c-84.643 0-159.183-44.077-201.88-110.482l69.756-50.976c3.965-2.897 4.41-8.649.937-12.121l-.115-.115a8 8 0 0 0-10.381-.803l-68.503 50.061a238.7 238.7 0 0 1-16.576-37.291L294.154 150.7c4.676 9.064 10.246 18.274 16.281 27.317l-164.074 119.9c-3.964 2.897-4.41 8.649-.937 12.122l.115.115a8 8 0 0 0 10.381.803l32.363-23.649 138.502 197.858c-22.383 6.928-46.155 10.666-70.785 10.666m86.644-16.202L201.34 277.766l30.443-22.247 145.228 207.469a239 239 0 0 1-34.367 16.642m48.046-25.293L244.839 245.978l74.839-54.69c26.752 36.915 57.669 68.139 59.943 70.42a8.086 8.086 0 0 0 11.452 0c2.985-2.994 55.336-55.869 82.819-106.018 14.38 31.26 21.939 65.657 21.939 100.311.001 82.35-41.726 155.133-105.141 198.336" />
-                    </svg>Ver en Google Maps
+                    </svg>
+                    <p>Ver en Google Maps</p>
                 </a>
             </div>
 
-        </div>
-    </div>
-
-    <div class="wrapper">
-        <div class="icon whatsapp position-fixed bottom-0 end-0 m-4 border border-black border-1" id="whatsapp">
-            <div class="tooltip border border-black">Whatsapp</div>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="40px" height="40px">
-                <path fill="currentColor"
-                    d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7 .9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 60.8 92.8 91.7 20.2 13.3 43.5 20.4 66.1 20.4 19.5 0 27.5-5.3 32.8-11.3 5.2-5.9 7.7-14.4 7.7-22.7 0-8.2-2.7-15.9-8.1-19.4-5.5-3.4-15.8-5.3-23.5-6.4zm0 0" />
-            </svg>
         </div>
     </div>
 

@@ -9,6 +9,8 @@ urlpatterns = [
     path('agregar/<int:producto_talla_id>/', views.agregar_al_carrito, name='agregar_al_carrito'),
     path('update/<int:producto_talla_id>/', views.actualizar_cantidad, name='actualizar_cantidad'),
     path('remove/<int:producto_talla_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
-    path('vaciar/', views.vaciar_carrito, name='vaciar_carrito'),            # <- añade esta línea
+    path('vaciar/', views.vaciar_carrito, name='vaciar_carrito'),
     path('checkout-whatsapp/', views.enviar_carrito, name='enviar_carrito'),
+    path('carrito/partial/', views.mini_cart_partial, name='mini_cart_partial'),
+
 ]

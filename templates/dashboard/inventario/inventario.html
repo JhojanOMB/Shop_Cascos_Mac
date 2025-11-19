@@ -6,17 +6,54 @@
 
 <style>
   .icono-redondo {
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 1.5rem;
-}
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.25rem;
+  }
 
+  /* Paginación compacta y responsive */
+  .pagination {
+    display: flex;
+    flex-wrap: wrap; /* permite que las páginas bajen de línea en pantallas pequeñas */
+    gap: 0.25rem;
+    justify-content: center;
+    align-items: center;
+    margin: 0.5rem 0;
+  }
+  .pagination .page-item .page-link {
+    padding: .25rem .5rem; /* más compacta */
+    min-width: 38px;
+    text-align: center;
+    font-size: .875rem;
+  }
+  .pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+  }
+  .pagination .page-item.disabled .page-link {
+    cursor: default;
+    color: #6c757d;
+    background-color: transparent;
+    border: none;
+  }
+
+  /* Mejora en tablas para evitar saltos de ancho */
+  .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table td, .table th { white-space: nowrap; vertical-align: middle; }
+  /* Para pantallas muy pequeñas permitimos wrap del nombre */
+  @media (max-width: 576px) {
+    .table td, .table th { font-size: .85rem; padding: .4rem .5rem; }
+    .icono-redondo { width: 48px; height: 48px; font-size: 1.1rem; }
+  }
+
+  /* Botón de acción más pequeño */
+  .btn-sm-compact { padding: .28rem .5rem; font-size: .80rem; }
 </style>
-
 
 <div class="container mt-4">
     <h2>Inventario</h2>
@@ -32,7 +69,7 @@
           </form>
         </div>
         <div class="col-md-6 text-end">
-          <a href="{% url 'movimiento_inventario' %}" class="btn btn-success btn-sm mb-3">
+          <a href="{% url 'movimiento_inventario' %}" class="btn btn-success btn-sm mb-3 btn-sm-compact">
             <i class="bi bi-plus-circle"></i> Registrar Movimiento
           </a>
         </div>
@@ -45,7 +82,7 @@
         <i class="fa-solid fa-circle-xmark fa-shake fs-5 align-middle me-2"
            style="-webkit-text-stroke: 0.5px rgb(255, 0, 0);"></i>
         ¡Atención! Hay variantes sin stock en el inventario.
-        <button class="btn btn-sm btn-dark ms-3 ver-productos" data-tipo="sin">Ver productos</button>
+        <button class="btn btn-sm btn-dark ms-3 ver-productos btn-sm-compact" data-tipo="sin">Ver productos</button>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
       </div>
     {% endif %}
@@ -55,7 +92,7 @@
         <i class="fa-solid fa-triangle-exclamation fa-beat-fade align-middle me-2"
            style="color: #FFD43B; -webkit-text-stroke: 1px black;"></i>
         ¡Precaución! Algunas variantes tienen 5 o menos unidades en stock.
-        <button class="btn btn-sm btn-dark ms-3 ver-productos" data-tipo="bajo">Ver productos</button>
+        <button class="btn btn-sm btn-dark ms-3 ver-productos btn-sm-compact" data-tipo="bajo">Ver productos</button>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
       </div>
     {% endif %}
@@ -115,31 +152,34 @@
       <div class="table-responsive">
         {% include 'dashboard/inventario/tabla_stock.html' %}
       </div>
+
+      <!-- PAGINACIÓN: STOCK (compacta, con puntos suspensivos) -->
       <nav aria-label="Paginación con stock">
-        <ul class="pagination justify-content-center mt-3" data-section="stock">
+        <ul class="pagination pagination-sm" data-section="stock">
           {% if variantes_con_stock.has_previous %}
             <li class="page-item">
-              <a class="page-link"
-                 href="?page_con={{ variantes_con_stock.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
-                « Anterior
-              </a>
+              <a class="page-link" href="?page_con={{ variantes_con_stock.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">«</a>
             </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">«</span></li>
           {% endif %}
+
           {% for n in variantes_con_stock.paginator.page_range %}
-            <li class="page-item {% if n == variantes_con_stock.number %}active{% endif %}">
-              <a class="page-link"
-                 href="?page_con={{ n }}{% if search_query %}&search={{ search_query }}{% endif %}">
-                {{ n }}
-              </a>
-            </li>
+            {% if n == 1 or n == variantes_con_stock.paginator.num_pages or n >= variantes_con_stock.number|add:"-2" and n <= variantes_con_stock.number|add:"2" %}
+              <li class="page-item {% if n == variantes_con_stock.number %}active{% endif %}">
+                <a class="page-link" href="?page_con={{ n }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ n }}</a>
+              </li>
+            {% elif n == variantes_con_stock.number|add:"-3" or n == variantes_con_stock.number|add:"3" %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
           {% endfor %}
+
           {% if variantes_con_stock.has_next %}
             <li class="page-item">
-              <a class="page-link"
-                 href="?page_con={{ variantes_con_stock.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
-                Siguiente »
-              </a>
+              <a class="page-link" href="?page_con={{ variantes_con_stock.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">»</a>
             </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">»</span></li>
           {% endif %}
         </ul>
       </nav>
@@ -184,7 +224,7 @@
                 <td>{{ var.producto.created_date }}</td>
                 <td>
                   <a href="{% url 'movimiento_inventario' %}?producto_talla_id={{ var.id }}"
-                     class="btn btn-sm btn-primary">
+                     class="btn btn-sm btn-primary btn-sm-compact">
                     Agregar Cantidad
                   </a>
                 </td>
@@ -199,32 +239,33 @@
       </div>
     </div>
 
-    <!-- Paginación bajo stock -->
+    <!-- PAGINACIÓN: BAJO STOCK -->
     <nav aria-label="Paginación bajo stock">
-      <ul class="pagination justify-content-center mt-3">
+      <ul class="pagination pagination-sm justify-content-center mt-3">
         {% if variantes_bajo_stock.has_previous %}
           <li class="page-item">
-            <a class="page-link"
-               href="?page_bajo={{ variantes_bajo_stock.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
-              « Anterior
-            </a>
+            <a class="page-link" href="?page_bajo={{ variantes_bajo_stock.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">«</a>
           </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">«</span></li>
         {% endif %}
+
         {% for n in variantes_bajo_stock.paginator.page_range %}
-          <li class="page-item {% if n == variantes_bajo_stock.number %}active{% endif %}">
-            <a class="page-link"
-               href="?page_bajo={{ n }}{% if search_query %}&search={{ search_query }}{% endif %}">
-              {{ n }}
-            </a>
-          </li>
+          {% if n == 1 or n == variantes_bajo_stock.paginator.num_pages or n >= variantes_bajo_stock.number|add:"-2" and n <= variantes_bajo_stock.number|add:"2" %}
+            <li class="page-item {% if n == variantes_bajo_stock.number %}active{% endif %}">
+              <a class="page-link" href="?page_bajo={{ n }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ n }}</a>
+            </li>
+          {% elif n == variantes_bajo_stock.number|add:"-3" or n == variantes_bajo_stock.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
         {% endfor %}
+
         {% if variantes_bajo_stock.has_next %}
           <li class="page-item">
-            <a class="page-link"
-               href="?page_bajo={{ variantes_bajo_stock.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
-              Siguiente »
-            </a>
+            <a class="page-link" href="?page_bajo={{ variantes_bajo_stock.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">»</a>
           </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">»</span></li>
         {% endif %}
       </ul>
     </nav>
@@ -269,7 +310,7 @@
                 <td>{{ var.producto.created_date }}</td>
                 <td>
                   <a href="{% url 'movimiento_inventario' %}?producto_talla_id={{ var.id }}"
-                     class="btn btn-sm btn-primary">
+                     class="btn btn-sm btn-primary btn-sm-compact">
                     Agregar Cantidad
                   </a>
                 </td>
@@ -284,37 +325,37 @@
       </div>
     </div>
 
-    <!-- Paginación Sin Stock -->
+    <!-- PAGINACIÓN: SIN STOCK -->
     <nav aria-label="Paginación sin stock">
-      <ul class="pagination justify-content-center mt-3">
+      <ul class="pagination pagination-sm justify-content-center mt-3">
         {% if variantes_sin_stock.has_previous %}
           <li class="page-item">
-            <a class="page-link"
-               href="?page_sin={{ variantes_sin_stock.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
-              « Anterior
-            </a>
+            <a class="page-link" href="?page_sin={{ variantes_sin_stock.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">«</a>
           </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">«</span></li>
         {% endif %}
+
         {% for n in variantes_sin_stock.paginator.page_range %}
-          <li class="page-item {% if n == variantes_sin_stock.number %}active{% endif %}">
-            <a class="page-link"
-               href="?page_sin={{ n }}{% if search_query %}&search={{ search_query }}{% endif %}">
-              {{ n }}
-            </a>
-          </li>
+          {% if n == 1 or n == variantes_sin_stock.paginator.num_pages or n >= variantes_sin_stock.number|add:"-2" and n <= variantes_sin_stock.number|add:"2" %}
+            <li class="page-item {% if n == variantes_sin_stock.number %}active{% endif %}">
+              <a class="page-link" href="?page_sin={{ n }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ n }}</a>
+            </li>
+          {% elif n == variantes_sin_stock.number|add:"-3" or n == variantes_sin_stock.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
         {% endfor %}
+
         {% if variantes_sin_stock.has_next %}
           <li class="page-item">
-            <a class="page-link"
-               href="?page_sin={{ variantes_sin_stock.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
-              Siguiente »
-            </a>
+            <a class="page-link" href="?page_sin={{ variantes_sin_stock.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">»</a>
           </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">»</span></li>
         {% endif %}
       </ul>
     </nav>
     
-
   </div>
 
 

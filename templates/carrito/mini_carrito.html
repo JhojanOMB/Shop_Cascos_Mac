@@ -1,0 +1,196 @@
+{# templates/carrito/mini_carrito.html #}
+{% load static %}
+{% load humanize %}
+
+<div class="p-2 w-full">
+  {% if cart_items %}
+    <ul class="divide-y">
+      {% for item in cart_items %}
+        <li class="py-3 flex items-center gap-3">
+          {# ---------- Caso 1: item.talla es una instancia ProductoTalla ---------- #}
+          {% if item.talla %}
+            {% with pt=item.talla %}
+              <div class="w-12 h-12 flex items-center justify-center">
+                {% if pt.producto and pt.producto.imagen1 %}
+                  <img src="{{ pt.producto.imagen1.url }}" class="w-12 h-12 object-contain rounded" alt="{{ pt.producto.nombre }}">
+                {% else %}
+                  <img src="{% static 'img/No_hay_imagen.png' %}" class="w-12 h-12 object-contain rounded opacity-90" alt="No image">
+                {% endif %}
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate">
+                  {% if pt.producto %}{{ pt.producto.nombre }}{% else %}Producto desconocido{% endif %}
+                </div>
+                <div class="text-xs text-gray-500 truncate">
+                  T: {% if pt.talla %}{{ pt.talla.nombre }}{% else %}--{% endif %}{% if pt.color %} | {{ pt.color.nombre }}{% endif %}
+                </div>
+              </div>
+
+              <div class="text-sm text-right">
+                {# cantidad seguro: item.cantidad -> si no existe, usar raw.cantidad -> else 0 #}
+                {% if item.cantidad %}
+                  <div>{{ item.cantidad }}</div>
+                {% elif item.raw and item.raw.cantidad %}
+                  <div>{{ item.raw.cantidad }}</div>
+                {% else %}
+                  <div>0</div>
+                {% endif %}
+
+                {# subtotal seguro: item.subtotal -> raw.subtotal -> else 0.00 #}
+                {% if item.subtotal %}
+                  <div class="text-xs text-gray-500">${{ item.subtotal }}</div>
+                {% elif item.raw and item.raw.subtotal %}
+                  <div class="text-xs text-gray-500">${{ item.raw.subtotal }}</div>
+                {% else %}
+                  <div class="text-xs text-gray-500">$0.00</div>
+                {% endif %}
+
+                <button data-id="{{ pt.id }}" class="text-red-500 text-xs mt-1 btn-mini-remove">Eliminar</button>
+              </div>
+            {% endwith %}
+
+          {# ---------- Caso 2: dict-like con producto_talla_id ---------- #}
+          {% elif item.producto_talla_id %}
+            {% with pt_id=item.producto_talla_id %}
+              <div class="w-12 h-12 flex items-center justify-center">
+                {% if item.imagen_url %}
+                  <img src="{{ item.imagen_url }}" class="w-12 h-12 object-contain rounded" alt="{{ item.producto_nombre|default:'Producto' }}">
+                {% else %}
+                  <img src="{% static 'img/No_hay_imagen.png' %}" class="w-12 h-12 object-contain rounded opacity-90" alt="No image">
+                {% endif %}
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate">
+                  {% if item.producto_nombre %}{{ item.producto_nombre }}{% else %}Variante #{{ pt_id }}{% endif %}
+                </div>
+                <div class="text-xs text-gray-500 truncate">
+                  {% if item.talla_nombre %}T: {{ item.talla_nombre }}{% else %}Detalles no disponibles{% endif %}
+                  {% if item.color_nombre %} | {{ item.color_nombre }}{% endif %}
+                </div>
+              </div>
+
+              <div class="text-sm text-right">
+                {# cantidad seguro #}
+                {% if item.cantidad %}
+                  <div>{{ item.cantidad }}</div>
+                {% elif item.raw and item.raw.cantidad %}
+                  <div>{{ item.raw.cantidad }}</div>
+                {% else %}
+                  <div>0</div>
+                {% endif %}
+
+                {# subtotal seguro #}
+                {% if item.subtotal %}
+                  <div class="text-xs text-gray-500">${{ item.subtotal }}</div>
+                {% elif item.raw and item.raw.subtotal %}
+                  <div class="text-xs text-gray-500">${{ item.raw.subtotal }}</div>
+                {% else %}
+                  <div class="text-xs text-gray-500">$0.00</div>
+                {% endif %}
+
+                <button data-id="{{ pt_id }}" class="text-red-500 text-xs mt-1 btn-mini-remove">Eliminar</button>
+              </div>
+            {% endwith %}
+
+          {# ---------- Caso 3: guardaste la instancia dentro de raw.talla (no recomendado) ---------- #}
+          {% elif item.raw and item.raw.talla %}
+            {% with pt=item.raw.talla %}
+              <div class="w-12 h-12 flex items-center justify-center">
+                {% if pt.producto and pt.producto.imagen1 %}
+                  <img src="{{ pt.producto.imagen1.url }}" class="w-12 h-12 object-contain rounded" alt="{{ pt.producto.nombre }}">
+                {% else %}
+                  <img src="{% static 'img/No_hay_imagen.png' %}" class="w-12 h-12 object-contain rounded opacity-90" alt="No image">
+                {% endif %}
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate">
+                  {% if pt.producto %}{{ pt.producto.nombre }}{% else %}Producto desconocido{% endif %}
+                </div>
+                <div class="text-xs text-gray-500 truncate">
+                  T: {% if pt.talla %}{{ pt.talla.nombre }}{% else %}--{% endif %}{% if pt.color %} | {{ pt.color.nombre }}{% endif %}
+                </div>
+              </div>
+
+              <div class="text-sm text-right">
+                {# cantidad seguro #}
+                {% if item.cantidad %}
+                  <div>{{ item.cantidad }}</div>
+                {% elif item.raw and item.raw.cantidad %}
+                  <div>{{ item.raw.cantidad }}</div>
+                {% else %}
+                  <div>0</div>
+                {% endif %}
+
+                {# subtotal seguro #}
+                {% if item.subtotal %}
+                  <div class="text-xs text-gray-500">${{ item.subtotal }}</div>
+                {% elif item.raw and item.raw.subtotal %}
+                  <div class="text-xs text-gray-500">${{ item.raw.subtotal }}</div>
+                {% else %}
+                  <div class="text-xs text-gray-500">$0.00</div>
+                {% endif %}
+
+                <button data-id="{{ pt.id }}" class="text-red-500 text-xs mt-1 btn-mini-remove">Eliminar</button>
+              </div>
+            {% endwith %}
+
+          {# ---------- Fallback: estructura desconocida ---------- #}
+          {% else %}
+            <div class="w-12 h-12 flex items-center justify-center">
+              <img src="{% static 'img/No_hay_imagen.png' %}" class="w-12 h-12 object-contain rounded opacity-90" alt="No image">
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium truncate">{{ item.producto_nombre|default:"Producto" }}</div>
+              <div class="text-xs text-gray-500 truncate">
+                {% if item.talla_nombre %}T: {{ item.talla_nombre }}{% else %}Sin información{% endif %}
+              </div>
+            </div>
+
+            <div class="text-sm text-right">
+              {% if item.cantidad %}
+                <div>{{ item.cantidad }}</div>
+              {% elif item.raw and item.raw.cantidad %}
+                <div>{{ item.raw.cantidad }}</div>
+              {% else %}
+                <div>0</div>
+              {% endif %}
+
+              {% if item.subtotal %}
+                <div class="text-xs text-gray-500">${{ item.subtotal }}</div>
+              {% elif item.raw and item.raw.subtotal %}
+                <div class="text-xs text-gray-500">${{ item.raw.subtotal }}</div>
+              {% else %}
+                <div class="text-xs text-gray-500">$0.00</div>
+              {% endif %}
+            </div>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+
+    <div class="p-3 border-t mt-2">
+      <div class="flex items-center justify-between font-semibold">
+        <span>Total</span>
+        {# total puede venir como Decimal o None; mostramos seguro #}
+        {% if total %}
+          <span>${{ total }}</span>
+        {% else %}
+          <span>$0.00</span>
+        {% endif %}
+      </div>
+      <div class="mt-3 flex gap-2">
+        <a href="{% url 'carrito:ver_carrito' %}" class="flex-1 text-center px-3 py-2 border rounded">Ver carrito</a>
+        <form method="post" action="{% url 'carrito:enviar_carrito' %}" class="flex-1">
+          {% csrf_token %}
+          <button type="submit" class="w-full bg-green-600 text-white px-3 py-2 rounded">Enviar por WhatsApp</button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-center text-sm text-gray-500 py-6">Tu carrito está vacío.</p>
+  {% endif %}
+</div>
